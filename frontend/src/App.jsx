@@ -7,6 +7,7 @@ import MemberList from './components/MemberList';
 import BrowserSessions from './components/BrowserSessions';
 import RouterList from './components/RouterList';
 import MonitoringIsolir from './components/MonitoringIsolir';
+import SystemSettings from './components/SystemSettings';
 
 // ─── localStorage helpers ───────────────────────────────────────────────────
 function loadState(key, fallbackFn) {
@@ -288,17 +289,7 @@ export default function App() {
       case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} {...commonProps} />;
       case 'routers':    return <RouterList routers={routers} setRouters={setRouters} packages={packages} {...commonProps} />;
       case 'monitoring': return <MonitoringIsolir routers={routers} setRouters={setRouters} {...commonProps} />;
-      case 'settings':   return (
-        <div className="w-full h-[60vh] flex flex-col items-center justify-center bg-surface-container-lowest border border-surface-variant/70 rounded-xl shadow-sm p-8 text-center animate-fadeIn">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-6">
-            <span className="material-symbols-outlined text-[40px]">settings</span>
-          </div>
-          <h2 className="text-headline-sm font-headline-sm text-on-surface mb-2">Pengaturan Sistem</h2>
-          <p className="text-body-md font-body-md text-on-surface-variant max-w-md">
-            Konfigurasi server FreeRADIUS, integrasi Mikrotik API, dan preferensi aplikasi akan tersedia pada pembaruan mendatang.
-          </p>
-        </div>
-      );
+      case 'settings':   return <SystemSettings {...commonProps} />;
       default:           return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} {...commonProps} />;
     }
   };

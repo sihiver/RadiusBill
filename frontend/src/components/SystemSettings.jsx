@@ -1,0 +1,293 @@
+import React, { useState, useEffect } from 'react';
+
+export default function SystemSettings({ addNotification }) {
+  const [activeTab, setActiveTab] = useState('freeradius');
+
+  // Form states
+  const [radiusConfig, setRadiusConfig] = useState({
+    host: '127.0.0.1',
+    port: '1812',
+    dbUser: 'radius',
+    dbPass: 'radpass',
+    secret: 'testing123'
+  });
+
+  const [mikrotikConfig, setMikrotikConfig] = useState({
+    host: '192.168.88.1',
+    port: '8728',
+    apiUser: 'admin',
+    apiPass: ''
+  });
+
+  const [appPreferences, setAppPreferences] = useState({
+    theme: 'system',
+    language: 'id',
+    autoSync: '30'
+  });
+
+  // Load from local storage on mount
+  useEffect(() => {
+    const savedRadius = localStorage.getItem('rtrwnet_radius_config');
+    if (savedRadius) setRadiusConfig(JSON.parse(savedRadius));
+
+    const savedMikrotik = localStorage.getItem('rtrwnet_mikrotik_config');
+    if (savedMikrotik) setMikrotikConfig(JSON.parse(savedMikrotik));
+
+    const savedPrefs = localStorage.getItem('rtrwnet_app_prefs');
+    if (savedPrefs) setAppPreferences(JSON.parse(savedPrefs));
+  }, []);
+
+  const handleSave = () => {
+    // In a real app, this would send an API request to the backend.
+    // Here we just save to localStorage to persist across reloads.
+    localStorage.setItem('rtrwnet_radius_config', JSON.stringify(radiusConfig));
+    localStorage.setItem('rtrwnet_mikrotik_config', JSON.stringify(mikrotikConfig));
+    localStorage.setItem('rtrwnet_app_prefs', JSON.stringify(appPreferences));
+    
+    addNotification('Pengaturan sistem berhasil disimpan.', 'success');
+  };
+
+  const handleTestConnection = (type) => {
+    addNotification(`Menguji koneksi ke ${type}...`, 'info');
+    setTimeout(() => {
+      addNotification(`Koneksi ke ${type} berhasil terhubung!`, 'success');
+    }, 1500);
+  };
+
+  return (
+    <div className="w-full space-y-6 animate-fadeIn">
+      {/* Title */}
+      <div>
+        <h2 className="font-headline-sm text-headline-sm text-on-surface">Pengaturan Sistem</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-1">Konfigurasi server FreeRADIUS, integrasi Mikrotik API, dan preferensi aplikasi.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        {/* Settings Navigation */}
+        <div className="lg:col-span-1 space-y-2">
+          <button 
+            onClick={() => setActiveTab('freeradius')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-label-md text-left ${activeTab === 'freeradius' ? 'bg-primary text-on-primary shadow-sm' : 'hover:bg-surface-container text-on-surface-variant'}`}
+          >
+            <span className="material-symbols-outlined text-[20px]">dns</span>
+            Server FreeRADIUS
+          </button>
+          <button 
+            onClick={() => setActiveTab('mikrotik')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-label-md text-left ${activeTab === 'mikrotik' ? 'bg-primary text-on-primary shadow-sm' : 'hover:bg-surface-container text-on-surface-variant'}`}
+          >
+            <span className="material-symbols-outlined text-[20px]">router</span>
+            Mikrotik API
+          </button>
+          <button 
+            onClick={() => setActiveTab('preferences')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-label-md text-left ${activeTab === 'preferences' ? 'bg-primary text-on-primary shadow-sm' : 'hover:bg-surface-container text-on-surface-variant'}`}
+          >
+            <span className="material-symbols-outlined text-[20px]">tune</span>
+            Preferensi Aplikasi
+          </button>
+        </div>
+
+        {/* Settings Form Content */}
+        <div className="lg:col-span-3">
+          <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl shadow-sm p-6">
+            
+            {/* FreeRADIUS Settings */}
+            {activeTab === 'freeradius' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-surface-variant pb-4 mb-4">
+                  <h3 className="font-title-md text-title-md text-on-surface">Koneksi Database FreeRADIUS</h3>
+                  <p className="text-[13px] text-on-surface-variant mt-1">Kredensial database MySQL/MariaDB yang digunakan oleh FreeRADIUS.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Database Host</label>
+                    <input 
+                      type="text" 
+                      value={radiusConfig.host}
+                      onChange={(e) => setRadiusConfig({...radiusConfig, host: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Database Port</label>
+                    <input 
+                      type="text" 
+                      value={radiusConfig.port}
+                      onChange={(e) => setRadiusConfig({...radiusConfig, port: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Database User</label>
+                    <input 
+                      type="text" 
+                      value={radiusConfig.dbUser}
+                      onChange={(e) => setRadiusConfig({...radiusConfig, dbUser: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Database Password</label>
+                    <input 
+                      type="password" 
+                      value={radiusConfig.dbPass}
+                      onChange={(e) => setRadiusConfig({...radiusConfig, dbPass: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[13px] font-semibold text-on-surface">RADIUS Secret Key</label>
+                    <input 
+                      type="password" 
+                      value={radiusConfig.secret}
+                      onChange={(e) => setRadiusConfig({...radiusConfig, secret: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <p className="text-[11px] text-on-surface-variant">Shared secret yang dikonfigurasi di clients.conf</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-between">
+                  <button onClick={() => handleTestConnection('Database FreeRADIUS')} className="px-4 py-2 text-primary hover:bg-primary/10 rounded-lg transition-colors font-label-md flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">cell_tower</span>
+                    Test Koneksi
+                  </button>
+                  <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
+                    Simpan Pengaturan
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Mikrotik Settings */}
+            {activeTab === 'mikrotik' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-surface-variant pb-4 mb-4">
+                  <h3 className="font-title-md text-title-md text-on-surface">Integrasi Mikrotik API</h3>
+                  <p className="text-[13px] text-on-surface-variant mt-1">Konfigurasi untuk komunikasi langsung dengan RouterBoard via API (untuk Kick User, Cek Interfaces).</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Router IP / Host</label>
+                    <input 
+                      type="text" 
+                      value={mikrotikConfig.host}
+                      onChange={(e) => setMikrotikConfig({...mikrotikConfig, host: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">API Port</label>
+                    <input 
+                      type="text" 
+                      value={mikrotikConfig.port}
+                      onChange={(e) => setMikrotikConfig({...mikrotikConfig, port: e.target.value})}
+                      placeholder="8728 (atau 8729 untuk SSL)"
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[13px] font-semibold text-on-surface">API Username</label>
+                    <input 
+                      type="text" 
+                      value={mikrotikConfig.apiUser}
+                      onChange={(e) => setMikrotikConfig({...mikrotikConfig, apiUser: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[13px] font-semibold text-on-surface">API Password</label>
+                    <input 
+                      type="password" 
+                      value={mikrotikConfig.apiPass}
+                      onChange={(e) => setMikrotikConfig({...mikrotikConfig, apiPass: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-between">
+                  <button onClick={() => handleTestConnection('Mikrotik API')} className="px-4 py-2 text-primary hover:bg-primary/10 rounded-lg transition-colors font-label-md flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">wifi_tethering</span>
+                    Test Koneksi
+                  </button>
+                  <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
+                    Simpan Pengaturan
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Application Preferences */}
+            {activeTab === 'preferences' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-surface-variant pb-4 mb-4">
+                  <h3 className="font-title-md text-title-md text-on-surface">Preferensi Dashboard</h3>
+                  <p className="text-[13px] text-on-surface-variant mt-1">Pengaturan antarmuka dan perilaku aplikasi Billing.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Tema Tampilan</label>
+                    <select 
+                      value={appPreferences.theme}
+                      onChange={(e) => setAppPreferences({...appPreferences, theme: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors appearance-none"
+                    >
+                      <option value="system">Mengikuti Sistem (Auto)</option>
+                      <option value="light">Mode Terang (Light)</option>
+                      <option value="dark">Mode Gelap (Dark)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Bahasa Dashboard</label>
+                    <select 
+                      value={appPreferences.language}
+                      onChange={(e) => setAppPreferences({...appPreferences, language: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors appearance-none"
+                    >
+                      <option value="id">Bahasa Indonesia</option>
+                      <option value="en">English</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-[13px] font-semibold text-on-surface">Interval Auto-Sync Background (Detik)</label>
+                    <div className="flex gap-4">
+                      {['10', '30', '60', '300'].map(val => (
+                        <label key={val} className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="autosync" 
+                            value={val}
+                            checked={appPreferences.autoSync === val}
+                            onChange={(e) => setAppPreferences({...appPreferences, autoSync: e.target.value})}
+                            className="w-4 h-4 text-primary bg-surface-container border-surface-variant focus:ring-primary"
+                          />
+                          <span className="text-[14px] text-on-surface">{val}s</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant mt-2">Seberapa sering dashboard menarik data terbaru dari server di latar belakang.</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-end">
+                  <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
+                    Simpan Preferensi
+                  </button>
+                </div>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
