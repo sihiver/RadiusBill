@@ -66,8 +66,184 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
     }
   };
 
+  if (selectedVoucher) {
+    return (
+      <div className="w-full space-y-6 animate-fadeIn">
+        {/* Header */}
+        <div className="flex items-center gap-4 border-b border-surface-variant pb-4">
+          <button 
+            onClick={() => setSelectedVoucher(null)}
+            className="p-2 bg-surface-container-low hover:bg-surface-container-high rounded-full text-on-surface-variant transition-colors flex items-center justify-center"
+            aria-label="Kembali"
+          >
+            <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+          </button>
+          <div>
+            <h2 className="font-headline-sm text-headline-sm text-on-surface flex items-center gap-3">
+              Detail Voucher
+              <span className={`px-3 py-1 rounded-full text-[12px] font-bold ${
+                selectedVoucher.status === 'Active' ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant' :
+                selectedVoucher.status === 'Unused' ? 'bg-surface-container-high text-on-surface-variant' :
+                'bg-error-container text-on-error-container'
+              }`}>
+                {selectedVoucher.status === 'Active' ? 'Aktif' : selectedVoucher.status === 'Unused' ? 'Belum Dipakai' : 'Expired'}
+              </span>
+            </h2>
+            <p className="font-mono text-[18px] font-bold text-primary mt-1">{selectedVoucher.code}</p>
+          </div>
+          
+          <div className="ml-auto flex gap-3">
+            {selectedVoucher.status === 'Active' && (
+              <button
+                onClick={() => {
+                  handleDisconnect(selectedVoucher.id, selectedVoucher.code);
+                  setSelectedVoucher(null);
+                }}
+                className="px-4 py-2 bg-error-container hover:bg-error/20 text-error font-label-md rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">wifi_off</span>
+                Putus Sesi
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Sidebar Info */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-5 shadow-sm space-y-4">
+              <h3 className="text-label-sm text-on-surface-variant uppercase font-bold tracking-wider border-b border-surface-variant pb-2">Informasi Paket</h3>
+              
+              <div>
+                <p className="text-[11px] text-on-surface-variant font-semibold">Paket</p>
+                <p className="font-body-md text-[14px] text-on-surface">{selectedVoucher.package}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-on-surface-variant font-semibold">Harga</p>
+                <p className="font-body-md text-[14px] text-on-surface font-semibold text-primary">Rp {selectedVoucher.price.toLocaleString('id-ID')}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-on-surface-variant font-semibold">Waktu Aktivasi</p>
+                <p className="font-body-md text-[14px] text-on-surface">{selectedVoucher.activatedTime || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-on-surface-variant font-semibold">Sisa Waktu</p>
+                <p className="font-mono text-[14px] text-on-surface font-bold text-primary">
+                  {selectedVoucher.expiresAt !== undefined ? (() => {
+                    const remaining = selectedVoucher.expiresAt - Date.now();
+                    return remaining <= 0 ? 'Waktu Habis' : formatCountdown(remaining);
+                  })() : selectedVoucher.timeLeft}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-5 shadow-sm space-y-4">
+              <h3 className="text-label-sm text-on-surface-variant uppercase font-bold tracking-wider border-b border-surface-variant pb-2">Informasi Jaringan</h3>
+              
+              <div>
+                <p className="text-[11px] text-on-surface-variant font-semibold">MAC Address</p>
+                <p className="font-mono text-[14px] text-on-surface">{selectedVoucher.macAddress || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-on-surface-variant font-semibold">IP Address</p>
+                <p className="font-mono text-[14px] text-on-surface">{selectedVoucher.ipAddress || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-on-surface-variant font-semibold">ID Sesi (Session-ID)</p>
+                <p className="font-mono text-[14px] text-on-surface text-on-surface-variant">
+                  {selectedVoucher.status === 'Active' ? `RAD-${selectedVoucher.id}0A8X` : '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Panel */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Overview Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-5 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined text-[24px]">data_usage</span>
+                </div>
+                <div>
+                  <p className="text-[11px] text-on-surface-variant font-semibold uppercase">Total Pemakaian</p>
+                  <p className="font-mono text-[20px] font-bold text-on-surface">{selectedVoucher.usedBytes || '0 MB'}</p>
+                </div>
+              </div>
+              
+              <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-5 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary">
+                  <span className="material-symbols-outlined text-[24px]">timer</span>
+                </div>
+                <div>
+                  <p className="text-[11px] text-on-surface-variant font-semibold uppercase">Lama Sesi (Uptime)</p>
+                  <p className="font-mono text-[20px] font-bold text-on-surface">{selectedVoucher.status === 'Active' ? '01:45:22' : '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Riwayat Sesi */}
+            <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-surface-variant bg-surface-container-low">
+                <h3 className="font-headline-sm text-headline-sm text-on-surface">Riwayat Sesi Lengkap</h3>
+              </div>
+              
+              {selectedVoucher.status === 'Unused' ? (
+                <div className="text-center p-12 text-on-surface-variant text-[14px] italic">
+                  Belum ada riwayat sesi. Voucher belum pernah digunakan.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-[13px]">
+                    <thead className="bg-surface-container-lowest text-on-surface-variant border-b border-surface-variant">
+                      <tr>
+                        <th className="px-5 py-3 font-semibold">Waktu Mulai</th>
+                        <th className="px-5 py-3 font-semibold">Waktu Selesai</th>
+                        <th className="px-5 py-3 font-semibold">Durasi</th>
+                        <th className="px-5 py-3 font-semibold">Pemakaian Data</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-container font-mono text-on-surface">
+                      {selectedVoucher.status === 'Active' && (
+                        <tr className="bg-tertiary/5 hover:bg-tertiary/10 transition-colors border-l-4 border-l-tertiary">
+                          <td className="px-5 py-3 text-tertiary">Hari ini</td>
+                          <td className="px-5 py-3 text-tertiary font-bold flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                            Aktif
+                          </td>
+                          <td className="px-5 py-3 font-bold text-tertiary">01:45:22</td>
+                          <td className="px-5 py-3 text-tertiary font-bold">45 MB</td>
+                        </tr>
+                      )}
+                      <tr className="hover:bg-surface-container-low/50 transition-colors">
+                        <td className="px-5 py-3 text-on-surface-variant">10/06 08:15</td>
+                        <td className="px-5 py-3 text-on-surface-variant">10/06 10:00</td>
+                        <td className="px-5 py-3">01:45:00</td>
+                        <td className="px-5 py-3 text-primary font-medium">120 MB</td>
+                      </tr>
+                      <tr className="hover:bg-surface-container-low/50 transition-colors">
+                        <td className="px-5 py-3 text-on-surface-variant">11/06 14:20</td>
+                        <td className="px-5 py-3 text-on-surface-variant">11/06 15:50</td>
+                        <td className="px-5 py-3">01:30:00</td>
+                        <td className="px-5 py-3 text-primary font-medium">85 MB</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-6 animate-fadeIn">
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -277,158 +453,6 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
         </div>
       </div>
 
-      {/* Detail Modal */}
-      {selectedVoucher && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-surface-container-lowest rounded-xl w-full max-w-lg shadow-2xl overflow-hidden border border-surface-variant animate-slideIn">
-            <div className="px-6 py-4 border-b border-surface-container bg-surface-container-low flex justify-between items-center">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface">Detail Voucher</h3>
-              <button 
-                onClick={() => setSelectedVoucher(null)}
-                className="text-on-surface-variant hover:text-on-surface transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              {/* Header Info */}
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-label-sm text-on-surface-variant uppercase font-semibold mb-1">Kode Voucher</p>
-                  <p className="font-mono text-[24px] font-bold text-on-surface">{selectedVoucher.code}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-[12px] font-bold ${
-                  selectedVoucher.status === 'Active' ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant' :
-                  selectedVoucher.status === 'Unused' ? 'bg-surface-container-high text-on-surface-variant' :
-                  'bg-error-container text-on-error-container'
-                }`}>
-                  {selectedVoucher.status === 'Active' ? 'Aktif' : selectedVoucher.status === 'Unused' ? 'Belum Dipakai' : 'Expired'}
-                </span>
-              </div>
-
-              {/* Detail Grid */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-4 bg-surface-container-low p-4 rounded-lg border border-surface-container">
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">Paket</p>
-                  <p className="font-body-md text-[14px] text-on-surface">{selectedVoucher.package}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">Harga</p>
-                  <p className="font-body-md text-[14px] text-on-surface font-semibold">Rp {selectedVoucher.price.toLocaleString('id-ID')}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">Waktu Aktivasi</p>
-                  <p className="font-body-md text-[14px] text-on-surface">{selectedVoucher.activatedTime || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">Sisa Waktu</p>
-                  <p className="font-mono text-[14px] text-on-surface font-bold text-primary">
-                    {selectedVoucher.expiresAt !== undefined ? (() => {
-                      const remaining = selectedVoucher.expiresAt - Date.now();
-                      return remaining <= 0 ? 'Waktu Habis' : formatCountdown(remaining);
-                    })() : selectedVoucher.timeLeft}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">MAC Address</p>
-                  <p className="font-mono text-[14px] text-on-surface">{selectedVoucher.macAddress || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">IP Address</p>
-                  <p className="font-mono text-[14px] text-on-surface">{selectedVoucher.ipAddress || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">Pemakaian Data</p>
-                  <p className="font-mono text-[14px] text-on-surface">{selectedVoucher.usedBytes || '0 MB'}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">ID Sesi (Session-ID)</p>
-                  <p className="font-mono text-[14px] text-on-surface text-on-surface-variant">
-                    {selectedVoucher.status === 'Active' ? `RAD-${selectedVoucher.id}0A8X` : '-'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-on-surface-variant uppercase font-semibold">Lama Sesi (Uptime)</p>
-                  <p className="font-mono text-[14px] text-on-surface text-on-surface-variant">
-                    {selectedVoucher.status === 'Active' ? '01:45:22' : '-'}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Riwayat Sesi */}
-              <div>
-                <p className="text-label-sm text-on-surface-variant uppercase font-semibold mb-2">Riwayat Sesi Terakhir</p>
-                {selectedVoucher.status === 'Unused' ? (
-                  <div className="text-center p-4 border border-surface-variant border-dashed rounded-lg text-on-surface-variant text-[12px] italic bg-surface-container-lowest">
-                    Belum ada riwayat sesi. Voucher belum pernah digunakan.
-                  </div>
-                ) : (
-                  <div className="border border-surface-variant rounded-lg overflow-hidden overflow-x-auto shadow-sm">
-                    <table className="w-full text-left text-[12px] min-w-[350px]">
-                      <thead className="bg-surface-container-low text-on-surface-variant border-b border-surface-variant">
-                        <tr>
-                          <th className="px-3 py-2 font-semibold">Mulai</th>
-                          <th className="px-3 py-2 font-semibold">Selesai</th>
-                          <th className="px-3 py-2 font-semibold">Durasi</th>
-                          <th className="px-3 py-2 font-semibold">Data</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-surface-container bg-surface-container-lowest font-mono text-on-surface">
-                        <tr className="hover:bg-surface-container-low/50 transition-colors">
-                          <td className="px-3 py-2 text-on-surface-variant">10/06 08:15</td>
-                          <td className="px-3 py-2 text-on-surface-variant">10/06 10:00</td>
-                          <td className="px-3 py-2">01:45:00</td>
-                          <td className="px-3 py-2 text-primary">120 MB</td>
-                        </tr>
-                        <tr className="hover:bg-surface-container-low/50 transition-colors">
-                          <td className="px-3 py-2 text-on-surface-variant">11/06 14:20</td>
-                          <td className="px-3 py-2 text-on-surface-variant">11/06 15:50</td>
-                          <td className="px-3 py-2">01:30:00</td>
-                          <td className="px-3 py-2 text-primary">85 MB</td>
-                        </tr>
-                        {selectedVoucher.status === 'Active' && (
-                          <tr className="bg-tertiary/5 hover:bg-tertiary/10 transition-colors">
-                            <td className="px-3 py-2 text-tertiary">Hari ini</td>
-                            <td className="px-3 py-2 text-tertiary font-bold flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
-                              Aktif
-                            </td>
-                            <td className="px-3 py-2 font-bold text-tertiary">01:45:22</td>
-                            <td className="px-3 py-2 text-tertiary font-bold">45 MB</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="px-6 py-4 border-t border-surface-container flex justify-end gap-3 bg-surface-container-lowest">
-              {selectedVoucher.status === 'Active' && (
-                <button
-                  onClick={() => {
-                    handleDisconnect(selectedVoucher.id, selectedVoucher.code);
-                    setSelectedVoucher(null);
-                  }}
-                  className="px-4 py-2 bg-error-container hover:bg-error/20 text-error font-label-md rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[18px]">wifi_off</span>
-                  Putus Sesi
-                </button>
-              )}
-              <button
-                onClick={() => setSelectedVoucher(null)}
-                className="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary font-label-md rounded-lg transition-colors"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }
