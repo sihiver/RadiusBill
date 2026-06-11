@@ -43,6 +43,21 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
     }
   };
 
+  const handleEditMac = (id, currentMac) => {
+    const newMac = window.prompt("Ubah MAC Address Voucher (kosongkan untuk hapus kuncian):", currentMac || "");
+    if (newMac !== null) {
+      setVouchers(vouchers.map(v => v.id === id ? { ...v, macAddress: newMac } : v));
+      addSystemLog('SYSTEM', `MAC Address voucher ID ${id} diubah menjadi "${newMac}"`);
+    }
+  };
+
+  const handleDelete = (id, code) => {
+    if (window.confirm(`Hapus voucher ${code} secara permanen dari sistem?`)) {
+      setVouchers(vouchers.filter(v => v.id !== id));
+      addSystemLog('SYSTEM', `Voucher ${code} dihapus oleh Admin`);
+    }
+  };
+
   const handleClearExpired = () => {
     if (window.confirm("Hapus semua voucher yang sudah Expired?")) {
       setVouchers(vouchers.filter(v => v.status !== 'Expired'));
@@ -60,13 +75,14 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
         <div className="flex gap-2 self-start sm:self-center">
           <button
             onClick={() => {
-              const headers = ['Kode', 'Password', 'Paket', 'Harga', 'Status', 'IP', 'Waktu Aktivasi', 'Pemakaian'];
+              const headers = ['Kode', 'Password', 'Paket', 'Harga', 'Status', 'MAC Address', 'IP', 'Waktu Aktivasi', 'Pemakaian'];
               const rows = filteredVouchers.map(v => [
                 v.code,
                 v.password || '',
                 v.package,
                 v.price,
                 v.status,
+                v.macAddress || '',
                 v.ipAddress,
                 v.activatedTime,
                 v.usedBytes
@@ -141,11 +157,12 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
                 <th className="p-4">Kode Voucher</th>
                 <th className="p-4">Paket & Tarif</th>
                 <th className="p-4">Status</th>
+                <th className="p-4">MAC Address</th>
                 <th className="p-4">IP Address</th>
                 <th className="p-4">Waktu Aktivasi</th>
                 <th className="p-4">Pemakaian</th>
                 <th className="p-4">Sisa Waktu</th>
-                <th className="p-4 text-center">Aksi Sesi</th>
+                <th className="p-4 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
@@ -180,9 +197,14 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
                       </span>
                     </td>
                     
+                    {/* MAC */}
+                    <td className="p-4 font-mono text-[11px] text-on-surface-variant">
+                      {v.macAddress || '-'}
+                    </td>
+                    
                     {/* IP */}
-                    <td className="p-4 font-mono text-on-surface-variant">
-                      {v.ipAddress}
+                    <td className="p-4 font-mono text-[11px] text-on-surface-variant">
+                      {v.ipAddress || '-'}
                     </td>
                     
                     {/* Activation Time */}
@@ -212,18 +234,33 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
                       )}
                     </td>
                     
-                    {/* Disconnect Action */}
+                    {/* Actions */}
                     <td className="p-4 text-center">
-                      {v.status === 'Active' ? (
+                      <div className="flex justify-center items-center gap-1">
+                        {v.status === 'Active' && (
+                          <button
+                            onClick={() => handleDisconnect(v.id, v.code)}
+                            title="Putus Sesi (Kick)"
+                            className="bg-error-container hover:bg-error/20 text-error font-label-sm p-1.5 rounded transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">wifi_off</span>
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleDisconnect(v.id, v.code)}
-                          className="bg-error-container hover:bg-error/20 text-error font-label-sm text-[11px] px-2.5 py-1 rounded transition-colors"
+                          onClick={() => handleEditMac(v.id, v.macAddress)}
+                          title="Edit MAC Address"
+                          className="bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-label-sm p-1.5 rounded transition-colors"
                         >
-                          Kick
+                          <span className="material-symbols-outlined text-[14px]">edit</span>
                         </button>
-                      ) : (
-                        <span className="text-outline text-[11px]">-</span>
-                      )}
+                        <button
+                          onClick={() => handleDelete(v.id, v.code)}
+                          title="Hapus Voucher"
+                          className="bg-surface-container hover:bg-error-container/50 text-error font-label-sm p-1.5 rounded transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

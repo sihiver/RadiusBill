@@ -11,6 +11,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
   const [speedUpload, setSpeedUpload] = useState('2 Mbps');
   const [speedDownload, setSpeedDownload] = useState('5 Mbps');
   const [validity, setValidity] = useState('30 Hari');
+  const [duration, setDuration] = useState('Unlimited');
   const [price, setPrice] = useState(50000);
   const [description, setDescription] = useState('');
 
@@ -22,6 +23,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
     setSpeedUpload('2 Mbps');
     setSpeedDownload('5 Mbps');
     setValidity('30 Hari');
+    setDuration('Unlimited');
     setPrice(50000);
     setDescription('');
     setShowModal(true);
@@ -35,6 +37,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
     setSpeedUpload(pkg.speedUpload);
     setSpeedDownload(pkg.speedDownload);
     setValidity(pkg.validity);
+    setDuration(pkg.duration || 'Unlimited');
     setPrice(pkg.price);
     setDescription(pkg.description || '');
     setShowModal(true);
@@ -61,6 +64,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
         speedUpload,
         speedDownload,
         validity,
+        duration,
         price: Number(price),
         description
       } : p));
@@ -75,6 +79,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
         speedUpload,
         speedDownload,
         validity,
+        duration,
         price: Number(price),
         description
       }]);
@@ -148,7 +153,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
               )}
 
               {/* Specs Grid */}
-              <div className="grid grid-cols-3 gap-2 bg-surface-container-low p-2.5 rounded-lg mb-6 border border-surface-container text-center text-label-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-surface-container-low p-2.5 rounded-lg mb-6 border border-surface-container text-center text-label-sm">
                 <div>
                   <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Download</p>
                   <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
@@ -164,9 +169,16 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
                   </p>
                 </div>
                 <div>
+                  <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Durasi</p>
+                  <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                    <span className="material-symbols-outlined text-[14px] text-amber-600">hourglass_empty</span>
+                    {pkg.duration || 'Unlimited'}
+                  </p>
+                </div>
+                <div>
                   <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Masa Aktif</p>
                   <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
-                    <span className="material-symbols-outlined text-[14px] text-purple-600">schedule</span>
+                    <span className="material-symbols-outlined text-[14px] text-purple-600">event_available</span>
                     {pkg.validity}
                   </p>
                 </div>
@@ -259,7 +271,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Download Speed</label>
                   <input 
@@ -282,8 +294,22 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Masa Aktif</label>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Durasi Kuota Waktu</label>
+                  <input 
+                    type="text" 
+                    value={duration} 
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder="e.g. 12 Jam, Unlimited" 
+                    required
+                    className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Masa Aktif (Validity)</label>
                   <input 
                     type="text" 
                     value={validity} 

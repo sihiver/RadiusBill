@@ -22,10 +22,10 @@ function saveState(key, value) {
 
 // ─── Default mock data factories (Date.now() is fresh on each cold start) ───
 const defaultPackages = () => [
-  { id: 1, name: 'Hotspot Hemat 5Mbps', type: 'Hotspot', speedUpload: '2 Mbps', speedDownload: '5 Mbps', validity: '30 Hari', price: 50000, description: 'Paket portal hotspot bulanan perumahan.' },
-  { id: 2, name: 'Hotspot Eceran 2Mbps', type: 'Hotspot', speedUpload: '1 Mbps', speedDownload: '2 Mbps', validity: '1 Hari', price: 3000, description: 'Voucher eceran murah untuk akses harian.' },
-  { id: 3, name: 'PPPoE Home 10Mbps', type: 'PPPoE', speedUpload: '3 Mbps', speedDownload: '10 Mbps', validity: '30 Hari', price: 100000, description: 'Router rumah unlimited standar bulanan.' },
-  { id: 4, name: 'PPPoE Premium 20Mbps', type: 'PPPoE', speedUpload: '5 Mbps', speedDownload: '20 Mbps', validity: '30 Hari', price: 180000, description: 'Router rumah premium unlimited bulanan.' },
+  { id: 1, name: 'Hotspot Hemat 5Mbps', type: 'Hotspot', speedUpload: '2 Mbps', speedDownload: '5 Mbps', duration: 'Unlimited', validity: '30 Hari', price: 50000, description: 'Paket portal hotspot bulanan perumahan.' },
+  { id: 2, name: 'Hotspot Eceran 2Mbps', type: 'Hotspot', speedUpload: '1 Mbps', speedDownload: '2 Mbps', duration: '12 Jam', validity: '1 Hari', price: 3000, description: 'Voucher eceran murah untuk akses harian.' },
+  { id: 3, name: 'PPPoE Home 10Mbps', type: 'PPPoE', speedUpload: '3 Mbps', speedDownload: '10 Mbps', duration: 'Unlimited', validity: '30 Hari', price: 100000, description: 'Router rumah unlimited standar bulanan.' },
+  { id: 4, name: 'PPPoE Premium 20Mbps', type: 'PPPoE', speedUpload: '5 Mbps', speedDownload: '20 Mbps', duration: 'Unlimited', validity: '30 Hari', price: 180000, description: 'Router rumah premium unlimited bulanan.' },
 ];
 
 const defaultVouchers = () => {
