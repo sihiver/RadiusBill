@@ -9,10 +9,9 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
   // Form fields
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [selectedPkg, setSelectedPkg] = useState('');
-  const [balance, setBalance] = useState(0);
-  const [expiryDate, setExpiryDate] = useState('');
 
   // Search state
   const [search, setSearch] = useState('');
@@ -23,16 +22,10 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
     setEditingId(null);
     setErrorMsg('');
     setName('');
+    setUsername('');
+    setPassword('');
     setPhone('');
-    setEmail('');
     setSelectedPkg(hotspotPackages[0]?.name || '');
-    setBalance(0);
-    
-    // Set default expiry date to 30 days from now
-    const nextMonth = new Date();
-    nextMonth.setDate(nextMonth.getDate() + 30);
-    setExpiryDate(nextMonth.toISOString().split('T')[0]);
-    
     setShowModal(true);
   };
 
@@ -40,11 +33,10 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
     setEditingId(member.id);
     setErrorMsg('');
     setName(member.name);
+    setUsername(member.username || '');
+    setPassword(member.password || '');
     setPhone(member.phone);
-    setEmail(member.email);
     setSelectedPkg(member.package);
-    setBalance(member.balance);
-    setExpiryDate(member.expiryDate);
     setShowModal(true);
   };
 
@@ -65,11 +57,10 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
       setMembers(members.map(m => m.id === editingId ? {
         ...m,
         name,
+        username,
+        password,
         phone,
-        email,
-        package: selectedPkg,
-        balance: Number(balance),
-        expiryDate
+        package: selectedPkg
       } : m));
       addSystemLog('SYSTEM', `Mengubah profil member Hotspot: "${name}"`);
     } else {
@@ -78,14 +69,12 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
       setMembers([...members, {
         id: newId,
         name,
+        username,
+        password,
         phone,
-        email,
         package: selectedPkg,
-        balance: Number(balance),
-        expiryDate,
         activeSession: false,
-        ipAddress: '-',
-        username: name.toLowerCase().replace(/\s+/g, '_') + '_' + Math.floor(Math.random()*100)
+        ipAddress: '-'
       }]);
       addSystemLog('SYSTEM', `Mendaftarkan member Hotspot baru: "${name}"`);
     }
@@ -154,11 +143,9 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-surface-variant text-label-sm font-label-sm text-on-surface-variant">
-                <th className="p-4">Nama / Username</th>
-                <th className="p-4">Kontak</th>
+                <th className="p-4">Nama & Kontak</th>
+                <th className="p-4">Username & Password</th>
                 <th className="p-4">Paket Aktif</th>
-                <th className="p-4">Saldo Dompet</th>
-                <th className="p-4">Tgl Kedaluwarsa</th>
                 <th className="p-4">Sesi Sinyal</th>
                 <th className="p-4 text-center">Tindakan</th>
               </tr>
@@ -166,7 +153,7 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
               {filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-12 text-center text-on-surface-variant">
+                  <td colSpan="5" className="p-12 text-center text-on-surface-variant">
                     <div className="flex flex-col items-center justify-center">
                       <span className="material-symbols-outlined text-[48px] text-surface-dim mb-3">group_off</span>
                       <p className="font-headline-sm text-[16px] font-semibold text-on-surface">Tidak ada member</p>
@@ -177,16 +164,16 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
               ) : (
                 filteredMembers.map((m) => (
                   <tr key={m.id} className="hover:bg-surface-container-lowest/50 transition-colors">
-                    {/* Name & User */}
+                    {/* Name & Contact */}
                     <td className="p-4">
                       <div className="font-bold text-on-surface text-[14px]">{m.name}</div>
-                      <div className="text-[11px] text-primary font-mono select-all">@{m.username}</div>
+                      <div className="text-[11px] text-on-surface-variant">{m.phone}</div>
                     </td>
                     
-                    {/* Contact */}
+                    {/* Credentials */}
                     <td className="p-4">
-                      <div>{m.phone}</div>
-                      <div className="text-[11px] text-on-surface-variant">{m.email}</div>
+                      <div className="text-[12px] text-primary font-mono font-bold select-all">{m.username}</div>
+                      <div className="text-[11px] text-on-surface-variant font-mono">{m.password || '***'}</div>
                     </td>
 
                     {/* Active Package */}
@@ -194,16 +181,6 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                       <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold">
                         {m.package}
                       </span>
-                    </td>
-
-                    {/* Balance */}
-                    <td className="p-4 font-mono font-semibold text-green-700">
-                      Rp {m.balance.toLocaleString('id-ID')}
-                    </td>
-
-                    {/* Expiry Date */}
-                    <td className="p-4 font-mono">
-                      {m.expiryDate}
                     </td>
 
                     {/* Active Session badge */}
@@ -283,6 +260,31 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Username *</label>
+                  <input 
+                    type="text" 
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
+                    placeholder="e.g. budisantoso" 
+                    required
+                    className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Password *</label>
+                  <input 
+                    type="password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="e.g. rahasia123" 
+                    required
+                    className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-1">No. WhatsApp / Telp *</label>
                   <input 
                     type="text" 
@@ -293,19 +295,6 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. budi@gmail.com" 
-                    className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Pilih Paket Hotspot</label>
                   <select 
@@ -321,27 +310,6 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                     )}
                   </select>
                 </div>
-                <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Isi Saldo (Rp)</label>
-                  <input 
-                    type="number" 
-                    value={balance} 
-                    onChange={(e) => setBalance(e.target.value)}
-                    placeholder="e.g. 50000" 
-                    className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Tanggal Masa Kedaluwarsa *</label>
-                <input 
-                  type="date" 
-                  value={expiryDate} 
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                />
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
