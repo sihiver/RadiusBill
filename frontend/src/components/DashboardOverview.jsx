@@ -1,0 +1,348 @@
+import React, { useState } from 'react';
+
+export default function DashboardOverview({ 
+  packages, 
+  vouchers, 
+  members, 
+  routers, 
+  logs, 
+  clearLogs,
+  isSyncing
+}) {
+  const [chartFilter, setChartFilter] = useState('all'); // 'all', 'hotspot', 'pppoe'
+  const [hoveredBar, setHoveredBar] = useState(null);
+
+  // Calculate dynamic stats
+  const activeVouchersCount = vouchers.filter(v => v.status === 'Active').length;
+  const activeMembersCount = members.filter(m => m.activeSession).length;
+  const onlineRoutersCount = routers.filter(r => r.status === 'Online').length;
+  const totalRoutersCount = routers.length;
+
+  // Let's compute a mock revenue sum
+  // Packages prices: Hotspot averages 5k-25k, PPPoE averages 100k-250k
+  // Sum active vouchers price + active members package price + router package price
+  const calculateTotalRevenue = () => {
+    let total = 0;
+    // Active vouchers revenue
+    vouchers.forEach(v => {
+      if (v.status === 'Active') {
+        const pkg = packages.find(p => p.name === v.package);
+        total += pkg ? pkg.price : 5000;
+      }
+    });
+    // Active members (monthly)
+    members.forEach(m => {
+      const pkg = packages.find(p => p.name === m.package);
+      total += pkg ? pkg.price : 25000;
+    });
+    // Online Routers (PPPoE monthly)
+    routers.forEach(r => {
+      if (r.status !== 'Isolated') {
+        const pkg = packages.find(p => p.name === r.package);
+        total += pkg ? pkg.price : 100000;
+      }
+    });
+    return total;
+  };
+
+  const currentRevenue = calculateTotalRevenue();
+
+  // Chart data configuration based on filter
+  const chartData = {
+    all: [
+      { day: 'Sen', amt: 4.8, label: 'Rp 4.8M' },
+      { day: 'Sel', amt: 5.6, label: 'Rp 5.6M' },
+      { day: 'Rab', amt: 6.2, label: 'Rp 6.2M' },
+      { day: 'Kam', amt: 7.9, label: 'Rp 7.9M' },
+      { day: 'Jum', amt: 8.5, label: 'Rp 8.5M' },
+      { day: 'Sab', amt: 10.4, label: 'Rp 10.4M' },
+      { day: 'Min', amt: 9.8, label: 'Rp 9.8M' },
+    ],
+    hotspot: [
+      { day: 'Sen', amt: 1.8, label: 'Rp 1.8M' },
+      { day: 'Sel', amt: 2.1, label: 'Rp 2.1M' },
+      { day: 'Rab', amt: 2.5, label: 'Rp 2.5M' },
+      { day: 'Kam', amt: 3.2, label: 'Rp 3.2M' },
+      { day: 'Jum', amt: 3.6, label: 'Rp 3.6M' },
+      { day: 'Sab', amt: 4.8, label: 'Rp 4.8M' },
+      { day: 'Min', amt: 4.2, label: 'Rp 4.2M' },
+    ],
+    pppoe: [
+      { day: 'Sen', amt: 3.0, label: 'Rp 3.0M' },
+      { day: 'Sel', amt: 3.5, label: 'Rp 3.5M' },
+      { day: 'Rab', amt: 3.7, label: 'Rp 3.7M' },
+      { day: 'Kam', amt: 4.7, label: 'Rp 4.7M' },
+      { day: 'Jum', amt: 4.9, label: 'Rp 4.9M' },
+      { day: 'Sab', amt: 5.6, label: 'Rp 5.6M' },
+      { day: 'Min', amt: 5.6, label: 'Rp 5.6M' },
+    ]
+  };
+
+  const activeChart = chartData[chartFilter];
+
+  return (
+    <div className="w-full space-y-6">
+      {/* Page Title Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="font-headline-sm text-headline-sm text-on-surface">Dashboard Overview</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1">Real-time network, customer usage, and billing metrics.</p>
+        </div>
+        <div className="flex items-center gap-2 text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-3 py-1.5 rounded-full self-start sm:self-center">
+          <span className="w-2.5 h-2.5 rounded-full bg-tertiary-container animate-ping"></span>
+          <span className="w-2.5 h-2.5 rounded-full bg-tertiary-container absolute"></span>
+          Live Updates Active
+        </div>
+      </div>
+
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Pendapatan */}
+        <div className="bg-surface-container-lowest rounded-xl p-card-padding shadow-[0_1px_3px_rgba(77,68,227,0.04)] border border-surface-variant/50 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-tertiary-container/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary-container">
+              <span className="material-symbols-outlined">payments</span>
+            </div>
+            <span className="font-label-sm text-label-sm text-tertiary-container bg-tertiary-container/10 px-2 py-0.5 rounded flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+              14.2%
+            </span>
+          </div>
+          <div className="relative z-10">
+            <h3 className="font-label-md text-label-md text-on-surface-variant mb-1">Estimasi Pendapatan (Bulan Ini)</h3>
+            {isSyncing ? (
+              <div className="h-10 bg-surface-variant animate-pulse rounded w-2/3 mt-2"></div>
+            ) : (
+              <p className="font-display-lg text-display-lg text-on-surface flex items-baseline gap-1">
+                <span className="font-body-md text-body-md text-on-surface-variant">Rp</span>
+                {((currentRevenue + 45200000) / 1000000).toFixed(2)}M
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Voucher Aktif */}
+        <div className="bg-surface-container-lowest rounded-xl p-card-padding shadow-[0_1px_3px_rgba(77,68,227,0.04)] border border-surface-variant/50 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600">
+              <span className="material-symbols-outlined">confirmation_number</span>
+            </div>
+            <span className="font-label-sm text-label-sm text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+              Eceran
+            </span>
+          </div>
+          <div className="relative z-10">
+            <h3 className="font-label-md text-label-md text-on-surface-variant mb-1">Voucher Hotspot Aktif</h3>
+            {isSyncing ? (
+              <div className="h-10 bg-surface-variant animate-pulse rounded w-1/2 mt-2"></div>
+            ) : (
+              <p className="font-display-lg text-display-lg text-on-surface">
+                {activeVouchersCount} <span className="font-body-md text-body-md text-on-surface-variant">dari {vouchers.length}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Member Hotspot Aktif */}
+        <div className="bg-surface-container-lowest rounded-xl p-card-padding shadow-[0_1px_3px_rgba(77,68,227,0.04)] border border-surface-variant/50 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+              <span className="material-symbols-outlined">wifi</span>
+            </div>
+            <span className="font-label-sm text-label-sm text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+              Bulanan Web
+            </span>
+          </div>
+          <div className="relative z-10">
+            <h3 className="font-label-md text-label-md text-on-surface-variant mb-1">Member Hotspot Aktif</h3>
+            {isSyncing ? (
+              <div className="h-10 bg-surface-variant animate-pulse rounded w-1/2 mt-2"></div>
+            ) : (
+              <p className="font-display-lg text-display-lg text-on-surface">
+                {activeMembersCount} <span className="font-body-md text-body-md text-on-surface-variant">dari {members.length}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Router PPPoE Online */}
+        <div className="bg-surface-container-lowest rounded-xl p-card-padding shadow-[0_1px_3px_rgba(77,68,227,0.04)] border border-surface-variant/50 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 group-hover:scale-125"></div>
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">router</span>
+            </div>
+            <span className={`font-label-sm text-label-sm px-2 py-0.5 rounded ${
+              onlineRoutersCount / totalRoutersCount >= 0.9 ? 'text-tertiary-container bg-tertiary-fixed-dim/20' : 'text-error bg-error-container'
+            }`}>
+              {((onlineRoutersCount / (totalRoutersCount || 1)) * 100).toFixed(0)}% Uptime
+            </span>
+          </div>
+          <div className="relative z-10">
+            <h3 className="font-label-md text-label-md text-on-surface-variant mb-1">Router PPPoE Aktif</h3>
+            {isSyncing ? (
+              <div className="h-10 bg-surface-variant animate-pulse rounded w-1/2 mt-2"></div>
+            ) : (
+              <p className="font-display-lg text-display-lg text-on-surface">
+                {onlineRoutersCount}<span className="font-body-md text-body-md text-on-surface-variant ml-1">/ {totalRoutersCount}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Dashboard Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Column: Chart */}
+        <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl shadow-[0_1px_3px_rgba(77,68,227,0.04)] border border-surface-variant/50 flex flex-col">
+          <div className="p-4 border-b border-surface-variant/50 flex justify-between items-center bg-surface-container-lowest rounded-t-xl">
+            <div className="flex flex-col">
+              <h3 className="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider">Revenue Trend (7 Days)</h3>
+              <p className="text-label-sm text-on-surface-variant mt-0.5">Estimasi pendapatan harian (Juta Rupiah)</p>
+            </div>
+            
+            {/* Filter buttons */}
+            <div className="flex bg-surface-container rounded-lg p-0.5">
+              <button 
+                onClick={() => setChartFilter('all')}
+                className={`px-3 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                  chartFilter === 'all' 
+                    ? 'bg-surface-container-lowest text-primary shadow-sm' 
+                    : 'text-on-secondary-container hover:text-on-surface'
+                }`}
+              >
+                Semua
+              </button>
+              <button 
+                onClick={() => setChartFilter('hotspot')}
+                className={`px-3 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                  chartFilter === 'hotspot' 
+                    ? 'bg-surface-container-lowest text-primary shadow-sm' 
+                    : 'text-on-secondary-container hover:text-on-surface'
+                }`}
+              >
+                Hotspot
+              </button>
+              <button 
+                onClick={() => setChartFilter('pppoe')}
+                className={`px-3 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                  chartFilter === 'pppoe' 
+                    ? 'bg-surface-container-lowest text-primary shadow-sm' 
+                    : 'text-on-secondary-container hover:text-on-surface'
+                }`}
+              >
+                PPPoE
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-card-padding flex-1 relative min-h-[300px] chart-grid flex items-end">
+            {/* Simulated Area Chart */}
+            <div className="w-full h-full relative flex items-end justify-between px-2 pb-6 pt-10">
+              {/* Y-axis labels */}
+              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-label-sm font-label-sm text-outline pr-2 pb-6">
+                <span>12M</span>
+                <span>9M</span>
+                <span>6M</span>
+                <span>3M</span>
+                <span>0</span>
+              </div>
+              
+              {/* Bars/Area points */}
+              <div className="flex-1 flex justify-around items-end h-full pl-8 z-10 gap-2">
+                {activeChart.map((item, idx) => {
+                  const percentage = (item.amt / 12) * 100;
+                  return (
+                    <div 
+                      key={idx}
+                      className="w-10 bg-primary/20 rounded-t-lg relative group hover:bg-primary/40 transition-colors cursor-pointer border-t-2 border-primary flex justify-center"
+                      style={{ height: `${percentage}%` }}
+                      onMouseEnter={() => setHoveredBar(idx)}
+                      onMouseLeave={() => setHoveredBar(null)}
+                    >
+                      {/* Tooltip */}
+                      <div className={`absolute -top-10 bg-inverse-surface text-inverse-on-surface text-[10px] font-mono px-2 py-1 rounded shadow-lg transition-opacity duration-200 z-30 whitespace-nowrap ${
+                        hoveredBar === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}>
+                        {item.label}
+                      </div>
+                      
+                      {/* Bar label for values */}
+                      <span className="text-[10px] font-semibold text-primary absolute -top-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {item.amt}M
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* X-axis labels */}
+              <div className="absolute bottom-0 left-0 w-full flex justify-around pl-10 pr-2 text-label-sm font-label-sm text-outline">
+                {activeChart.map((item, idx) => (
+                  <span key={idx} className="w-10 text-center">{item.day}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Real-Time Interface Log */}
+        <div className="lg:col-span-4 bg-surface-container-lowest rounded-xl shadow-[0_1px_3px_rgba(77,68,227,0.04)] border border-surface-variant/50 flex flex-col h-[400px]">
+          <div className="p-4 border-b border-surface-variant/50 flex justify-between items-center bg-surface-container-lowest rounded-t-xl">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-outline">terminal</span>
+              <h3 className="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider">Interface Log</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={clearLogs}
+                title="Clear Logs"
+                className="p-1 hover:bg-surface-container rounded text-outline hover:text-error transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+              </button>
+              <span className="font-label-sm text-label-sm bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant">FreeRADIUS</span>
+            </div>
+          </div>
+          
+          <div className="p-3 flex-1 overflow-y-auto bg-on-secondary-fixed text-surface-container font-mono text-[11px] leading-relaxed rounded-b-xl flex flex-col gap-1.5 scrollbar-thin scrollbar-thumb-slate-700">
+            {logs.length === 0 ? (
+              <div className="text-outline-variant italic text-center mt-10">Mendengarkan permintaan autentikasi FreeRADIUS...</div>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className="log-entry">
+                  <span className="text-outline-variant mr-1.5">[{log.time}]</span>
+                  {log.type === 'AUTH' && (
+                    <>
+                      <span className="text-tertiary-fixed-dim font-bold">[AUTH]</span> Accept:{' '}
+                      <span className="text-primary-fixed-dim">{log.user}</span> ({log.ip}) -{' '}
+                      <span className="text-secondary-fixed-dim">{log.service}</span>
+                    </>
+                  )}
+                  {log.type === 'REJECT' && (
+                    <>
+                      <span className="text-error font-bold">[REJECT]</span> {log.reason}:{' '}
+                      <span className="text-primary-fixed-dim">{log.user}</span> ({log.ip})
+                    </>
+                  )}
+                  {log.type === 'ACCT' && (
+                    <>
+                      <span className="text-secondary-fixed-dim font-bold">[ACCT]</span> {log.action}:{' '}
+                      <span className="text-primary-fixed-dim">{log.user}</span> - Session ID: {log.session}
+                    </>
+                  )}
+                  {log.type === 'SYSTEM' && (
+                    <span className="text-outline-variant italic">{log.message}</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
