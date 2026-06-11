@@ -9,24 +9,28 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
   // Form fields
   const [name, setName] = useState('');
   const [type, setType] = useState('Hotspot'); // Hotspot, PPPoE
+  const [speedType, setSpeedType] = useState('fix'); // fix, dinamis, statik
+  const [speedUpTo, setSpeedUpTo] = useState('10 Mbps');
   const [speedUpload, setSpeedUpload] = useState('2 Mbps');
   const [speedDownload, setSpeedDownload] = useState('5 Mbps');
   const [validity, setValidity] = useState('30 Hari');
   const [duration, setDuration] = useState('Unlimited');
-  const [price, setPrice] = useState(50000);
-  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState(50000); // Harga Modal
+  const [sellingPrice, setSellingPrice] = useState(60000); // Harga Jual
 
   const openAddModal = () => {
     setEditingId(null);
     setErrorMsg('');
     setName('');
     setType('Hotspot');
+    setSpeedType('fix');
+    setSpeedUpTo('10 Mbps');
     setSpeedUpload('2 Mbps');
     setSpeedDownload('5 Mbps');
     setValidity('30 Hari');
     setDuration('Unlimited');
     setPrice(50000);
-    setDescription('');
+    setSellingPrice(60000);
     setShowModal(true);
   };
 
@@ -35,12 +39,14 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
     setErrorMsg('');
     setName(pkg.name);
     setType(pkg.type);
+    setSpeedType(pkg.speedType || 'fix');
+    setSpeedUpTo(pkg.speedUpTo || '10 Mbps');
     setSpeedUpload(pkg.speedUpload);
     setSpeedDownload(pkg.speedDownload);
     setValidity(pkg.validity);
     setDuration(pkg.duration || 'Unlimited');
     setPrice(pkg.price);
-    setDescription(pkg.description || '');
+    setSellingPrice(pkg.sellingPrice || pkg.price);
     setShowModal(true);
   };
 
@@ -59,15 +65,17 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
     if (editingId) {
       // Edit
       setPackages(packages.map(p => p.id === editingId ? {
-        id: editingId,
+        ...p,
         name,
         type,
-        speedUpload,
-        speedDownload,
+        speedType,
+        speedUpTo: speedType === 'dinamis' ? speedUpTo : '',
+        speedUpload: speedType === 'fix' ? speedUpload : '',
+        speedDownload: speedType === 'fix' ? speedDownload : '',
         validity,
         duration,
         price: Number(price),
-        description
+        sellingPrice: Number(sellingPrice)
       } : p));
       addSystemLog('SYSTEM', `Mengubah paket: "${name}"`);
     } else {
@@ -77,12 +85,14 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
         id: newId,
         name,
         type,
-        speedUpload,
-        speedDownload,
+        speedType,
+        speedUpTo: speedType === 'dinamis' ? speedUpTo : '',
+        speedUpload: speedType === 'fix' ? speedUpload : '',
+        speedDownload: speedType === 'fix' ? speedDownload : '',
         validity,
         duration,
         price: Number(price),
-        description
+        sellingPrice: Number(sellingPrice)
       }]);
       addSystemLog('SYSTEM', `Menambahkan paket baru: "${name}"`);
     }
@@ -142,33 +152,57 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
                 }`}>
                   {pkg.type}
                 </span>
-                <span className="font-display-lg text-[22px] font-bold text-on-surface">
-                  <span className="text-body-md text-on-surface-variant font-normal">Rp</span> {pkg.price.toLocaleString('id-ID')}
-                </span>
+                <div className="text-right">
+                  <span className="font-display-lg text-[22px] font-bold text-on-surface">
+                    <span className="text-body-md text-on-surface-variant font-normal">Rp</span> {(pkg.sellingPrice || pkg.price).toLocaleString('id-ID')}
+                  </span>
+                  {(pkg.sellingPrice && pkg.sellingPrice !== pkg.price) && (
+                    <div className="text-[10px] text-on-surface-variant font-medium mt-[-4px]">
+                      Modal: Rp {pkg.price.toLocaleString('id-ID')}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Title */}
-              <h3 className="font-headline-sm text-[18px] text-on-surface mb-2 font-bold group-hover:text-primary transition-colors">{pkg.name}</h3>
-              {pkg.description && (
-                <p className="text-body-md text-label-sm text-on-surface-variant line-clamp-2 mb-4">{pkg.description}</p>
-              )}
+              <h3 className="font-headline-sm text-[18px] text-on-surface mb-4 font-bold group-hover:text-primary transition-colors">{pkg.name}</h3>
 
               {/* Specs Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-surface-container-low p-2.5 rounded-lg mb-6 border border-surface-container text-center text-label-sm">
-                <div>
-                  <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Download</p>
-                  <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
-                    <span className="material-symbols-outlined text-[14px] text-green-600">download</span>
-                    {pkg.speedDownload}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Upload</p>
-                  <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
-                    <span className="material-symbols-outlined text-[14px] text-blue-600">upload</span>
-                    {pkg.speedUpload}
-                  </p>
-                </div>
+                {pkg.speedType === 'dinamis' ? (
+                  <div className="col-span-2">
+                    <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Kecepatan Maksimal</p>
+                    <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                      <span className="material-symbols-outlined text-[14px] text-tertiary">bolt</span>
+                      Up To {pkg.speedUpTo || '-'}
+                    </p>
+                  </div>
+                ) : pkg.speedType === 'statik' ? (
+                  <div className="col-span-2">
+                    <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Tipe Limit</p>
+                    <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                      <span className="material-symbols-outlined text-[14px] text-purple-600">dns</span>
+                      Profile Mikrotik
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Download</p>
+                      <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[14px] text-green-600">download</span>
+                        {pkg.speedDownload || '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Upload</p>
+                      <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[14px] text-blue-600">upload</span>
+                        {pkg.speedUpload || '-'}
+                      </p>
+                    </div>
+                  </>
+                )}
                 <div>
                   <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Durasi</p>
                   <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
@@ -260,7 +294,7 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
                   </select>
                 </div>
                 <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Harga (Rupiah) *</label>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Harga Modal (Rp)</label>
                   <input 
                     type="number" 
                     value={price} 
@@ -272,30 +306,85 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Download Speed</label>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Harga Jual (Rp) *</label>
                   <input 
-                    type="text" 
-                    value={speedDownload} 
-                    onChange={(e) => setSpeedDownload(e.target.value)}
-                    placeholder="e.g. 5 Mbps" 
-                    required
-                    className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Upload Speed</label>
-                  <input 
-                    type="text" 
-                    value={speedUpload} 
-                    onChange={(e) => setSpeedUpload(e.target.value)}
-                    placeholder="e.g. 2 Mbps" 
+                    type="number" 
+                    value={sellingPrice} 
+                    onChange={(e) => setSellingPrice(e.target.value)}
+                    placeholder="e.g. 7000" 
                     required
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Tipe Kecepatan</label>
+                <select 
+                  value={speedType} 
+                  onChange={(e) => setSpeedType(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                >
+                  <option value="fix">Fix (Limit Radius)</option>
+                  <option value="dinamis">Dinamis (Up To)</option>
+                  <option value="statik">Statik (Limit Mikrotik)</option>
+                </select>
+              </div>
+
+              {speedType === 'fix' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Download Speed</label>
+                    <input 
+                      type="text" 
+                      value={speedDownload} 
+                      onChange={(e) => setSpeedDownload(e.target.value)}
+                      placeholder="e.g. 5 Mbps" 
+                      required
+                      className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Upload Speed</label>
+                    <input 
+                      type="text" 
+                      value={speedUpload} 
+                      onChange={(e) => setSpeedUpload(e.target.value)}
+                      placeholder="e.g. 2 Mbps" 
+                      required
+                      className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {speedType === 'dinamis' && (
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Kecepatan Maksimal (Up To)</label>
+                    <input 
+                      type="text" 
+                      value={speedUpTo} 
+                      onChange={(e) => setSpeedUpTo(e.target.value)}
+                      placeholder="e.g. 10 Mbps" 
+                      required
+                      className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {speedType === 'statik' && (
+                <div className="bg-surface-container px-4 py-3 rounded-lg flex items-start gap-3 border border-surface-variant/50">
+                  <span className="material-symbols-outlined text-info text-[20px] mt-0.5 text-primary">info</span>
+                  <p className="text-body-md text-[13px] text-on-surface-variant leading-relaxed">
+                    Sistem <b>tidak akan</b> mengirimkan nilai limit kecepatan ke Radius. <br/>
+                    Kecepatan pelanggan akan diatur sepenuhnya oleh <b>Profile Mikrotik</b>. Pastikan nama paket ini sama dengan nama profil di Mikrotik.
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -320,17 +409,6 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Deskripsi Paket</label>
-                <textarea 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows="2"
-                  placeholder="Keterangan opsional..." 
-                  className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
-                />
               </div>
 
               {/* Modal Footer */}

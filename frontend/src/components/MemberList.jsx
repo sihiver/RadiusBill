@@ -11,6 +11,8 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
   const [phone, setPhone] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [macBinding, setMacBinding] = useState(false);
+  const [macAddress, setMacAddress] = useState('');
   const [selectedPkg, setSelectedPkg] = useState('');
 
   // Search state
@@ -24,6 +26,8 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
     setName('');
     setUsername('');
     setPassword('');
+    setMacBinding(false);
+    setMacAddress('');
     setPhone('');
     setSelectedPkg(hotspotPackages[0]?.name || '');
     setShowModal(true);
@@ -35,6 +39,8 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
     setName(member.name);
     setUsername(member.username || '');
     setPassword(member.password || '');
+    setMacBinding(!!member.macBinding);
+    setMacAddress(member.macAddress || '');
     setPhone(member.phone);
     setSelectedPkg(member.package);
     setShowModal(true);
@@ -59,26 +65,70 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
         name,
         username,
         password,
+        macBinding,
+        macAddress: macBinding ? macAddress : '',
         phone,
         package: selectedPkg
       } : m));
       addSystemLog('SYSTEM', `Mengubah profil member Hotspot: "${name}"`);
     } else {
       // Add
+      const nextMonth = new Date();
+      nextMonth.setDate(nextMonth.getDate() + 30);
+      const newExpiry = nextMonth.toISOString().split('T')[0];
+
       const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
       setMembers([...members, {
         id: newId,
         name,
         username,
         password,
+        macBinding,
+        macAddress: macBinding ? macAddress : '',
         phone,
         package: selectedPkg,
+        expiryDate: newExpiry,
         activeSession: false,
         ipAddress: '-'
       }]);
       addSystemLog('SYSTEM', `Mendaftarkan member Hotspot baru: "${name}"`);
     }
     setShowModal(false);
+  };
+
+  const handleExtend = (id, memberName) => {
+    requestConfirm({
+      title: 'Perpanjang Paket',
+      message: `Apakah Anda yakin ingin memperpanjang paket untuk member "${memberName}" selama 30 hari?`,
+      confirmText: 'Ya, Perpanjang',
+      variant: 'primary',
+      onConfirm: () => {
+        setMembers(members.map(m => {
+          if (m.id === id) {
+            let baseDate = new Date();
+            if (m.expiryDate) {
+              const currentExp = new Date(m.expiryDate);
+              // If not expired yet, extend from current expiry
+              if (currentExp > baseDate) baseDate = currentExp;
+            }
+            baseDate.setDate(baseDate.getDate() + 30);
+            return { ...m, expiryDate: baseDate.toISOString().split('T')[0] };
+          }
+          return m;
+        }));
+        addSystemLog('SYSTEM', `Memperpanjang paket member: "${memberName}"`);
+        if(addNotification) addNotification(`Paket member "${memberName}" berhasil diperpanjang`, 'success');
+      }
+    });
+  };
+
+  const handlePrint = (member) => {
+    addSystemLog('SYSTEM', `Mencetak tiket member Hotspot: "${member.name}"`);
+    if(addNotification) addNotification(`Menyiapkan tiket cetak untuk "${member.name}"...`, 'info');
+    // Simulasikan delay untuk generate tiket
+    setTimeout(() => {
+      window.print();
+    }, 800);
   };
 
   const handleDelete = (id, memberName) => {
@@ -146,6 +196,7 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                 <th className="p-4">Nama & Kontak</th>
                 <th className="p-4">Username & Password</th>
                 <th className="p-4">Paket Aktif</th>
+                <th className="p-4">Masa Aktif</th>
                 <th className="p-4">Sesi Sinyal</th>
                 <th className="p-4 text-center">Tindakan</th>
               </tr>
@@ -153,7 +204,7 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
               {filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-12 text-center text-on-surface-variant">
+                  <td colSpan="6" className="p-12 text-center text-on-surface-variant">
                     <div className="flex flex-col items-center justify-center">
                       <span className="material-symbols-outlined text-[48px] text-surface-dim mb-3">group_off</span>
                       <p className="font-headline-sm text-[16px] font-semibold text-on-surface">Tidak ada member</p>
@@ -170,10 +221,16 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                       <div className="text-[11px] text-on-surface-variant">{m.phone}</div>
                     </td>
                     
-                    {/* Credentials */}
+                    {/* Credentials & MAC */}
                     <td className="p-4">
                       <div className="text-[12px] text-primary font-mono font-bold select-all">{m.username}</div>
                       <div className="text-[11px] text-on-surface-variant font-mono">{m.password || '***'}</div>
+                      {m.macAddress && (
+                        <div className="text-[10px] text-outline font-mono mt-0.5" title="MAC Address">
+                          <span className="material-symbols-outlined text-[10px] align-middle mr-1">settings_ethernet</span>
+                          {m.macAddress}
+                        </div>
+                      )}
                     </td>
 
                     {/* Active Package */}
@@ -181,6 +238,28 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                       <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold">
                         {m.package}
                       </span>
+                    </td>
+
+                    {/* Active Period */}
+                    <td className="p-4">
+                      {(() => {
+                        if (!m.expiryDate) return <span className="text-on-surface-variant text-[11px]">-</span>;
+                        const today = new Date();
+                        today.setHours(0,0,0,0);
+                        const exp = new Date(m.expiryDate);
+                        const isExpired = exp < today;
+                        const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+                        return (
+                          <div>
+                            <div className={`text-[12px] font-bold ${isExpired ? 'text-error' : 'text-green-600'}`}>
+                              {isExpired ? 'Kedaluwarsa' : 'Aktif'}
+                            </div>
+                            <div className="text-[10px] text-on-surface-variant mt-0.5">
+                              s/d {m.expiryDate} {isExpired ? '' : `(${diffDays} hr)`}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Active Session badge */}
@@ -197,6 +276,20 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                     {/* Actions */}
                     <td className="p-4 text-center">
                       <div className="flex justify-center gap-1.5">
+                        <button
+                          onClick={() => handlePrint(m)}
+                          className="text-on-surface-variant hover:bg-surface-container hover:text-on-surface p-1.5 rounded transition-colors"
+                          title="Cetak Tiket"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">print</span>
+                        </button>
+                        <button
+                          onClick={() => handleExtend(m.id, m.name)}
+                          className="text-green-600 hover:bg-green-50 p-1.5 rounded transition-colors"
+                          title="Perpanjang Paket"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">update</span>
+                        </button>
                         <button
                           onClick={() => openEditModal(m)}
                           className="text-primary hover:bg-primary/10 p-1.5 rounded transition-colors"
@@ -296,7 +389,31 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                   />
                 </div>
                 <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Pilih Paket Hotspot</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-label-md text-label-md text-on-surface-variant">Binding MAC Address</label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={macBinding} 
+                        onChange={(e) => setMacBinding(e.target.checked)} 
+                      />
+                      <div className="w-8 h-4 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                  <input 
+                    type="text" 
+                    value={macAddress} 
+                    onChange={(e) => setMacAddress(e.target.value)}
+                    placeholder="e.g. 00:1A:2B:3C:4D:5E" 
+                    disabled={!macBinding}
+                    className={`w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono ${!macBinding ? 'bg-surface-container opacity-60 cursor-not-allowed' : ''}`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Pilih Paket Hotspot</label>
                   <select 
                     value={selectedPkg} 
                     onChange={(e) => setSelectedPkg(e.target.value)}
@@ -310,7 +427,6 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
                     )}
                   </select>
                 </div>
-              </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
                 <button 

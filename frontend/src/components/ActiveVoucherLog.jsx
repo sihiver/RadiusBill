@@ -6,6 +6,19 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Unused', 'Expired'
   const [selectedVoucher, setSelectedVoucher] = useState(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds(new Set()); // Reset selection on filter change
+  }, [searchTerm, statusFilter]);
+
   // Tick counter to force re-render every second for countdown timers
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -31,6 +44,43 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
     const matchesStatus = statusFilter === 'All' || v.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredVouchers.length / itemsPerPage);
+  const paginatedVouchers = filteredVouchers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const newSelected = new Set(selectedIds);
+      filteredVouchers.forEach(v => newSelected.add(v.id));
+      setSelectedIds(newSelected);
+    } else {
+      const newSelected = new Set(selectedIds);
+      filteredVouchers.forEach(v => newSelected.delete(v.id));
+      setSelectedIds(newSelected);
+    }
+  };
+
+  const handleSelectRow = (id) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (window.confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.size} voucher terpilih?`)) {
+      setVouchers(vouchers.filter(v => !selectedIds.has(v.id)));
+      addSystemLog('SYSTEM', `Menghapus ${selectedIds.size} voucher secara massal`);
+      setSelectedIds(new Set());
+    }
+  };
 
   const handleDisconnect = (id, code) => {
     if (window.confirm(`Apakah Anda yakin ingin mematikan sesi untuk voucher ${code}?`)) {
@@ -326,17 +376,40 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-error-container/20 border border-error/30 rounded-xl p-3 shadow-sm flex items-center justify-between mb-4 animate-fadeIn">
+          <span className="text-on-surface font-medium text-[14px]">
+            {selectedIds.size} voucher terpilih
+          </span>
+          <button
+            onClick={handleBulkDelete}
+            className="bg-error text-on-error hover:bg-error/90 font-label-md text-label-md px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">delete</span>
+            Hapus Terpilih
+          </button>
+        </div>
+      )}
+
       {/* Vouchers Table */}
       <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl shadow-[0_1px_3px_rgba(77,68,227,0.03)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-surface-variant text-label-sm font-label-sm text-on-surface-variant">
+                <th className="p-4 w-10">
+                  <input 
+                    type="checkbox" 
+                    onChange={handleSelectAll}
+                    checked={filteredVouchers.length > 0 && filteredVouchers.every(v => selectedIds.has(v.id))}
+                    className="rounded border-outline cursor-pointer w-4 h-4 text-primary focus:ring-primary/20"
+                  />
+                </th>
                 <th className="p-4">Kode Voucher</th>
                 <th className="p-4">Paket & Tarif</th>
                 <th className="p-4">Status</th>
-                <th className="p-4">MAC Address</th>
-                <th className="p-4">IP Address</th>
+                <th className="p-4">IP / MAC Address</th>
                 <th className="p-4">Waktu Aktivasi</th>
                 <th className="p-4">Pemakaian</th>
                 <th className="p-4">Sisa Waktu</th>
@@ -344,15 +417,24 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
-              {filteredVouchers.length === 0 ? (
+              {paginatedVouchers.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="p-8 text-center text-on-surface-variant italic">
+                  <td colSpan="9" className="p-8 text-center text-on-surface-variant italic">
                     Tidak ada voucher yang ditemukan.
                   </td>
                 </tr>
               ) : (
-                filteredVouchers.map((v) => (
-                  <tr key={v.id} className="hover:bg-surface-container-lowest/50 transition-colors">
+                paginatedVouchers.map((v) => (
+                  <tr key={v.id} className={`hover:bg-surface-container-lowest/50 transition-colors ${selectedIds.has(v.id) ? 'bg-primary/5 hover:bg-primary/10' : ''}`}>
+                    {/* Checkbox */}
+                    <td className="p-4 w-10">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.has(v.id)}
+                        onChange={() => handleSelectRow(v.id)}
+                        className="rounded border-outline cursor-pointer w-4 h-4 text-primary focus:ring-primary/20"
+                      />
+                    </td>
                     {/* Code */}
                     <td className="p-4">
                       <button 
@@ -380,14 +462,14 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
                       </span>
                     </td>
                     
-                    {/* MAC */}
-                    <td className="p-4 font-mono text-[11px] text-on-surface-variant">
-                      {v.macAddress || '-'}
-                    </td>
-                    
-                    {/* IP */}
-                    <td className="p-4 font-mono text-[11px] text-on-surface-variant">
-                      {v.ipAddress || '-'}
+                    {/* IP & MAC */}
+                    <td className="p-4">
+                      <div className="font-mono text-[12px] text-primary font-medium mb-0.5" title="IP Address">
+                        {v.ipAddress || '-'}
+                      </div>
+                      <div className="font-mono text-[10px] text-on-surface-variant flex items-center gap-1" title="MAC Address">
+                        {v.macAddress || '-'}
+                      </div>
                     </td>
                     
                     {/* Activation Time */}
@@ -451,6 +533,48 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-surface-variant bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-label-sm text-on-surface-variant">
+              Menampilkan <span className="font-bold text-on-surface">{((currentPage - 1) * itemsPerPage) + 1}</span> - <span className="font-bold text-on-surface">{Math.min(currentPage * itemsPerPage, filteredVouchers.length)}</span> dari <span className="font-bold text-on-surface">{filteredVouchers.length}</span> voucher
+            </p>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1 rounded hover:bg-surface-container disabled:opacity-50 transition-colors text-on-surface-variant"
+              >
+                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`min-w-[28px] h-7 rounded text-[12px] font-bold transition-colors px-1 ${
+                      currentPage === i + 1 
+                        ? 'bg-primary text-on-primary shadow-[0_2px_4px_rgba(77,68,227,0.3)]' 
+                        : 'hover:bg-surface-container text-on-surface-variant'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded hover:bg-surface-container disabled:opacity-50 transition-colors text-on-surface-variant"
+              >
+                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
