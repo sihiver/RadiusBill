@@ -51,6 +51,16 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
     currentPage * itemsPerPage
   );
 
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + 4);
+  if (endPage - startPage < 4) {
+    startPage = Math.max(1, endPage - 4);
+  }
+  const visiblePages = [];
+  for (let i = startPage; i <= endPage; i++) {
+    visiblePages.push(i);
+  }
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       const newSelected = new Set(selectedIds);
@@ -550,19 +560,31 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
               </button>
               
               <div className="flex items-center gap-1">
-                {[...Array(totalPages)].map((_, i) => (
+                {startPage > 1 && (
+                  <>
+                    <button onClick={() => setCurrentPage(1)} className="min-w-[28px] h-7 rounded text-[12px] font-bold transition-colors px-1 hover:bg-surface-container text-on-surface-variant">1</button>
+                    {startPage > 2 && <span className="text-on-surface-variant text-[12px] px-1">...</span>}
+                  </>
+                )}
+                {visiblePages.map(page => (
                   <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
                     className={`min-w-[28px] h-7 rounded text-[12px] font-bold transition-colors px-1 ${
-                      currentPage === i + 1 
+                      currentPage === page 
                         ? 'bg-primary text-on-primary shadow-[0_2px_4px_rgba(77,68,227,0.3)]' 
                         : 'hover:bg-surface-container text-on-surface-variant'
                     }`}
                   >
-                    {i + 1}
+                    {page}
                   </button>
                 ))}
+                {endPage < totalPages && (
+                  <>
+                    {endPage < totalPages - 1 && <span className="text-on-surface-variant text-[12px] px-1">...</span>}
+                    <button onClick={() => setCurrentPage(totalPages)} className="min-w-[28px] h-7 rounded text-[12px] font-bold transition-colors px-1 hover:bg-surface-container text-on-surface-variant">{totalPages}</button>
+                  </>
+                )}
               </div>
 
               <button 

@@ -8,6 +8,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, addS
   const [codeLength, setCodeLength] = useState(6);
   const [prefix, setPrefix] = useState('RW-');
   const [format, setFormat] = useState('same'); // 'same' (user=pass), 'up' (user & pass separate)
+  const [macBinding, setMacBinding] = useState(false); // MAC Binding toggle
 
   // Session state to show recently generated vouchers
   const [newlyGenerated, setNewlyGenerated] = useState([]);
@@ -45,6 +46,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, addS
         package: pkg.name,
         price: pkg.price,
         status: 'Unused',
+        macBinding: macBinding,
         ipAddress: '-',
         activatedTime: '-',
         usedBytes: '0 MB',
@@ -175,6 +177,25 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, addS
                   Username & Password Berbeda
                 </label>
               </div>
+            </div>
+
+            <div>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Pengaturan Keamanan</label>
+              <label className="flex items-center gap-3 cursor-pointer mt-2 bg-surface-container-low border border-surface-dim rounded-lg p-3 transition-colors hover:bg-surface-container">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={macBinding}
+                    onChange={(e) => setMacBinding(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-surface-container-highest rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:border-outline-variant after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 peer-checked:after:border-primary"></div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-on-surface text-[13px]">Enable MAC Binding</span>
+                  <span className="text-[11px] text-on-surface-variant leading-tight mt-0.5">Kunci voucher ke perangkat pertama</span>
+                </div>
+              </label>
             </div>
 
             <button 
