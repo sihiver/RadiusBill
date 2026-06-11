@@ -370,7 +370,7 @@ export default function App() {
             </button>
 
             {/* Global Search */}
-            <div className={`relative ${mobileSearchOpen ? 'absolute inset-0 bg-surface z-50 flex items-center px-4 w-full h-full' : 'hidden'} sm:block sm:static sm:bg-transparent sm:w-auto sm:p-0`}>
+            <div className={`relative ${mobileSearchOpen ? 'absolute inset-0 bg-surface z-50 flex items-center px-4 w-full h-full' : 'hidden'} sm:block sm:relative sm:bg-transparent sm:w-auto sm:p-0`}>
               {mobileSearchOpen && (
                 <button 
                   onClick={() => { setMobileSearchOpen(false); setSearchQuery(''); }} 
