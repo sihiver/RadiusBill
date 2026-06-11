@@ -266,6 +266,7 @@ export default function App() {
     { id: 'sessions', name: 'Status Sesi Browser', icon: 'sensors', section: 'member' },
     { id: 'routers', name: 'Daftar Router Rumah', icon: 'router', section: 'pppoe' },
     { id: 'monitoring', name: 'Monitoring & Isolir', icon: 'analytics', section: 'pppoe' },
+    { id: 'settings', name: 'Pengaturan Sistem', icon: 'settings', section: 'pppoe' },
   ];
 
   const sectionLabels = {
@@ -287,6 +288,17 @@ export default function App() {
       case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} {...commonProps} />;
       case 'routers':    return <RouterList routers={routers} setRouters={setRouters} packages={packages} {...commonProps} />;
       case 'monitoring': return <MonitoringIsolir routers={routers} setRouters={setRouters} {...commonProps} />;
+      case 'settings':   return (
+        <div className="w-full h-[60vh] flex flex-col items-center justify-center bg-surface-container-lowest border border-surface-variant/70 rounded-xl shadow-sm p-8 text-center animate-fadeIn">
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-6">
+            <span className="material-symbols-outlined text-[40px]">settings</span>
+          </div>
+          <h2 className="text-headline-sm font-headline-sm text-on-surface mb-2">Pengaturan Sistem</h2>
+          <p className="text-body-md font-body-md text-on-surface-variant max-w-md">
+            Konfigurasi server FreeRADIUS, integrasi Mikrotik API, dan preferensi aplikasi akan tersedia pada pembaruan mendatang.
+          </p>
+        </div>
+      );
       default:           return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} {...commonProps} />;
     }
   };
@@ -343,7 +355,6 @@ export default function App() {
           <div className="h-px bg-slate-800 w-full"></div>
           <ul className="space-y-1">
             <li><button onClick={handleResetData} className="w-full flex items-center gap-3 px-2 py-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/40 transition-all font-label-md text-label-md text-left"><span className="material-symbols-outlined">settings_backup_restore</span>Reset Data</button></li>
-            <li><button onClick={() => alert("Pengaturan Sistem FreeRADIUS & Mikrotik API...")} className="w-full flex items-center gap-3 px-2 py-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/40 transition-all font-label-md text-label-md text-left"><span className="material-symbols-outlined">settings</span>Settings</button></li>
             <li><button onClick={() => { if (confirm("Logout dari Dashboard?")) alert("Logout berhasil!"); }} className="w-full flex items-center gap-3 px-2 py-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/40 transition-all font-label-md text-label-md text-left"><span className="material-symbols-outlined">logout</span>Logout</button></li>
           </ul>
         </div>
