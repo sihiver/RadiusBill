@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -277,8 +278,8 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
       </div>
 
       {/* Detail Modal */}
-      {selectedVoucher && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      {selectedVoucher && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-surface-container-lowest rounded-xl w-full max-w-lg shadow-2xl overflow-hidden border border-surface-variant animate-slideIn">
             <div className="px-6 py-4 border-b border-surface-container bg-surface-container-low flex justify-between items-center">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">Detail Voucher</h3>
@@ -425,7 +426,8 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

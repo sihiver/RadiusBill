@@ -554,7 +554,7 @@ export default function App() {
 
         {/* ── WORKSPACE CANVAS ────────────────────────────────────────────── */}
         <main className="flex-1 p-6 max-w-container-max mx-auto w-full print:p-0 print:m-0 overflow-x-hidden">
-          <div key={activeTab} className="animate-slideIn">
+          <div key={activeTab}>
             {renderActiveComponent()}
           </div>
         </main>

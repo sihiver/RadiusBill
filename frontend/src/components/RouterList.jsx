@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function RouterList({ routers, setRouters, packages, addSystemLog, requestConfirm, addNotification }) {
   const [showModal, setShowModal] = useState(false);
@@ -235,8 +236,8 @@ export default function RouterList({ routers, setRouters, packages, addSystemLog
       </div>
 
       {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {showModal && createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-surface-container-lowest rounded-xl max-w-md w-full shadow-2xl border border-surface-variant overflow-hidden animate-slideIn">
             <div className="px-6 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">
@@ -355,7 +356,8 @@ export default function RouterList({ routers, setRouters, packages, addSystemLog
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function PackageManagement({ packages, setPackages, addSystemLog, requestConfirm, addNotification }) {
   const [showModal, setShowModal] = useState(false);
@@ -207,8 +208,8 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
       </div>
 
       {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {showModal && createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-surface-container-lowest rounded-xl max-w-md w-full shadow-2xl border border-surface-variant overflow-hidden animate-slideIn">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low">
@@ -350,7 +351,8 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
