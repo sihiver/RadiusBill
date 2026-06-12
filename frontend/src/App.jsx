@@ -40,77 +40,75 @@ const defaultVouchers = () => {
 };
 
 const defaultVoucherTemplate = `
-<div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.1)] overflow-hidden relative font-sans border border-slate-200" style="width: 230px; height: 140px; page-break-inside: avoid; break-inside: avoid; --color-main: {{warna_utama}}; --color-sub: {{warna_sekunder}}; --color-light: {{warna_muda}};">
+<div class="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)] overflow-hidden relative font-sans border border-slate-200" style="width: 400px; height: 230px; page-break-inside: avoid; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; --color-main: {{warna_utama}}; --color-sub: {{warna_sekunder}}; --color-light: {{warna_muda}};">
   
   <!-- Background Decorations -->
-  <!-- Top Right Light Blue Triangle -->
-  <div class="absolute top-0 right-0 w-28 h-28 bg-[var(--color-light)] transform rotate-45 translate-x-14 -translate-y-14 opacity-80 z-0"></div>
-  <div class="absolute top-0 right-0 w-20 h-20 bg-[var(--color-light)] transform rotate-45 translate-x-8 -translate-y-10 opacity-100 z-0" style="filter: brightness(0.95);"></div>
+  <div class="absolute top-0 right-0 w-48 h-48 bg-[var(--color-light)] transform rotate-45 translate-x-24 -translate-y-24 opacity-80 z-0" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;"></div>
+  <div class="absolute top-0 right-0 w-32 h-32 bg-[var(--color-light)] transform rotate-45 translate-x-12 -translate-y-16 opacity-100 z-0" style="-webkit-print-color-adjust: exact; print-color-adjust: exact; filter: brightness(0.95);"></div>
   
-  <!-- Bottom Left Dark Blue Angles -->
-  <div class="absolute bottom-0 left-0 w-[120%] h-8 bg-[var(--color-main)] transform -rotate-2 origin-bottom-left -translate-x-2 translate-y-1 z-0"></div>
-  <div class="absolute bottom-0 left-0 w-[120%] h-12 bg-[var(--color-sub)] transform -rotate-3 origin-bottom-left -translate-x-2 translate-y-4 z-0"></div>
+  <div class="absolute bottom-0 left-0 w-[120%] h-14 bg-[var(--color-main)] transform -rotate-2 origin-bottom-left -translate-x-4 translate-y-2 z-0" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;"></div>
+  <div class="absolute bottom-0 left-0 w-[120%] h-20 bg-[var(--color-sub)] transform -rotate-3 origin-bottom-left -translate-x-4 translate-y-8 z-0" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;"></div>
 
   <!-- Content Container -->
-  <div class="relative z-10 p-3 flex h-full">
+  <div class="relative z-10 p-5 flex h-full">
     
     <!-- Left Section -->
-    <div class="w-[45%] flex flex-col justify-between pt-0.5">
+    <div class="w-[45%] flex flex-col justify-between pt-1">
       <div>
         <!-- MikroTik Logo Text -->
-        <div class="flex items-center text-[14px] font-black italic tracking-tighter text-[#1C1C1C]">
-          <span class="material-symbols-outlined text-[16px] mr-0.5 text-[var(--color-main)]" style="font-variation-settings: 'FILL' 1;">rss_feed</span>
+        <div class="flex items-center text-[24px] font-black italic tracking-tighter text-[#1C1C1C]">
+          <span class="material-symbols-outlined text-[26px] mr-0.5 text-[var(--color-main)]" style="font-variation-settings: 'FILL' 1;">rss_feed</span>
           MQL.net
         </div>
         <!-- Hotspot Subtitle -->
-        <div class="text-[6px] text-[var(--color-main)] font-black tracking-[0.35em] mt-1 mb-0.5">
+        <div class="text-[10px] text-[var(--color-main)] font-black tracking-[0.35em] mt-2 mb-3">
           H O T S P O T
         </div>
-        <!-- VOUCHER Main Title -->
-        <div class="text-[20px] font-black text-[#0A1A3B] leading-none tracking-tighter" style="font-family: Impact, sans-serif; transform: scaleY(1.1); transform-origin: left;">
-          VOUCHER
+        
+        <!-- Durasi & Aktif -->
+        <div class="mt-4">
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">DURASI / AKTIF</div>
+          <div class="text-[18px] font-black text-[#0A1A3B] leading-none mt-1.5">{{durasi}} / {{masa_aktif}}</div>
         </div>
+        
         <!-- Divider Line -->
-        <div class="h-1 w-6 bg-[var(--color-main)] mt-1.5"></div>
+        <div class="h-1 w-10 bg-[var(--color-main)] mt-4"></div>
       </div>
       
-      <!-- Footer Left: WiFi Info -->
-      <div class="flex items-center gap-1 mb-2">
-        <span class="material-symbols-outlined text-[var(--color-main)] text-[16px] font-bold">wifi</span>
-        <div class="text-[6px] font-bold text-[#0A1A3B] leading-tight">
-          Akses Internet<br/>Mudah & Cepat
+      <!-- Footer Left: Info -->
+      <div class="flex items-center gap-2 mb-4">
+        <span class="material-symbols-outlined text-[var(--color-main)] text-[28px] font-bold">info</span>
+        <div class="text-[10px] font-bold text-slate-600 leading-tight italic">
+          *Masa Aktif / Durasi mana yang<br/>lebih dulu habis akan expired.
         </div>
       </div>
     </div>
 
     <!-- Right Section -->
-    <div class="w-[55%] flex flex-col items-end pt-1 pb-2 pl-1 justify-between">
+    <div class="w-[55%] flex flex-col items-end pt-3 pb-6 pl-2 justify-between">
       
       <!-- Kode Voucher Box -->
-      <div class="w-full relative mt-2">
-        <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-[var(--color-main)] text-white text-[6px] font-bold px-2 py-0.5 rounded tracking-widest whitespace-nowrap z-10">
+      <div class="w-full relative mt-3">
+        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[var(--color-main)] text-white text-[10px] font-bold px-4 py-1 rounded-md tracking-widest whitespace-nowrap z-10" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
           KODE VOUCHER
         </div>
-        <div class="border border-[var(--color-main)] rounded-lg p-1 flex items-center justify-center h-8 bg-white relative z-0">
-          <span class="font-bold text-[14px] text-[#0A1A3B] tracking-[0.1em]" style="font-family: 'Fira Code', monospace;">{{kode}}</span>
+        <div class="border-2 border-[var(--color-main)] rounded-lg p-2 flex items-center justify-center h-14 bg-white relative z-0" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+          <span class="font-bold text-[24px] text-[#0A1A3B] tracking-[0.15em]" style="font-family: 'Fira Code', monospace;">{{kode}}</span>
         </div>
       </div>
 
-      <!-- Masa Berlaku -->
-      <div class="w-full flex items-center justify-center gap-1 mt-1 mb-1">
-        <span class="material-symbols-outlined text-[var(--color-main)] text-[10px] font-bold">schedule</span>
-        <span class="text-[6px] font-bold text-[#0A1A3B] tracking-widest uppercase">BERLAKU: {{masa_aktif}}</span>
-      </div>
+      <!-- Spacer -->
+      <div class="flex-1"></div>
 
       <!-- Harga Box -->
-      <div class="w-full border border-[var(--color-main)] rounded flex overflow-hidden h-6 relative bg-white">
+      <div class="w-full border-2 border-[var(--color-main)] rounded-md flex overflow-hidden h-11 relative bg-white" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
         <!-- HARGA Blue Angle -->
-        <div class="absolute left-0 top-0 bottom-0 bg-[var(--color-main)] text-white flex items-center justify-center text-[7px] font-bold tracking-widest" style="width: 38%; clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%);">
-          <span class="-ml-1">HARGA</span>
+        <div class="absolute left-0 top-0 bottom-0 bg-[var(--color-main)] text-white flex items-center justify-center text-[11px] font-bold tracking-widest" style="width: 38%; clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%); -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+          <span class="-ml-2">HARGA</span>
         </div>
         <!-- Price Text -->
-        <div class="w-full h-full flex items-center justify-end pr-2">
-          <span class="text-[13px] font-black text-[#0A1A3B] tracking-tight">{{harga}}</span>
+        <div class="w-full h-full flex items-center justify-end pr-3">
+          <span class="text-[22px] font-black text-[#0A1A3B] tracking-tight">{{harga}}</span>
         </div>
       </div>
       
@@ -345,9 +343,9 @@ export default function App() {
     { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', section: 'core' },
     { id: 'packages', name: 'Paket & Bandwidth', icon: 'inventory_2', section: 'core' },
     { id: 'generator', name: 'Generator Voucher', icon: 'confirmation_number', section: 'voucher' },
-    { id: 'log', name: 'Log Voucher Aktif', icon: 'history', section: 'voucher' },
+    { id: 'log', name: 'Voucher', icon: 'history', section: 'voucher' },
     { id: 'members', name: 'Daftar Member', icon: 'group', section: 'member' },
-    { id: 'sessions', name: 'Status Sesi Browser', icon: 'sensors', section: 'member' },
+    { id: 'sessions', name: 'Status Sesi', icon: 'sensors', section: 'member' },
     { id: 'routers', name: 'Daftar Router Rumah', icon: 'router', section: 'pppoe' },
     { id: 'monitoring', name: 'Monitoring & Isolir', icon: 'analytics', section: 'pppoe' },
     { id: 'settings', name: 'Pengaturan Sistem', icon: 'settings', section: 'pppoe' },

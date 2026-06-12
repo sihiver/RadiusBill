@@ -52,7 +52,8 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, vouc
         ipAddress: '-',
         activatedTime: '-',
         usedBytes: '0 MB',
-        timeLeft: pkg.validity
+        timeLeft: pkg.validity,
+        duration: pkg.duration
       });
     }
 
@@ -91,7 +92,12 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, vouc
             body { background: white; padding: 20px; }
             @media print {
               @page { margin: 5mm; }
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              body { padding: 0; }
             }
           </style>
         </head>
@@ -366,6 +372,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, vouc
             html = html.replace(/\{\{paket\}\}/g, item.package);
             html = html.replace(/\{\{harga\}\}/g, 'Rp ' + item.price.toLocaleString('id-ID'));
             html = html.replace(/\{\{masa_aktif\}\}/g, item.timeLeft);
+            html = html.replace(/\{\{durasi\}\}/g, item.duration || '-');
             
             // Apply dynamic colors
             html = html.replace(/\{\{warna_utama\}\}/g, palette.main);

@@ -24,6 +24,7 @@ export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate
     package: 'Hotspot Hemat 5Mbps',
     price: 'Rp 50.000',
     timeLeft: '30 Hari',
+    duration: 'Unlimited'
   };
 
   // Replace tags with dummy data for preview
@@ -34,6 +35,7 @@ export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate
     html = html.replace(/\{\{paket\}\}/g, dummyVoucher.package);
     html = html.replace(/\{\{harga\}\}/g, dummyVoucher.price);
     html = html.replace(/\{\{masa_aktif\}\}/g, dummyVoucher.timeLeft);
+    html = html.replace(/\{\{durasi\}\}/g, dummyVoucher.duration);
     html = html.replace(/\{\{warna_utama\}\}/g, '#14478C'); // Default preview blue
     html = html.replace(/\{\{warna_sekunder\}\}/g, '#1E62C2');
     html = html.replace(/\{\{warna_muda\}\}/g, '#E6F0FA');
@@ -84,7 +86,7 @@ export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate
               <div className="mb-3 space-y-1">
                 <p className="text-[11px] font-semibold text-slate-600">Variabel Tersedia (Klik untuk salin):</p>
                 <div className="flex flex-wrap gap-2 text-[10px] font-mono">
-                  {['{{kode}}', '{{password}}', '{{paket}}', '{{harga}}', '{{masa_aktif}}', '{{warna_utama}}', '{{warna_sekunder}}', '{{warna_muda}}'].map(v => (
+                  {['{{kode}}', '{{password}}', '{{paket}}', '{{harga}}', '{{durasi}}', '{{masa_aktif}}', '{{warna_utama}}', '{{warna_sekunder}}', '{{warna_muda}}'].map(v => (
                     <span 
                       key={v} 
                       onClick={() => navigator.clipboard.writeText(v)} 
