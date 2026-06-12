@@ -86,19 +86,45 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return;
     if (window.confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.size} voucher terpilih?`)) {
-      fetch('/api/vouchers/bulk', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: Array.from(selectedIds) })
-      })
-        .then(res => res.json())
-        .then(json => {
-          if (json.success) {
+      const voucherIds = [];
+      const logIds = [];
+      selectedIds.forEach(id => {
+        if (String(id).startsWith('log-')) {
+          logIds.push(parseInt(String(id).replace('log-', ''), 10));
+        } else {
+          voucherIds.push(id);
+        }
+      });
+
+      const promises = [];
+      if (voucherIds.length > 0) {
+        promises.push(
+          fetch('/api/vouchers/bulk', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: voucherIds })
+          }).then(res => res.json())
+        );
+      }
+      if (logIds.length > 0) {
+        promises.push(
+          fetch('/api/voucher-logs/bulk/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: logIds })
+          }).then(res => res.json())
+        );
+      }
+
+      Promise.all(promises)
+        .then(results => {
+          const allSuccess = results.every(r => r.success);
+          if (allSuccess) {
             fetchVouchers();
             addSystemLog('SYSTEM', `Menghapus ${selectedIds.size} voucher secara massal`);
             setSelectedIds(new Set());
           } else {
-            alert(json.message || 'Gagal menghapus voucher.');
+            alert('Beberapa penghapusan massal gagal.');
           }
         })
         .catch(err => alert('Error: ' + err.message));
@@ -144,7 +170,10 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
 
   const handleDelete = (id, code) => {
     if (window.confirm(`Hapus voucher ${code} secara permanen dari sistem?`)) {
-      fetch(`/api/vouchers/${id}`, { method: 'DELETE' })
+      const url = String(id).startsWith('log-')
+        ? `/api/voucher-logs/${String(id).replace('log-', '')}`
+        : `/api/vouchers/${id}`;
+      fetch(url, { method: 'DELETE' })
         .then(res => res.json())
         .then(json => {
           if (json.success) {
@@ -569,13 +598,15 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
                             <span className="material-symbols-outlined text-[14px]">wifi_off</span>
                           </button>
                         )}
-                        <button
-                          onClick={() => handleEditMac(v.id, v.macAddress)}
-                          title="Edit MAC Address"
-                          className="bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-label-sm p-1.5 rounded transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">edit</span>
-                        </button>
+                        {v.status !== 'Expired' && (
+                          <button
+                            onClick={() => handleEditMac(v.id, v.macAddress)}
+                            title="Edit MAC Address"
+                            className="bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-label-sm p-1.5 rounded transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">edit</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(v.id, v.code)}
                           title="Hapus Voucher"

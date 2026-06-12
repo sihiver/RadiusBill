@@ -219,25 +219,56 @@ export default function App() {
   // Fetch vouchers from backend
   const fetchVouchers = async () => {
     try {
-      const res = await fetch('/api/vouchers');
-      const json = await res.json();
-      if (json.success) {
-        const mapped = json.data.map(v => ({
-          id: v.id,
+      const [resVouchers, resLogs] = await Promise.all([
+        fetch('/api/vouchers'),
+        fetch('/api/voucher-logs')
+      ]);
+      const jsonVouchers = await resVouchers.json();
+      const jsonLogs = await resLogs.json();
+
+      let combined = [];
+
+      if (jsonVouchers.success) {
+        const mappedVouchers = jsonVouchers.data.map(v => {
+          const isUnused = v.status === 'Unused';
+          return {
+            id: v.id,
+            code: v.code,
+            password: v.password,
+            package: v.package_name,
+            price: v.price,
+            status: v.status,
+            ipAddress: v.ip_address || '-',
+            macAddress: v.mac_address || '',
+            activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
+            usedBytes: formatBytes(v.used_bytes),
+            timeLeft: isUnused ? (v.duration || v.validity || '-') : (v.expires_at ? '' : '-'),
+            expiresAt: (v.status === 'Active' && v.expires_at) ? new Date(v.expires_at).getTime() : undefined,
+          };
+        });
+        combined = [...combined, ...mappedVouchers];
+      }
+
+      if (jsonLogs.success) {
+        const mappedLogs = jsonLogs.data.map(v => ({
+          id: `log-${v.id}`,
+          originalId: v.original_id,
           code: v.code,
           password: v.password,
           package: v.package_name,
           price: v.price,
-          status: v.status,
+          status: 'Expired',
           ipAddress: v.ip_address || '-',
           macAddress: v.mac_address || '',
           activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
           usedBytes: formatBytes(v.used_bytes),
-          timeLeft: v.expires_at ? '' : (v.duration || v.validity || '-'),
-          expiresAt: v.expires_at ? new Date(v.expires_at).getTime() : undefined,
+          timeLeft: 'Sesi Selesai',
+          expiresAt: undefined,
         }));
-        setVouchers(mapped);
+        combined = [...combined, ...mappedLogs];
       }
+
+      setVouchers(combined);
     } catch (err) {
       console.error('Error fetching vouchers:', err);
     }
