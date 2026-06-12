@@ -39,6 +39,86 @@ const defaultVouchers = () => {
   ];
 };
 
+const defaultVoucherTemplate = `
+<div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.1)] overflow-hidden relative font-sans border border-slate-200" style="width: 230px; height: 140px; page-break-inside: avoid; break-inside: avoid; --color-main: {{warna_utama}}; --color-sub: {{warna_sekunder}}; --color-light: {{warna_muda}};">
+  
+  <!-- Background Decorations -->
+  <!-- Top Right Light Blue Triangle -->
+  <div class="absolute top-0 right-0 w-28 h-28 bg-[var(--color-light)] transform rotate-45 translate-x-14 -translate-y-14 opacity-80 z-0"></div>
+  <div class="absolute top-0 right-0 w-20 h-20 bg-[var(--color-light)] transform rotate-45 translate-x-8 -translate-y-10 opacity-100 z-0" style="filter: brightness(0.95);"></div>
+  
+  <!-- Bottom Left Dark Blue Angles -->
+  <div class="absolute bottom-0 left-0 w-[120%] h-8 bg-[var(--color-main)] transform -rotate-2 origin-bottom-left -translate-x-2 translate-y-1 z-0"></div>
+  <div class="absolute bottom-0 left-0 w-[120%] h-12 bg-[var(--color-sub)] transform -rotate-3 origin-bottom-left -translate-x-2 translate-y-4 z-0"></div>
+
+  <!-- Content Container -->
+  <div class="relative z-10 p-3 flex h-full">
+    
+    <!-- Left Section -->
+    <div class="w-[45%] flex flex-col justify-between pt-0.5">
+      <div>
+        <!-- MikroTik Logo Text -->
+        <div class="flex items-center text-[14px] font-black italic tracking-tighter text-[#1C1C1C]">
+          <span class="material-symbols-outlined text-[16px] mr-0.5 text-[var(--color-main)]" style="font-variation-settings: 'FILL' 1;">rss_feed</span>
+          MQL.net
+        </div>
+        <!-- Hotspot Subtitle -->
+        <div class="text-[6px] text-[var(--color-main)] font-black tracking-[0.35em] mt-1 mb-0.5">
+          H O T S P O T
+        </div>
+        <!-- VOUCHER Main Title -->
+        <div class="text-[20px] font-black text-[#0A1A3B] leading-none tracking-tighter" style="font-family: Impact, sans-serif; transform: scaleY(1.1); transform-origin: left;">
+          VOUCHER
+        </div>
+        <!-- Divider Line -->
+        <div class="h-1 w-6 bg-[var(--color-main)] mt-1.5"></div>
+      </div>
+      
+      <!-- Footer Left: WiFi Info -->
+      <div class="flex items-center gap-1 mb-2">
+        <span class="material-symbols-outlined text-[var(--color-main)] text-[16px] font-bold">wifi</span>
+        <div class="text-[6px] font-bold text-[#0A1A3B] leading-tight">
+          Akses Internet<br/>Mudah & Cepat
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Section -->
+    <div class="w-[55%] flex flex-col items-end pt-1 pb-2 pl-1 justify-between">
+      
+      <!-- Kode Voucher Box -->
+      <div class="w-full relative mt-2">
+        <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-[var(--color-main)] text-white text-[6px] font-bold px-2 py-0.5 rounded tracking-widest whitespace-nowrap z-10">
+          KODE VOUCHER
+        </div>
+        <div class="border border-[var(--color-main)] rounded-lg p-1 flex items-center justify-center h-8 bg-white relative z-0">
+          <span class="font-bold text-[14px] text-[#0A1A3B] tracking-[0.1em]" style="font-family: 'Fira Code', monospace;">{{kode}}</span>
+        </div>
+      </div>
+
+      <!-- Masa Berlaku -->
+      <div class="w-full flex items-center justify-center gap-1 mt-1 mb-1">
+        <span class="material-symbols-outlined text-[var(--color-main)] text-[10px] font-bold">schedule</span>
+        <span class="text-[6px] font-bold text-[#0A1A3B] tracking-widest uppercase">BERLAKU: {{masa_aktif}}</span>
+      </div>
+
+      <!-- Harga Box -->
+      <div class="w-full border border-[var(--color-main)] rounded flex overflow-hidden h-6 relative bg-white">
+        <!-- HARGA Blue Angle -->
+        <div class="absolute left-0 top-0 bottom-0 bg-[var(--color-main)] text-white flex items-center justify-center text-[7px] font-bold tracking-widest" style="width: 38%; clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%);">
+          <span class="-ml-1">HARGA</span>
+        </div>
+        <!-- Price Text -->
+        <div class="w-full h-full flex items-center justify-end pr-2">
+          <span class="text-[13px] font-black text-[#0A1A3B] tracking-tight">{{harga}}</span>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+`.trim();
+
 const defaultMembers = () => {
   const now = Date.now();
   return [
@@ -106,6 +186,7 @@ export default function App() {
   const [vouchers, setVouchers]   = useState(() => loadState('vouchers', defaultVouchers));
   const [members, setMembers]     = useState(() => loadState('members', defaultMembers));
   const [routers, setRouters]     = useState(() => loadState('routers', defaultRouters));
+  const [voucherTemplate, setVoucherTemplate] = useState(() => loadState('voucher_template', defaultVoucherTemplate));
   const [isDark, setIsDark]       = useState(() => loadState('theme_dark', false));
 
   // Update HTML class for dark mode
@@ -208,6 +289,7 @@ export default function App() {
   useEffect(() => { saveState('vouchers', vouchers); }, [vouchers]);
   useEffect(() => { saveState('members', members); }, [members]);
   useEffect(() => { saveState('routers', routers); }, [routers]);
+  useEffect(() => { saveState('voucher_template', voucherTemplate); }, [voucherTemplate]);
 
   // ── Sync server handler ───────────────────────────────────────────────────
   const handleSyncServer = () => {
@@ -227,6 +309,7 @@ export default function App() {
     setVouchers(defaultVouchers());
     setMembers(defaultMembers());
     setRouters(defaultRouters());
+    setVoucherTemplate(defaultVoucherTemplate);
     setNotifications([]);
     addNotification('Data berhasil direset ke default.', 'info');
   };
@@ -283,7 +366,7 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':  return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} {...commonProps} />;
       case 'packages':   return <PackageManagement packages={packages} setPackages={setPackages} {...commonProps} />;
-      case 'generator':  return <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} {...commonProps} />;
+      case 'generator':  return <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />;
       case 'log':        return <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} {...commonProps} />;
       case 'members':    return <MemberList members={members} setMembers={setMembers} packages={packages} {...commonProps} />;
       case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} {...commonProps} />;
@@ -301,7 +384,7 @@ export default function App() {
     <div className="min-h-screen flex w-full bg-background text-on-surface">
 
       {/* ── SIDEBAR ─────────────────────────────────────────────────────────── */}
-      <nav className={`fixed left-0 top-0 h-full w-sidebar-width bg-on-secondary-fixed text-slate-100 flex flex-col py-6 px-2 z-40 transition-transform duration-300 md:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <nav className={`fixed left-0 top-0 h-full w-sidebar-width bg-on-secondary-fixed text-slate-100 flex flex-col py-6 px-2 z-40 transition-transform duration-300 md:translate-x-0 print:hidden ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Brand */}
         <div className="mb-6 px-4 flex items-center gap-3 border-b border-slate-800 pb-5">
           <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold shadow-md">
@@ -355,10 +438,10 @@ export default function App() {
       {mobileMenuOpen && <div onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 bg-slate-900/50 z-30 md:hidden backdrop-blur-sm" />}
 
       {/* ── MAIN AREA ───────────────────────────────────────────────────────── */}
-      <div className="flex-1 md:ml-[280px] min-h-screen flex flex-col overflow-x-hidden">
+      <div className="flex-1 md:ml-[280px] print:ml-0 min-h-screen flex flex-col overflow-x-hidden print:overflow-visible bg-background print:bg-white">
 
         {/* ── TOP HEADER ──────────────────────────────────────────────────── */}
-        <header className="bg-surface border-b border-surface-variant shadow-sm w-full h-16 flex justify-between items-center px-6 sticky top-0 z-20">
+        <header className="bg-surface border-b border-surface-variant shadow-sm w-full h-16 flex justify-between items-center px-6 sticky top-0 z-20 print:hidden">
 
           {/* Left: Hamburger + Search */}
           <div className="flex items-center gap-4">

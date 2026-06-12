@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import VoucherTemplateEditor from './VoucherTemplateEditor';
 
-export default function VoucherGenerator({ packages, vouchers, setVouchers, addSystemLog }) {
+export default function VoucherGenerator({ packages, vouchers, setVouchers, voucherTemplate, setVoucherTemplate, defaultTemplate, addSystemLog }) {
   // Generator settings
   const hotspotPackages = packages.filter(p => p.type === 'Hotspot');
   const [selectedPkgId, setSelectedPkgId] = useState(hotspotPackages[0]?.id || '');
@@ -12,6 +13,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, addS
 
   // Session state to show recently generated vouchers
   const [newlyGenerated, setNewlyGenerated] = useState([]);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   // Generate random characters
   const generateRandomCode = (length) => {
@@ -64,7 +66,51 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, addS
   };
 
   const handlePrint = () => {
-    window.print();
+    const printArea = document.getElementById('printable-voucher-items');
+    if (!printArea) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Silakan izinkan Popup pada browser Anda untuk mencetak tiket di halaman baru.");
+      return;
+    }
+
+    let styles = '';
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => {
+      styles += node.outerHTML;
+    });
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="id">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Cetak Tiket Voucher</title>
+          ${styles}
+          <style>
+            body { background: white; padding: 20px; }
+            @media print {
+              @page { margin: 5mm; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2 class="text-center font-black text-[24px] mb-6 tracking-wider uppercase border-b-2 border-black pb-2 mx-auto max-w-sm font-sans">
+            Voucher Internet
+          </h2>
+          <div class="flex flex-wrap gap-4 justify-center items-start content-start">
+            ${printArea.innerHTML}
+          </div>
+          <script>
+            setTimeout(() => {
+              window.print();
+            }, 800);
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleExportCSV = () => {
@@ -85,9 +131,18 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, addS
   return (
     <div className="w-full space-y-6">
       {/* Title */}
-      <div>
-        <h2 className="font-headline-sm text-headline-sm text-on-surface">Generator Voucher</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-1">Cetak voucher eceran Hotspot secara massal dengan konfigurasi fleksibel.</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="font-headline-sm text-headline-sm text-on-surface">Generator Voucher</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1">Cetak voucher eceran Hotspot secara massal dengan konfigurasi fleksibel.</p>
+        </div>
+        <button 
+          onClick={() => setEditorOpen(true)}
+          className="bg-white border border-surface-variant text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-label-md text-sm font-semibold flex items-center gap-2 shadow-sm transition-colors active:scale-95 print:hidden"
+        >
+          <span className="material-symbols-outlined text-[18px]">brush</span>
+          Edit Template
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 print:hidden">
@@ -281,36 +336,63 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, addS
       </div>
 
       {/* Printable Area - Render ONLY when printing */}
-      <div className="hidden print:block w-full">
-        <h2 className="text-center font-bold text-[18px] mb-4">Voucher Hotspot RT/RW NET</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {newlyGenerated.map((item, idx) => (
-            <div 
-              key={idx} 
-              className="border-2 border-dashed border-slate-400 bg-white p-3 flex flex-col justify-between h-[150px] relative"
-            >
-              <div className="flex justify-between items-center border-b border-slate-300 pb-1">
-                <span className="text-[10px] font-bold">RT/RW NET</span>
-                <span className="text-[9px] font-bold">HOTSPOT</span>
-              </div>
-              <div className="text-center my-2">
-                <p className="text-[8px] text-slate-500 uppercase">KODE LOGIN</p>
-                <p className="text-[15px] font-bold font-mono tracking-widest">{item.code}</p>
-                {format === 'up' && (
-                  <p className="text-[9px] font-mono">PASSWORD: {item.password}</p>
-                )}
-              </div>
-              <div className="text-[8px] font-mono text-slate-600 border-t border-slate-200 pt-1">
-                <p>SSID: RT_RW_NET_HOTSPOT</p>
-                <p>Masa Aktif: {item.timeLeft}</p>
-              </div>
-              <div className="absolute right-0 top-6 bg-slate-800 text-white text-[9px] font-bold px-2 py-0.5 rounded-l">
-                Rp {item.price.toLocaleString('id-ID')}
-              </div>
-            </div>
-          ))}
+      <div className="hidden print:block w-full text-black font-sans" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+        <h2 className="text-center font-black text-[24px] mb-6 tracking-wider uppercase border-b-2 border-black pb-2 mx-auto max-w-sm">
+          Voucher Internet
+        </h2>
+        <div id="printable-voucher-items" className="flex flex-wrap gap-4 justify-center">
+          {newlyGenerated.map((item, idx) => {
+            // Determine colors dynamically based on package or price
+            const palettes = [
+              { main: '#14478C', sub: '#1E62C2', light: '#E6F0FA' }, // Blue
+              { main: '#C62828', sub: '#E53935', light: '#FFEBEE' }, // Red
+              { main: '#2E7D32', sub: '#43A047', light: '#E8F5E9' }, // Green
+              { main: '#F57F17', sub: '#FBC02D', light: '#FFFDE7' }, // Yellow/Orange
+              { main: '#4527A0', sub: '#5E35B1', light: '#EDE7F6' }, // Purple
+              { main: '#00695C', sub: '#00897B', light: '#E0F2F1' }, // Teal
+              { main: '#AD1457', sub: '#D81B60', light: '#FCE4EC' }, // Pink
+            ];
+            // Hash the package name or use price to pick a consistent color
+            let hash = 0;
+            for (let i = 0; i < item.package.length; i++) {
+              hash = item.package.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colorIndex = Math.abs(hash) % palettes.length;
+            const palette = palettes[colorIndex];
+
+            let html = voucherTemplate || '';
+            html = html.replace(/\{\{kode\}\}/g, item.code);
+            html = html.replace(/\{\{password\}\}/g, item.password);
+            html = html.replace(/\{\{paket\}\}/g, item.package);
+            html = html.replace(/\{\{harga\}\}/g, 'Rp ' + item.price.toLocaleString('id-ID'));
+            html = html.replace(/\{\{masa_aktif\}\}/g, item.timeLeft);
+            
+            // Apply dynamic colors
+            html = html.replace(/\{\{warna_utama\}\}/g, palette.main);
+            html = html.replace(/\{\{warna_sekunder\}\}/g, palette.sub);
+            html = html.replace(/\{\{warna_muda\}\}/g, palette.light);
+            
+            return (
+              <div 
+                key={idx} 
+                dangerouslySetInnerHTML={{ __html: html }} 
+                style={{ pageBreakInside: 'avoid' }}
+              />
+            );
+          })}
         </div>
       </div>
+
+      <VoucherTemplateEditor 
+        isOpen={editorOpen} 
+        onClose={() => setEditorOpen(false)} 
+        initialTemplate={voucherTemplate} 
+        defaultTemplate={defaultTemplate}
+        onSave={(newTemplate) => {
+          setVoucherTemplate(newTemplate);
+          addSystemLog('SYSTEM', 'Template cetak voucher berhasil diperbarui.');
+        }} 
+      />
     </div>
   );
 }
