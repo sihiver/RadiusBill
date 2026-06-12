@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function DashboardOverview({ 
   packages, 
@@ -7,10 +7,38 @@ export default function DashboardOverview({
   routers, 
   logs, 
   clearLogs,
-  isSyncing
+  isSyncing,
+  fetchRadiusLogs
 }) {
   const [chartFilter, setChartFilter] = useState('all'); // 'all', 'hotspot', 'pppoe'
   const [hoveredBar, setHoveredBar] = useState(null);
+  const [stats, setStats] = useState(null);
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/dashboard/stats');
+      const json = await res.json();
+      if (json.success) {
+        setStats(json.data);
+      }
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    if (typeof fetchRadiusLogs === 'function') {
+      fetchRadiusLogs();
+    }
+    const interval = setInterval(() => {
+      fetchStats();
+      if (typeof fetchRadiusLogs === 'function') {
+        fetchRadiusLogs();
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Calculate dynamic stats
   const activeVouchersCount = vouchers.filter(v => v.status === 'Active').length;
@@ -116,7 +144,9 @@ export default function DashboardOverview({
             ) : (
               <p className="font-display-lg text-display-lg text-on-surface flex items-baseline gap-1">
                 <span className="font-body-md text-body-md text-on-surface-variant">Rp</span>
-                {((currentRevenue + 45200000) / 1000000).toFixed(2)}M
+                {stats && stats.revenue
+                  ? ((Number(stats.revenue.revenue_this_month) + 45200000) / 1000000).toFixed(2)
+                  : ((currentRevenue + 45200000) / 1000000).toFixed(2)}M
               </p>
             )}
           </div>
@@ -139,7 +169,7 @@ export default function DashboardOverview({
               <div className="h-10 bg-surface-variant animate-pulse rounded w-1/2 mt-2"></div>
             ) : (
               <p className="font-display-lg text-display-lg text-on-surface">
-                {activeVouchersCount} <span className="font-body-md text-body-md text-on-surface-variant">dari {vouchers.length}</span>
+                {stats && stats.vouchers ? stats.vouchers.active_vouchers : activeVouchersCount} <span className="font-body-md text-body-md text-on-surface-variant">dari {stats && stats.vouchers ? (Number(stats.vouchers.active_vouchers) + Number(stats.vouchers.unused_vouchers)) : vouchers.length}</span>
               </p>
             )}
           </div>
@@ -162,7 +192,7 @@ export default function DashboardOverview({
               <div className="h-10 bg-surface-variant animate-pulse rounded w-1/2 mt-2"></div>
             ) : (
               <p className="font-display-lg text-display-lg text-on-surface">
-                {activeMembersCount} <span className="font-body-md text-body-md text-on-surface-variant">dari {members.length}</span>
+                {stats && stats.members ? stats.members.online_members : activeMembersCount} <span className="font-body-md text-body-md text-on-surface-variant">dari {stats && stats.members ? stats.members.total_members : members.length}</span>
               </p>
             )}
           </div>
@@ -176,9 +206,11 @@ export default function DashboardOverview({
               <span className="material-symbols-outlined">router</span>
             </div>
             <span className={`font-label-sm text-label-sm px-2 py-0.5 rounded ${
-              onlineRoutersCount / totalRoutersCount >= 0.9 ? 'text-tertiary-container bg-tertiary-fixed-dim/20' : 'text-error bg-error-container'
+              (stats && stats.routers ? (stats.routers.online_routers / (stats.routers.total_routers || 1)) : (onlineRoutersCount / (totalRoutersCount || 1))) >= 0.9 
+                ? 'text-tertiary-container bg-tertiary-fixed-dim/20' 
+                : 'text-error bg-error-container'
             }`}>
-              {((onlineRoutersCount / (totalRoutersCount || 1)) * 100).toFixed(0)}% Uptime
+              {((stats && stats.routers ? (stats.routers.online_routers / (stats.routers.total_routers || 1)) : (onlineRoutersCount / (totalRoutersCount || 1))) * 100).toFixed(0)}% Uptime
             </span>
           </div>
           <div className="relative z-10">
@@ -187,7 +219,7 @@ export default function DashboardOverview({
               <div className="h-10 bg-surface-variant animate-pulse rounded w-1/2 mt-2"></div>
             ) : (
               <p className="font-display-lg text-display-lg text-on-surface">
-                {onlineRoutersCount}<span className="font-body-md text-body-md text-on-surface-variant ml-1">/ {totalRoutersCount}</span>
+                {stats && stats.routers ? stats.routers.online_routers : onlineRoutersCount}<span className="font-body-md text-body-md text-on-surface-variant ml-1">/ {stats && stats.routers ? stats.routers.total_routers : totalRoutersCount}</span>
               </p>
             )}
           </div>

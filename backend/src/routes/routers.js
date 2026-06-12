@@ -1,0 +1,198 @@
+// ─── Routers (PPPoE) Routes ───────────────────────────────────────────────────
+const express = require('express');
+const router  = express.Router();
+const Joi     = require('joi');
+const db      = require('../db/pool');
+const { cacheDelPattern } = require('../services/cacheService');
+const radius  = require('../services/radiusService');
+const { asyncHandler, createError } = require('../middleware/errorHandler');
+
+const routerSchema = Joi.object({
+  customer_name: Joi.string().max(100).required(),
+  pppoe_user:    Joi.string().max(50).required(),
+  pppoe_pass:    Joi.string().max(100).required(),
+  router_ip:     Joi.string().ip({ version: ['ipv4'] }).allow('', null),
+  package_id:    Joi.number().integer().allow(null),
+  package_name:  Joi.string().max(100).allow('', null),
+  status:        Joi.string().valid('Online', 'Offline', 'Isolated').default('Online'),
+  isolir:        Joi.boolean().default(false),
+  isolir_reason: Joi.string().max(200).allow('', null),
+});
+
+// GET /api/routers
+router.get('/', asyncHandler(async (req, res) => {
+  const { q: search, status } = req.query;
+  const conditions = [];
+  const params     = [];
+
+  if (search) {
+    conditions.push(`(r.customer_name ILIKE $${params.length + 1} OR r.pppoe_user ILIKE $${params.length + 1} OR CAST(r.router_ip AS TEXT) ILIKE $${params.length + 1})`);
+    params.push(`%${search}%`);
+  }
+  if (status) {
+    conditions.push(`r.status = $${params.length + 1}`);
+    params.push(status);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const result = await db.query(`
+    SELECT r.*, p.speed_upload, p.speed_download, p.duration
+    FROM routers r
+    LEFT JOIN packages p ON p.id = r.package_id
+    ${where}
+    ORDER BY r.created_at DESC
+  `, params);
+
+  res.json({ success: true, data: result.rows });
+}));
+
+// GET /api/routers/:id
+router.get('/:id', asyncHandler(async (req, res) => {
+  const result = await db.query(`
+    SELECT r.*, p.speed_upload, p.speed_download
+    FROM routers r
+    LEFT JOIN packages p ON p.id = r.package_id
+    WHERE r.id = $1
+  `, [req.params.id]);
+  if (!result.rows[0]) throw createError(404, 'Router tidak ditemukan');
+  res.json({ success: true, data: result.rows[0] });
+}));
+
+// POST /api/routers
+router.post('/', asyncHandler(async (req, res) => {
+  const { error, value } = routerSchema.validate(req.body);
+  if (error) throw error;
+
+  const result = await db.query(`
+    INSERT INTO routers (customer_name, pppoe_user, pppoe_pass, router_ip, package_id, package_name, status, isolir)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+    RETURNING *
+  `, [value.customer_name, value.pppoe_user, value.pppoe_pass, value.router_ip,
+      value.package_id, value.package_name, value.status, value.isolir]);
+
+  const rtr = result.rows[0];
+
+  // Sync to FreeRADIUS
+  if (value.package_id) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
+    if (pkgRes.rows[0]) {
+      const pkg = pkgRes.rows[0];
+      await radius.syncUserToRadius(
+        rtr.pppoe_user, rtr.pppoe_pass,
+        radius.buildGroupName(pkg),
+        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
+      );
+    }
+  }
+
+  // Apply isolir if needed
+  if (value.isolir || value.status === 'Isolated') {
+    await radius.isolirUser(rtr.pppoe_user);
+  }
+
+  await cacheDelPattern('routers:*');
+  res.status(201).json({ success: true, data: rtr, message: 'Router PPPoE berhasil didaftarkan' });
+}));
+
+// PUT /api/routers/:id
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { error, value } = routerSchema.validate(req.body);
+  if (error) throw error;
+
+  const oldRes = await db.query('SELECT * FROM routers WHERE id = $1', [req.params.id]);
+  if (!oldRes.rows[0]) throw createError(404, 'Router tidak ditemukan');
+  const old = oldRes.rows[0];
+
+  const result = await db.query(`
+    UPDATE routers
+    SET customer_name=$1, pppoe_user=$2, pppoe_pass=$3, router_ip=$4,
+        package_id=$5, package_name=$6, status=$7, isolir=$8
+    WHERE id=$9
+    RETURNING *
+  `, [value.customer_name, value.pppoe_user, value.pppoe_pass, value.router_ip,
+      value.package_id, value.package_name, value.status, value.isolir,
+      req.params.id]);
+
+  const rtr = result.rows[0];
+
+  // If username changed, remove old RADIUS entry first
+  if (old.pppoe_user !== value.pppoe_user) {
+    await radius.removeUserFromRadius(old.pppoe_user);
+  }
+
+  // Re-sync to RADIUS
+  if (value.package_id) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
+    if (pkgRes.rows[0]) {
+      const pkg = pkgRes.rows[0];
+      await radius.syncUserToRadius(
+        rtr.pppoe_user, rtr.pppoe_pass,
+        radius.buildGroupName(pkg),
+        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
+      );
+    }
+  }
+
+  // Handle isolir change
+  if (value.isolir && !old.isolir) {
+    await radius.isolirUser(rtr.pppoe_user);
+    await db.query(`UPDATE routers SET isolir_since = NOW() WHERE id = $1`, [req.params.id]);
+  } else if (!value.isolir && old.isolir) {
+    await radius.unisolirUser(rtr.pppoe_user);
+    await db.query(`UPDATE routers SET isolir_since = NULL WHERE id = $1`, [req.params.id]);
+  }
+
+  await cacheDelPattern('routers:*');
+  res.json({ success: true, data: rtr, message: 'Router diperbarui' });
+}));
+
+// POST /api/routers/:id/isolir — Aktifkan isolir
+router.post('/:id/isolir', asyncHandler(async (req, res) => {
+  const { reason = 'Tunggakan tagihan' } = req.body;
+  const rtrRes = await db.query('SELECT * FROM routers WHERE id = $1', [req.params.id]);
+  if (!rtrRes.rows[0]) throw createError(404, 'Router tidak ditemukan');
+  const rtr = rtrRes.rows[0];
+
+  await radius.isolirUser(rtr.pppoe_user);
+
+  await db.query(`
+    UPDATE routers
+    SET status = 'Isolated', isolir = TRUE, isolir_reason = $2, isolir_since = NOW()
+    WHERE id = $1
+  `, [req.params.id, reason]);
+
+  await cacheDelPattern('routers:*');
+  res.json({ success: true, message: `Router "${rtr.customer_name}" berhasil diisolir` });
+}));
+
+// POST /api/routers/:id/unisolir — Lepas isolir
+router.post('/:id/unisolir', asyncHandler(async (req, res) => {
+  const rtrRes = await db.query('SELECT * FROM routers WHERE id = $1', [req.params.id]);
+  if (!rtrRes.rows[0]) throw createError(404, 'Router tidak ditemukan');
+  const rtr = rtrRes.rows[0];
+
+  await radius.unisolirUser(rtr.pppoe_user);
+
+  await db.query(`
+    UPDATE routers
+    SET status = 'Online', isolir = FALSE, isolir_reason = NULL, isolir_since = NULL
+    WHERE id = $1
+  `, [req.params.id]);
+
+  await cacheDelPattern('routers:*');
+  res.json({ success: true, message: `Isolir router "${rtr.customer_name}" dilepas` });
+}));
+
+// DELETE /api/routers/:id
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const rtrRes = await db.query('SELECT * FROM routers WHERE id = $1', [req.params.id]);
+  if (!rtrRes.rows[0]) throw createError(404, 'Router tidak ditemukan');
+
+  await db.query('DELETE FROM routers WHERE id = $1', [req.params.id]);
+  await radius.removeUserFromRadius(rtrRes.rows[0].pppoe_user);
+  await cacheDelPattern('routers:*');
+  res.json({ success: true, message: `Router "${rtrRes.rows[0].customer_name}" dihapus` });
+}));
+
+module.exports = router;

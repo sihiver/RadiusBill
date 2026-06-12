@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }) {
+export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers, addSystemLog }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Unused', 'Expired'
   const [selectedVoucher, setSelectedVoucher] = useState(null);
@@ -86,43 +86,91 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, addSystemLog }
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return;
     if (window.confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.size} voucher terpilih?`)) {
-      setVouchers(vouchers.filter(v => !selectedIds.has(v.id)));
-      addSystemLog('SYSTEM', `Menghapus ${selectedIds.size} voucher secara massal`);
-      setSelectedIds(new Set());
+      fetch('/api/vouchers/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds) })
+      })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            fetchVouchers();
+            addSystemLog('SYSTEM', `Menghapus ${selectedIds.size} voucher secara massal`);
+            setSelectedIds(new Set());
+          } else {
+            alert(json.message || 'Gagal menghapus voucher.');
+          }
+        })
+        .catch(err => alert('Error: ' + err.message));
     }
   };
 
   const handleDisconnect = (id, code) => {
     if (window.confirm(`Apakah Anda yakin ingin mematikan sesi untuk voucher ${code}?`)) {
-      setVouchers(vouchers.map(v => v.id === id ? {
-        ...v,
-        status: 'Expired',
-        ipAddress: '-',
-        timeLeft: '0 Sesi Selesai'
-      } : v));
-      
-      addSystemLog('ACCT', `Stop: Sesi voucher ${code} diputus secara paksa oleh Admin`, '88A9B2', '192.168.1.45');
+      fetch(`/api/vouchers/${id}/disconnect`, { method: 'POST' })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            fetchVouchers();
+            addSystemLog('ACCT', `Stop: Sesi voucher ${code} diputus secara paksa oleh Admin`, '88A9B2', '192.168.1.45');
+          } else {
+            alert(json.message || 'Gagal memutus sesi voucher.');
+          }
+        })
+        .catch(err => alert('Error: ' + err.message));
     }
   };
 
   const handleEditMac = (id, currentMac) => {
     const newMac = window.prompt("Ubah MAC Address Voucher (kosongkan untuk hapus kuncian):", currentMac || "");
     if (newMac !== null) {
-      setVouchers(vouchers.map(v => v.id === id ? { ...v, macAddress: newMac } : v));
-      addSystemLog('SYSTEM', `MAC Address voucher ID ${id} diubah menjadi "${newMac}"`);
+      fetch(`/api/vouchers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mac_address: newMac || null })
+      })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            fetchVouchers();
+            addSystemLog('SYSTEM', `MAC Address voucher ID ${id} diubah menjadi "${newMac}"`);
+          } else {
+            alert(json.message || 'Gagal mengubah MAC Address.');
+          }
+        })
+        .catch(err => alert('Error: ' + err.message));
     }
   };
 
   const handleDelete = (id, code) => {
     if (window.confirm(`Hapus voucher ${code} secara permanen dari sistem?`)) {
-      setVouchers(vouchers.filter(v => v.id !== id));
-      addSystemLog('SYSTEM', `Voucher ${code} dihapus oleh Admin`);
+      fetch(`/api/vouchers/${id}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            fetchVouchers();
+            addSystemLog('SYSTEM', `Voucher ${code} dihapus oleh Admin`);
+          } else {
+            alert(json.message || 'Gagal menghapus voucher.');
+          }
+        })
+        .catch(err => alert('Error: ' + err.message));
     }
   };
 
   const handleClearExpired = () => {
-    if (window.confirm("Hapus semua voucher yang sudah Expired?")) {
-      setVouchers(vouchers.filter(v => v.status !== 'Expired'));
+    if (window.confirm("Hapus semua voucher yang sudah Expired? (Pindahkan ke database log)")) {
+      fetch('/api/vouchers/expire-now', { method: 'POST' })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            fetchVouchers();
+            addSystemLog('SYSTEM', 'Pembersihan manual voucher expired dilakukan.');
+          } else {
+            alert(json.message || 'Gagal membersihkan.');
+          }
+        })
+        .catch(err => alert('Error: ' + err.message));
     }
   };
 

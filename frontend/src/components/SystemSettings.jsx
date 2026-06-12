@@ -25,33 +25,105 @@ export default function SystemSettings({ addNotification }) {
     autoSync: '30'
   });
 
-  // Load from local storage on mount
+  // Load from backend on mount
   useEffect(() => {
-    const savedRadius = localStorage.getItem('rtrwnet_radius_config');
-    if (savedRadius) setRadiusConfig(JSON.parse(savedRadius));
-
-    const savedMikrotik = localStorage.getItem('rtrwnet_mikrotik_config');
-    if (savedMikrotik) setMikrotikConfig(JSON.parse(savedMikrotik));
-
-    const savedPrefs = localStorage.getItem('rtrwnet_app_prefs');
-    if (savedPrefs) setAppPreferences(JSON.parse(savedPrefs));
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          const data = json.data;
+          if (data.radius_host) {
+            setRadiusConfig({
+              host: data.radius_host || '127.0.0.1',
+              port: data.radius_port || '5432',
+              dbUser: data.radius_user || 'radius',
+              dbPass: data.radius_pass || 'radpass',
+              secret: data.radius_secret || 'testing123'
+            });
+          }
+          if (data.mikrotik_host) {
+            setMikrotikConfig({
+              host: data.mikrotik_host || '192.168.88.1',
+              port: data.mikrotik_port || '8728',
+              apiUser: data.mikrotik_user || 'admin',
+              apiPass: data.mikrotik_pass || ''
+            });
+          }
+          setAppPreferences({
+            theme: data.app_prefs_theme || 'system',
+            language: data.app_prefs_lang || 'id',
+            autoSync: data.auto_sync_interval || '30'
+          });
+        }
+      })
+      .catch(err => console.error('Error fetching settings:', err));
   }, []);
 
   const handleSave = () => {
-    // In a real app, this would send an API request to the backend.
-    // Here we just save to localStorage to persist across reloads.
-    localStorage.setItem('rtrwnet_radius_config', JSON.stringify(radiusConfig));
-    localStorage.setItem('rtrwnet_mikrotik_config', JSON.stringify(mikrotikConfig));
-    localStorage.setItem('rtrwnet_app_prefs', JSON.stringify(appPreferences));
+    const payload = {
+      radius_host: radiusConfig.host,
+      radius_port: radiusConfig.port,
+      radius_user: radiusConfig.dbUser,
+      radius_pass: radiusConfig.dbPass,
+      radius_secret: radiusConfig.secret,
+      
+      mikrotik_host: mikrotikConfig.host,
+      mikrotik_port: mikrotikConfig.port,
+      mikrotik_user: mikrotikConfig.apiUser,
+      mikrotik_pass: mikrotikConfig.apiPass,
+      
+      app_prefs_theme: appPreferences.theme,
+      app_prefs_lang: appPreferences.language,
+      auto_sync_interval: appPreferences.autoSync
+    };
     
-    addNotification('Pengaturan sistem berhasil disimpan.', 'success');
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        addNotification('Pengaturan sistem berhasil disimpan.', 'success');
+      } else {
+        addNotification('Gagal menyimpan pengaturan: ' + json.message, 'error');
+      }
+    })
+    .catch(err => {
+      addNotification('Gagal menyimpan pengaturan: ' + err.message, 'error');
+    });
   };
 
   const handleTestConnection = (type) => {
     addNotification(`Menguji koneksi ke ${type}...`, 'info');
-    setTimeout(() => {
-      addNotification(`Koneksi ke ${type} berhasil terhubung!`, 'success');
-    }, 1500);
+    
+    let apiPath = '';
+    let payload = {};
+    if (type === 'Database FreeRADIUS') {
+      apiPath = '/api/settings/test-radius';
+      payload = radiusConfig;
+    } else {
+      apiPath = '/api/settings/test-mikrotik';
+      payload = { host: mikrotikConfig.host, port: mikrotikConfig.port };
+    }
+    
+    fetch(apiPath, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        addNotification(json.message, 'success');
+      } else {
+        addNotification(json.message || 'Koneksi gagal', 'error');
+      }
+    })
+    .catch(err => {
+      addNotification(`Gagal menguji koneksi: ${err.message}`, 'error');
+    });
   };
 
   return (

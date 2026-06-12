@@ -179,13 +179,119 @@ export default function App() {
     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
   };
 
-  // ── Data state (persisted in localStorage) ────────────────────────────────
-  const [packages, setPackages]   = useState(() => loadState('packages', defaultPackages));
-  const [vouchers, setVouchers]   = useState(() => loadState('vouchers', defaultVouchers));
-  const [members, setMembers]     = useState(() => loadState('members', defaultMembers));
-  const [routers, setRouters]     = useState(() => loadState('routers', defaultRouters));
+  // ── Data state (loaded from backend APIs) ────────────────────────────────
+  const [packages, setPackages] = useState([]);
+  const [vouchers, setVouchers] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [routers, setRouters] = useState([]);
   const [voucherTemplate, setVoucherTemplate] = useState(() => loadState('voucher_template', defaultVoucherTemplate));
   const [isDark, setIsDark]       = useState(() => loadState('theme_dark', false));
+
+  // Helper to format bytes
+  const formatBytes = (bytes) => {
+    if (bytes === null || bytes === undefined) return '0 MB';
+    const num = Number(bytes);
+    if (isNaN(num) || num === 0) return '0 MB';
+    if (num < 1024) return num + ' B';
+    if (num < 1024 * 1024) return (num / 1024).toFixed(1) + ' KB';
+    if (num < 1024 * 1024 * 1024) return (num / (1024 * 1024)).toFixed(1) + ' MB';
+    return (num / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  };
+
+  // Fetch packages from backend
+  const fetchPackages = async () => {
+    try {
+      const res = await fetch('/api/packages');
+      const json = await res.json();
+      if (json.success) {
+        const mapped = json.data.map(p => ({
+          ...p,
+          speedUpload: p.speed_upload,
+          speedDownload: p.speed_download
+        }));
+        setPackages(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching packages:', err);
+    }
+  };
+
+  // Fetch vouchers from backend
+  const fetchVouchers = async () => {
+    try {
+      const res = await fetch('/api/vouchers');
+      const json = await res.json();
+      if (json.success) {
+        const mapped = json.data.map(v => ({
+          id: v.id,
+          code: v.code,
+          password: v.password,
+          package: v.package_name,
+          price: v.price,
+          status: v.status,
+          ipAddress: v.ip_address || '-',
+          macAddress: v.mac_address || '',
+          activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
+          usedBytes: formatBytes(v.used_bytes),
+          timeLeft: v.expires_at ? '' : (v.duration || v.validity || '-'),
+          expiresAt: v.expires_at ? new Date(v.expires_at).getTime() : undefined,
+        }));
+        setVouchers(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching vouchers:', err);
+    }
+  };
+
+  // Fetch members from backend
+  const fetchMembers = async () => {
+    try {
+      const res = await fetch('/api/members');
+      const json = await res.json();
+      if (json.success) {
+        const mapped = json.data.map(m => ({
+          id: m.id,
+          name: m.name,
+          username: m.username,
+          password: m.password,
+          phone: m.phone || '-',
+          email: m.email || '-',
+          package: m.package_name || '-',
+          balance: m.balance,
+          expiryDate: m.expiry_date ? m.expiry_date.split('T')[0] : '',
+          activeSession: m.active_session,
+          ipAddress: m.ip_address || '-',
+          sessionStartedAt: m.session_start ? new Date(m.session_start).getTime() : undefined
+        }));
+        setMembers(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching members:', err);
+    }
+  };
+
+  // Fetch routers from backend
+  const fetchRouters = async () => {
+    try {
+      const res = await fetch('/api/routers');
+      const json = await res.json();
+      if (json.success) {
+        const mapped = json.data.map(r => ({
+          id: r.id,
+          customerName: r.customer_name,
+          pppoeUser: r.pppoe_user,
+          pppoePass: r.pppoe_pass,
+          routerIp: r.router_ip || '-',
+          package: r.package_name || '-',
+          status: r.status,
+          isolir: r.isolir
+        }));
+        setRouters(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching routers:', err);
+    }
+  };
 
   // Update HTML class for dark mode
   useEffect(() => {
@@ -198,13 +304,67 @@ export default function App() {
   }, [isDark]);
 
   // ── FreeRADIUS live logs (NOT persisted – fresh each session) ─────────────
-  const [logs, setLogs] = useState([
-    { id: 1, time: '13:30:05', type: 'SYSTEM', message: 'System initialized. FreeRADIUS listening on port 1812/1813...' },
-    { id: 2, time: '13:31:12', type: 'AUTH', user: 'user_0892', ip: '192.168.1.45', service: 'Hotspot' },
-    { id: 3, time: '13:31:45', type: 'AUTH', user: 'router_ahmad', ip: '10.10.10.2', service: 'PPPoE' },
-    { id: 4, time: '13:32:10', type: 'REJECT', user: 'guest_temp', ip: '192.168.1.102', reason: 'Invalid password' },
-    { id: 5, time: '13:33:02', type: 'ACCT', action: 'Start', user: 'user_0892', session: '88A9B2' },
-  ]);
+  const [logs, setLogs] = useState([]);
+
+  // Fetch radius logs
+  const fetchRadiusLogs = async () => {
+    try {
+      const res = await fetch('/api/radius/logs?limit=50');
+      const json = await res.json();
+      if (json.success) {
+        const mapped = json.data.map((l, idx) => {
+          const timeStr = new Date(l.created_at).toLocaleTimeString('id-ID');
+          return {
+            id: idx,
+            time: timeStr,
+            type: l.log_type, // 'AUTH', 'REJECT', 'ACCT', 'SYSTEM'
+            user: l.username,
+            ip: l.ip_address || '-',
+            service: l.service || 'RADIUS',
+            action: l.action || (l.reply === 'Access-Accept' ? 'Accept' : l.reply),
+            session: l.session_id || '-',
+            reason: l.reason || l.reply || '-',
+            message: l.message
+          };
+        });
+        setLogs(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching radius logs:', err);
+    }
+  };
+
+  // Fetch RADIUS status
+  const fetchRadiusStatus = async () => {
+    try {
+      const res = await fetch('/api/radius/status');
+      const json = await res.json();
+      if (json.success) {
+        setRadiusStatus(json.data.status);
+      }
+    } catch (err) {
+      setRadiusStatus('Disconnected');
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchPackages();
+    fetchVouchers();
+    fetchMembers();
+    fetchRouters();
+    fetchRadiusStatus();
+    fetchRadiusLogs();
+  }, []);
+
+  // Poll RADIUS status & logs periodically
+  useEffect(() => {
+    const timer = setInterval(() => {
+      fetchRadiusStatus();
+      fetchRadiusLogs();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   // ── Notification helper ───────────────────────────────────────────────────
   const addNotification = (message, variant = 'info') => {
@@ -244,6 +404,21 @@ export default function App() {
 
     setLogs(prev => [newLog, ...prev.slice(0, 49)]);
 
+    // Proactively post log to database via dashboard API
+    fetch('/api/dashboard/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        log_type: type,
+        username: type !== 'SYSTEM' ? detailsOrMsg : null,
+        ip_address: ipOrReason !== '-' ? ipOrReason : null,
+        service: serviceOrSession !== '-' ? serviceOrSession : null,
+        action: type === 'ACCT' ? detailsOrMsg.split(':')[0] : null,
+        reason: type === 'REJECT' ? ipOrReason : null,
+        message: type === 'SYSTEM' ? detailsOrMsg : null
+      })
+    }).catch(err => console.error('Error logging to backend:', err));
+
     // Auto-generate notification for every user-initiated action
     const variant = type === 'REJECT' ? 'warning' : type === 'AUTH' ? 'success' : 'info';
     addNotification(detailsOrMsg, variant);
@@ -259,57 +434,47 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Simulated periodic FreeRADIUS log ─────────────────────────────────────
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (radiusStatus !== 'Connected') return;
-      const r = Math.random();
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0];
-      const log = { id: Date.now(), time: timeStr };
-
-      if (r < 0.45) {
-        log.type = 'AUTH'; log.user = 'user_' + Math.floor(Math.random() * 9000 + 1000); log.ip = '192.168.1.' + Math.floor(Math.random() * 100 + 20); log.service = 'Hotspot';
-      } else if (r < 0.75) {
-        const users = ['router_ahmad', 'router_ratna', 'budi_san', 'rian_h'];
-        log.type = 'ACCT'; log.action = 'Alive Update'; log.user = users[Math.floor(Math.random() * users.length)]; log.session = Math.floor(Math.random() * 900000 + 100000).toString(16).toUpperCase();
-      } else {
-        log.type = 'REJECT'; log.user = 'guest_' + Math.floor(Math.random() * 100); log.reason = 'Password Expired / Invalid'; log.ip = '192.168.1.' + Math.floor(Math.random() * 100 + 20);
-      }
-      // Direct setLogs – NOT through addSystemLog (avoid notification flood)
-      setLogs(prev => [log, ...prev.slice(0, 49)]);
-    }, 8000);
-    return () => clearInterval(timer);
-  }, [radiusStatus]);
-
-  // ── localStorage persistence ──────────────────────────────────────────────
-  useEffect(() => { saveState('packages', packages); }, [packages]);
-  useEffect(() => { saveState('vouchers', vouchers); }, [vouchers]);
-  useEffect(() => { saveState('members', members); }, [members]);
-  useEffect(() => { saveState('routers', routers); }, [routers]);
+  // Save voucher template configuration locally
   useEffect(() => { saveState('voucher_template', voucherTemplate); }, [voucherTemplate]);
 
   // ── Sync server handler ───────────────────────────────────────────────────
-  const handleSyncServer = () => {
+  const handleSyncServer = async () => {
     setRadiusStatus('Syncing');
     addSystemLog('SYSTEM', 'Sinkronisasi profil & billing ke FreeRADIUS Server dimulai...');
-    setTimeout(() => {
-      setRadiusStatus('Connected');
-      addSystemLog('SYSTEM', 'Sinkronisasi Selesai. Database tersinkronisasi.');
-    }, 1500);
+    try {
+      const res = await fetch('/api/radius/sync', { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        setRadiusStatus('Connected');
+        addSystemLog('SYSTEM', `Sinkronisasi Selesai. Database tersinkronisasi.`);
+        addNotification('Sinkronisasi FreeRADIUS Selesai.', 'success');
+      } else {
+        setRadiusStatus('Disconnected');
+        addSystemLog('SYSTEM', 'Sinkronisasi Gagal: ' + json.message);
+        addNotification('Sinkronisasi Gagal', 'error');
+      }
+    } catch (err) {
+      setRadiusStatus('Disconnected');
+      addSystemLog('SYSTEM', 'Sinkronisasi Gagal: ' + err.message);
+      addNotification('Sinkronisasi Gagal', 'error');
+    }
   };
 
-  // ── Reset data (clear localStorage) ───────────────────────────────────────
-  const handleResetData = () => {
-    if (!window.confirm('Reset semua data ke default? Data saat ini akan dihapus.')) return;
-    ['packages', 'vouchers', 'members', 'routers'].forEach(k => localStorage.removeItem(`rtrwnet_${k}`));
-    setPackages(defaultPackages());
-    setVouchers(defaultVouchers());
-    setMembers(defaultMembers());
-    setRouters(defaultRouters());
-    setVoucherTemplate(defaultVoucherTemplate);
-    setNotifications([]);
-    addNotification('Data berhasil direset ke default.', 'info');
+  // ── Reset data (clear expired logs from DB) ───────────────────────────────────
+  const handleResetData = async () => {
+    if (!window.confirm('Bersihkan semua log voucher hangus dari database?')) return;
+    try {
+      const res = await fetch('/api/voucher-logs/clear/all', { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        addNotification(json.message, 'success');
+        fetchVouchers();
+      } else {
+        addNotification('Gagal membersihkan log: ' + json.message, 'error');
+      }
+    } catch (err) {
+      addNotification('Gagal membersihkan log: ' + err.message, 'error');
+    }
   };
 
   // ── Global search computation ─────────────────────────────────────────────
@@ -362,16 +527,16 @@ export default function App() {
     const commonProps = { addSystemLog, requestConfirm, addNotification };
     const isSyncing = radiusStatus === 'Syncing';
     switch (activeTab) {
-      case 'dashboard':  return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} {...commonProps} />;
-      case 'packages':   return <PackageManagement packages={packages} setPackages={setPackages} {...commonProps} />;
-      case 'generator':  return <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />;
-      case 'log':        return <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} {...commonProps} />;
-      case 'members':    return <MemberList members={members} setMembers={setMembers} packages={packages} {...commonProps} />;
-      case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} {...commonProps} />;
-      case 'routers':    return <RouterList routers={routers} setRouters={setRouters} packages={packages} {...commonProps} />;
-      case 'monitoring': return <MonitoringIsolir routers={routers} setRouters={setRouters} {...commonProps} />;
+      case 'dashboard':  return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} fetchRadiusLogs={fetchRadiusLogs} {...commonProps} />;
+      case 'packages':   return <PackageManagement packages={packages} setPackages={setPackages} fetchPackages={fetchPackages} {...commonProps} />;
+      case 'generator':  return <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />;
+      case 'log':        return <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} {...commonProps} />;
+      case 'members':    return <MemberList members={members} setMembers={setMembers} fetchMembers={fetchMembers} packages={packages} {...commonProps} />;
+      case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} fetchMembers={fetchMembers} {...commonProps} />;
+      case 'routers':    return <RouterList routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} packages={packages} {...commonProps} />;
+      case 'monitoring': return <MonitoringIsolir routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} {...commonProps} />;
       case 'settings':   return <SystemSettings {...commonProps} />;
-      default:           return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} {...commonProps} />;
+      default:           return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} fetchRadiusLogs={fetchRadiusLogs} {...commonProps} />;
     }
   };
 

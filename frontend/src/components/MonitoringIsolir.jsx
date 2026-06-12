@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function MonitoringIsolir({ routers, setRouters, addSystemLog }) {
+export default function MonitoringIsolir({ routers, setRouters, fetchRouters, addSystemLog, requestConfirm, addNotification }) {
   const [search, setSearch] = useState('');
   
   // Create state to simulate fluctuating live traffic speeds
@@ -30,19 +30,43 @@ export default function MonitoringIsolir({ routers, setRouters, addSystemLog }) 
 
   const handleToggleIsolir = (router) => {
     const isNowIsolated = router.status !== 'Isolated';
-    const newStatus = isNowIsolated ? 'Isolated' : 'Online';
+    const action = isNowIsolated ? 'isolir' : 'unisolir';
+    
+    const proceed = () => {
+      fetch(`/api/routers/${router.id}/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Tunggakan tagihan' })
+      })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          addNotification(json.message, 'success');
+          if (isNowIsolated) {
+            addSystemLog('REJECT', `Isolir Aktif: Akun PPPoE @${router.pppoeUser} diblokir (Tunggakan Tagihan)`, 'REJECT-BILL', router.routerIp);
+          } else {
+            addSystemLog('AUTH', `Isolir Dimatikan: Akun PPPoE @${router.pppoeUser} kembali diaktifkan`, router.routerIp, 'PPPoE');
+          }
+          fetchRouters();
+        } else {
+          addNotification(`Gagal mengubah status isolir: ${json.message}`, 'error');
+        }
+      })
+      .catch(err => {
+        addNotification(`Gagal mengubah status isolir: ${err.message}`, 'error');
+      });
+    };
 
-    setRouters(routers.map(r => r.id === router.id ? {
-      ...r,
-      status: newStatus,
-      isolir: isNowIsolated
-    } : r));
-
-    if (isNowIsolated) {
-      addSystemLog('REJECT', `Isolir Aktif: Akun PPPoE @${router.pppoeUser} diblokir (Tunggakan Tagihan)`, 'REJECT-BILL', router.routerIp);
-    } else {
-      addSystemLog('AUTH', `Isolir Dimatikan: Akun PPPoE @${router.pppoeUser} kembali diaktifkan`, router.routerIp, 'PPPoE');
-    }
+    requestConfirm({
+      title: isNowIsolated ? 'Isolasi Router PPPoE' : 'Buka Isolasi Router PPPoE',
+      message: isNowIsolated 
+        ? `Apakah Anda yakin ingin memblokir akses internet untuk pelanggan "${router.customerName}" (@${router.pppoeUser})?`
+        : `Apakah Anda yakin ingin memulihkan akses internet untuk pelanggan "${router.customerName}" (@${router.pppoeUser})?`,
+      confirmText: isNowIsolated ? 'Ya, Isolir' : 'Ya, Buka Isolir',
+      cancelText: 'Batal',
+      variant: isNowIsolated ? 'danger' : 'success',
+      onConfirm: proceed
+    });
   };
 
   const filteredRouters = routers.filter(r => 

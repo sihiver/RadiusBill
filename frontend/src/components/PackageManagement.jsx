@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function PackageManagement({ packages, setPackages, addSystemLog, requestConfirm, addNotification }) {
+export default function PackageManagement({ packages, setPackages, fetchPackages, addSystemLog, requestConfirm, addNotification }) {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -62,41 +62,39 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
       return;
     }
 
-    if (editingId) {
-      // Edit
-      setPackages(packages.map(p => p.id === editingId ? {
-        ...p,
-        name,
-        type,
-        speedType,
-        speedUpTo: speedType === 'dinamis' ? speedUpTo : '',
-        speedUpload: speedType === 'fix' ? speedUpload : '',
-        speedDownload: speedType === 'fix' ? speedDownload : '',
-        validity,
-        duration,
-        price: Number(price),
-        sellingPrice: Number(sellingPrice)
-      } : p));
-      addSystemLog('SYSTEM', `Mengubah paket: "${name}"`);
-    } else {
-      // Add new
-      const newId = packages.length > 0 ? Math.max(...packages.map(p => p.id)) + 1 : 1;
-      setPackages([...packages, {
-        id: newId,
-        name,
-        type,
-        speedType,
-        speedUpTo: speedType === 'dinamis' ? speedUpTo : '',
-        speedUpload: speedType === 'fix' ? speedUpload : '',
-        speedDownload: speedType === 'fix' ? speedDownload : '',
-        validity,
-        duration,
-        price: Number(price),
-        sellingPrice: Number(sellingPrice)
-      }]);
-      addSystemLog('SYSTEM', `Menambahkan paket baru: "${name}"`);
-    }
-    setShowModal(false);
+    const payload = {
+      name: name.trim(),
+      type,
+      speed_upload: speedType === 'fix' ? speedUpload : (speedType === 'dinamis' ? speedUpTo : 'Mikrotik Profile'),
+      speed_download: speedType === 'fix' ? speedDownload : (speedType === 'dinamis' ? speedUpTo : 'Mikrotik Profile'),
+      duration,
+      validity,
+      price: Number(sellingPrice || price),
+      description: `speedType=${speedType};speedUpTo=${speedUpTo}`,
+      is_active: true
+    };
+
+    const url = editingId ? `/api/packages/${editingId}` : '/api/packages';
+    const method = editingId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          fetchPackages();
+          addSystemLog('SYSTEM', editingId ? `Mengubah paket: "${name}"` : `Menambahkan paket baru: "${name}"`);
+          setShowModal(false);
+        } else {
+          setErrorMsg(json.message || 'Gagal menyimpan paket.');
+        }
+      })
+      .catch(err => {
+        setErrorMsg('Error: ' + err.message);
+      });
   };
 
   const handleDelete = (id, pkgName) => {
@@ -106,9 +104,20 @@ export default function PackageManagement({ packages, setPackages, addSystemLog,
       confirmText: 'Ya, Hapus',
       variant: 'danger',
       onConfirm: () => {
-        setPackages(packages.filter(p => p.id !== id));
-        addSystemLog('SYSTEM', `Menghapus paket ID ${id}`);
-        if(addNotification) addNotification(`Paket "${pkgName}" berhasil dihapus`, 'success');
+        fetch(`/api/packages/${id}`, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) {
+              fetchPackages();
+              addSystemLog('SYSTEM', `Menghapus paket ID ${id}`);
+              if(addNotification) addNotification(`Paket "${pkgName}" berhasil dihapus`, 'success');
+            } else {
+              alert(json.message || 'Gagal menghapus paket.');
+            }
+          })
+          .catch(err => {
+            alert('Error: ' + err.message);
+          });
       }
     });
   };

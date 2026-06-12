@@ -1,66 +1,101 @@
 import React, { useState, useEffect } from 'react';
 
-const formatUptime = (ms) => {
-  if (!ms || ms < 0) return '-- --';
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  return `${String(h).padStart(2,'0')} Jam ${String(m).padStart(2,'0')} Mnt ${String(s).padStart(2,'0')} Dtk`;
-};
-
-export default function BrowserSessions({ members, setMembers, addSystemLog }) {
+export default function BrowserSessions({ members, setMembers, fetchMembers, addSystemLog }) {
   const [search, setSearch] = useState('');
-  const [, setTick] = useState(0);
-  const [trafficData, setTrafficData] = useState({});
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Tick every 1s to force re-render for uptime counters
+  // Helper to format bytes
+  const formatBytes = (bytes) => {
+    if (bytes === null || bytes === undefined) return '0 MB';
+    const num = Number(bytes);
+    if (isNaN(num) || num === 0) return '0 MB';
+    if (num < 1024) return num + ' B';
+    if (num < 1024 * 1024) return (num / 1024).toFixed(1) + ' KB';
+    if (num < 1024 * 1024 * 1024) return (num / (1024 * 1024)).toFixed(1) + ' MB';
+    return (num / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  };
+
+  const formatUptime = (startedAt) => {
+    if (!startedAt) return '-- --';
+    const elapsedMs = Date.now() - new Date(startedAt).getTime();
+    const totalSec = Math.max(0, Math.floor(elapsedMs / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return `${String(h).padStart(2,'0')} Jam ${String(m).padStart(2,'0')} Mnt ${String(s).padStart(2,'0')} Dtk`;
+  };
+
+  const fetchActiveSessions = () => {
+    fetch('/api/radius/sessions')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          const mapped = json.data.map(s => {
+            const member = members.find(m => m.username === s.username);
+            return {
+              id: s.radacctid,
+              name: member ? member.name : (s.username.startsWith('RW-') ? 'Voucher Guest' : 'Pelanggan PPPoE'),
+              username: s.username,
+              ipAddress: s.ip_address,
+              macAddress: s.mac_address || '-',
+              package: member ? member.package : (s.username.startsWith('RW-') ? 'Voucher' : 'PPPoE'),
+              startedAt: s.started_at,
+              inputOctets: s.input_octets,
+              outputOctets: s.output_octets,
+              totalBytes: s.total_bytes
+            };
+          });
+          setActiveSessions(mapped);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load active sessions:', err);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchActiveSessions();
+    const interval = setInterval(fetchActiveSessions, 5000);
+    return () => clearInterval(interval);
+  }, [members]);
+
+  // Uptime tick counter to force re-render every second
+  const [, setTick] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Randomize traffic data every 2.5s
-  useEffect(() => {
-    const generateTraffic = () => {
-      const data = {};
-      members.filter(m => m.activeSession).forEach(m => {
-        data[m.id] = {
-          rx: (Math.random() * (3.5 - 0.2) + 0.2).toFixed(1) + ' GB',
-          tx: (Math.floor(Math.random() * (900 - 100 + 1)) + 100) + ' MB',
-        };
-      });
-      setTrafficData(data);
-    };
-    generateTraffic();
-    const interval = setInterval(generateTraffic, 2500);
-    return () => clearInterval(interval);
-  }, [members]);
-
   // Compute live totals for stat cards
-  const totalDownload = Object.values(trafficData).reduce((sum, t) => sum + parseFloat(t.rx), 0).toFixed(1);
-  const totalUpload = (Object.values(trafficData).reduce((sum, t) => sum + parseInt(t.tx), 0) / 1000).toFixed(1);
+  const totalDownloadBytes = activeSessions.reduce((sum, s) => sum + Number(s.outputOctets || 0), 0);
+  const totalUploadBytes = activeSessions.reduce((sum, s) => sum + Number(s.inputOctets || 0), 0);
+  const totalDownload = formatBytes(totalDownloadBytes);
+  const totalUpload = formatBytes(totalUploadBytes);
 
-  // Get only members with active sessions
-  const activeSessions = members.filter(m => m.activeSession);
-
-  const handleDisconnect = (id, name, username) => {
+  const handleDisconnect = (radacctid, name, username) => {
     if (window.confirm(`Apakah Anda yakin ingin memutuskan sesi browser untuk @${username}?`)) {
-      setMembers(members.map(m => m.id === id ? {
-        ...m,
-        activeSession: false,
-        ipAddress: '-',
-        sessionStartedAt: undefined
-      } : m));
-
-      addSystemLog('ACCT', `Stop: Logout browser session untuk @${username} (${name})`, '99C128', '192.168.1.120');
+      fetch(`/api/radius/sessions/${radacctid}/disconnect`, { method: 'POST' })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            fetchActiveSessions();
+            if (fetchMembers) fetchMembers();
+            addSystemLog('ACCT', `Stop: Logout browser session untuk @${username} (${name})`, '99C128', '192.168.1.120');
+          } else {
+            alert(json.message || 'Gagal memutuskan sesi.');
+          }
+        })
+        .catch(err => alert('Error: ' + err.message));
     }
   };
 
-  const filteredSessions = activeSessions.filter(m => 
-    m.name.toLowerCase().includes(search.toLowerCase()) || 
-    m.username.toLowerCase().includes(search.toLowerCase()) || 
-    (m.ipAddress && m.ipAddress.includes(search))
+  const filteredSessions = activeSessions.filter(s => 
+    s.name.toLowerCase().includes(search.toLowerCase()) || 
+    s.username.toLowerCase().includes(search.toLowerCase()) || 
+    (s.ipAddress && s.ipAddress.includes(search))
   );
 
   return (
@@ -68,7 +103,7 @@ export default function BrowserSessions({ members, setMembers, addSystemLog }) {
       {/* Title */}
       <div>
         <h2 className="font-headline-sm text-headline-sm text-on-surface">Status Sesi Browser</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-1">Daftar pengguna terautentikasi portal web captive portal saat ini. Monitor sesi aktif dan putuskan koneksi browser secara real-time.</p>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-1">Daftar pengguna terautentikasi captive portal saat ini. Monitor sesi aktif dan putuskan koneksi secara real-time.</p>
       </div>
 
       {/* Statistics Row */}
@@ -88,7 +123,7 @@ export default function BrowserSessions({ members, setMembers, addSystemLog }) {
           </div>
           <div>
             <p className="text-label-sm text-on-surface-variant">Total Download (Live)</p>
-            <p className="font-display-lg text-[22px] font-bold text-on-surface">{totalDownload} GB</p>
+            <p className="font-display-lg text-[22px] font-bold text-on-surface">{totalDownload}</p>
           </div>
         </div>
         <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-4 flex items-center gap-3 shadow-sm">
@@ -97,7 +132,7 @@ export default function BrowserSessions({ members, setMembers, addSystemLog }) {
           </div>
           <div>
             <p className="text-label-sm text-on-surface-variant">Total Upload (Live)</p>
-            <p className="font-display-lg text-[22px] font-bold text-on-surface">{totalUpload} GB</p>
+            <p className="font-display-lg text-[22px] font-bold text-on-surface">{totalUpload}</p>
           </div>
         </div>
       </div>
@@ -135,7 +170,7 @@ export default function BrowserSessions({ members, setMembers, addSystemLog }) {
               {filteredSessions.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="p-8 text-center text-on-surface-variant italic">
-                    Tidak ada sesi browser portal yang sedang aktif saat ini.
+                    {loading ? 'Memuat data sesi...' : 'Tidak ada sesi browser portal yang sedang aktif saat ini.'}
                   </td>
                 </tr>
               ) : (
@@ -154,8 +189,7 @@ export default function BrowserSessions({ members, setMembers, addSystemLog }) {
 
                     {/* MAC */}
                     <td className="p-4 font-mono text-outline">
-                      {/* Simulated MAC Address based on id */}
-                      {`A4:3E:45:C2:08:${session.id.toString(16).padStart(2, '0').toUpperCase()}`}
+                      {session.macAddress}
                     </td>
 
                     {/* Package */}
@@ -167,17 +201,17 @@ export default function BrowserSessions({ members, setMembers, addSystemLog }) {
 
                     {/* Uptime */}
                     <td className="p-4 font-mono">
-                      {session.sessionStartedAt ? formatUptime(Date.now() - session.sessionStartedAt) : '-- --'}
+                      {formatUptime(session.startedAt)}
                     </td>
 
                     {/* Traffic */}
                     <td className="p-4 font-mono">
                       <div className="flex items-center gap-1 text-[12px]">
                         <span className="material-symbols-outlined text-[12px] text-green-600">download</span>
-                        {trafficData[session.id]?.rx || '0.0 GB'}
+                        {formatBytes(session.outputOctets)}
                         <span className="text-[10px] text-outline">/</span>
                         <span className="material-symbols-outlined text-[12px] text-blue-600">upload</span>
-                        {trafficData[session.id]?.tx || '0 MB'}
+                        {formatBytes(session.inputOctets)}
                       </div>
                     </td>
 

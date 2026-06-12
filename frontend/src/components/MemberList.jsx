@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function MemberList({ members, setMembers, packages, addSystemLog, requestConfirm, addNotification }) {
+export default function MemberList({ members, setMembers, fetchMembers, packages, addSystemLog, requestConfirm, addNotification }) {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -58,42 +58,44 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
       return;
     }
 
-    if (editingId) {
-      // Edit
-      setMembers(members.map(m => m.id === editingId ? {
-        ...m,
-        name,
-        username,
-        password,
-        macBinding,
-        macAddress: macBinding ? macAddress : '',
-        phone,
-        package: selectedPkg
-      } : m));
-      addSystemLog('SYSTEM', `Mengubah profil member Hotspot: "${name}"`);
-    } else {
-      // Add
-      const nextMonth = new Date();
-      nextMonth.setDate(nextMonth.getDate() + 30);
-      const newExpiry = nextMonth.toISOString().split('T')[0];
+    const pkg = packages.find(p => p.name === selectedPkg);
 
-      const newId = members.length > 0 ? Math.max(...members.map(m => m.id)) + 1 : 1;
-      setMembers([...members, {
-        id: newId,
-        name,
-        username,
-        password,
-        macBinding,
-        macAddress: macBinding ? macAddress : '',
-        phone,
-        package: selectedPkg,
-        expiryDate: newExpiry,
-        activeSession: false,
-        ipAddress: '-'
-      }]);
-      addSystemLog('SYSTEM', `Mendaftarkan member Hotspot baru: "${name}"`);
-    }
-    setShowModal(false);
+    const payload = {
+      name: name.trim(),
+      username: username.trim(),
+      password: password.trim(),
+      phone: phone.trim(),
+      email: null,
+      package_id: pkg ? pkg.id : null,
+      package_name: pkg ? pkg.name : null,
+      mac_binding: macBinding,
+      mac_address: macBinding ? macAddress : null,
+      balance: 0,
+      expiry_date: null, // calculated in backend
+      is_active: true
+    };
+
+    const url = editingId ? `/api/members/${editingId}` : '/api/members';
+    const method = editingId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          fetchMembers();
+          addSystemLog('SYSTEM', editingId ? `Mengubah profil member Hotspot: "${name}"` : `Mendaftarkan member Hotspot baru: "${name}"`);
+          setShowModal(false);
+        } else {
+          setErrorMsg(json.message || 'Gagal menyimpan member.');
+        }
+      })
+      .catch(err => {
+        setErrorMsg('Error: ' + err.message);
+      });
   };
 
   const handleExtend = (id, memberName) => {
@@ -103,21 +105,22 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
       confirmText: 'Ya, Perpanjang',
       variant: 'primary',
       onConfirm: () => {
-        setMembers(members.map(m => {
-          if (m.id === id) {
-            let baseDate = new Date();
-            if (m.expiryDate) {
-              const currentExp = new Date(m.expiryDate);
-              // If not expired yet, extend from current expiry
-              if (currentExp > baseDate) baseDate = currentExp;
+        fetch(`/api/members/${id}/extend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: 30 })
+        })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) {
+              fetchMembers();
+              addSystemLog('SYSTEM', `Memperpanjang paket member: "${memberName}"`);
+              if(addNotification) addNotification(`Paket member "${memberName}" berhasil diperpanjang`, 'success');
+            } else {
+              alert(json.message || 'Gagal memperpanjang paket.');
             }
-            baseDate.setDate(baseDate.getDate() + 30);
-            return { ...m, expiryDate: baseDate.toISOString().split('T')[0] };
-          }
-          return m;
-        }));
-        addSystemLog('SYSTEM', `Memperpanjang paket member: "${memberName}"`);
-        if(addNotification) addNotification(`Paket member "${memberName}" berhasil diperpanjang`, 'success');
+          })
+          .catch(err => alert('Error: ' + err.message));
       }
     });
   };
@@ -125,7 +128,6 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
   const handlePrint = (member) => {
     addSystemLog('SYSTEM', `Mencetak tiket member Hotspot: "${member.name}"`);
     if(addNotification) addNotification(`Menyiapkan tiket cetak untuk "${member.name}"...`, 'info');
-    // Simulasikan delay untuk generate tiket
     setTimeout(() => {
       window.print();
     }, 800);
@@ -138,9 +140,18 @@ export default function MemberList({ members, setMembers, packages, addSystemLog
       confirmText: 'Ya, Hapus',
       variant: 'danger',
       onConfirm: () => {
-        setMembers(members.filter(m => m.id !== id));
-        addSystemLog('SYSTEM', `Menghapus member Hotspot: "${memberName}"`);
-        if(addNotification) addNotification(`Member "${memberName}" berhasil dihapus`, 'success');
+        fetch(`/api/members/${id}`, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) {
+              fetchMembers();
+              addSystemLog('SYSTEM', `Menghapus member Hotspot: "${memberName}"`);
+              if(addNotification) addNotification(`Member "${memberName}" berhasil dihapus`, 'success');
+            } else {
+              alert(json.message || 'Gagal menghapus member.');
+            }
+          })
+          .catch(err => alert('Error: ' + err.message));
       }
     });
   };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import VoucherTemplateEditor from './VoucherTemplateEditor';
 
-export default function VoucherGenerator({ packages, vouchers, setVouchers, voucherTemplate, setVoucherTemplate, defaultTemplate, addSystemLog }) {
+export default function VoucherGenerator({ packages, vouchers, setVouchers, fetchVouchers, voucherTemplate, setVoucherTemplate, defaultTemplate, addSystemLog }) {
   // Generator settings
   const hotspotPackages = packages.filter(p => p.type === 'Hotspot');
   const [selectedPkgId, setSelectedPkgId] = useState(hotspotPackages[0]?.id || '');
@@ -15,16 +15,6 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, vouc
   const [newlyGenerated, setNewlyGenerated] = useState([]);
   const [editorOpen, setEditorOpen] = useState(false);
 
-  // Generate random characters
-  const generateRandomCode = (length) => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous chars like O, 0, I, 1
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
-
   const handleGenerate = (e) => {
     e.preventDefault();
     const pkg = packages.find(p => p.id === Number(selectedPkgId)) || hotspotPackages[0];
@@ -33,37 +23,47 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, vouc
       return;
     }
 
-    const generated = [];
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    const payload = {
+      package_id: Number(selectedPkgId || pkg.id),
+      quantity: Number(quantity),
+      prefix,
+      code_length: Number(codeLength),
+      format,
+      mac_binding: macBinding
+    };
 
-    for (let i = 0; i < quantity; i++) {
-      const code = prefix + generateRandomCode(codeLength);
-      const password = format === 'same' ? code : generateRandomCode(6);
-      
-      generated.push({
-        id: Date.now() + i,
-        code: code,
-        password: password,
-        package: pkg.name,
-        price: pkg.price,
-        status: 'Unused',
-        macBinding: macBinding,
-        ipAddress: '-',
-        activatedTime: '-',
-        usedBytes: '0 MB',
-        timeLeft: pkg.validity,
-        duration: pkg.duration
+    fetch('/api/vouchers/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          const mapped = json.data.map(v => ({
+            id: v.id,
+            code: v.code,
+            password: v.password,
+            package: v.package_name,
+            price: v.price,
+            status: v.status,
+            ipAddress: v.ip_address || '-',
+            macAddress: v.mac_address || '',
+            activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
+            usedBytes: '0 MB',
+            timeLeft: v.expires_at ? '' : (pkg.duration || pkg.validity || '-'),
+            expiresAt: v.expires_at ? new Date(v.expires_at).getTime() : undefined,
+          }));
+          setNewlyGenerated(mapped);
+          fetchVouchers();
+          addSystemLog('SYSTEM', `Membuat ${quantity} Voucher baru untuk Paket "${pkg.name}"`);
+        } else {
+          alert(json.message || 'Gagal men-generate voucher.');
+        }
+      })
+      .catch(err => {
+        alert('Error: ' + err.message);
       });
-    }
-
-    // Update global vouchers
-    setVouchers([...generated, ...vouchers]);
-    // Set local session generated list to display printing tickets
-    setNewlyGenerated(generated);
-
-    // Logging
-    addSystemLog('SYSTEM', `Membuat ${quantity} Voucher baru untuk Paket "${pkg.name}"`);
   };
 
   const handlePrint = () => {

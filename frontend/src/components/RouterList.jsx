@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function RouterList({ routers, setRouters, packages, addSystemLog, requestConfirm, addNotification }) {
+export default function RouterList({ routers, setRouters, fetchRouters, packages, addSystemLog, requestConfirm, addNotification }) {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -60,33 +60,40 @@ export default function RouterList({ routers, setRouters, packages, addSystemLog
       return;
     }
 
-    if (editingId) {
-      setRouters(routers.map(r => r.id === editingId ? {
-        ...r,
-        customerName,
-        pppoeUser,
-        pppoePass,
-        routerIp,
-        package: selectedPkg,
-        status: status
-      } : r));
-      addSystemLog('SYSTEM', `Mengubah profil router PPPoE pelanggan: "${customerName}"`);
-    } else {
-      const newId = routers.length > 0 ? Math.max(...routers.map(r => r.id)) + 1 : 1;
-      setRouters([...routers, {
-        id: newId,
-        customerName,
-        pppoeUser,
-        pppoePass,
-        routerIp,
-        package: selectedPkg,
-        status: status,
-        trafficRxTx: '0 Kbps / 0 Kbps',
-        isolir: status === 'Isolated'
-      }]);
-      addSystemLog('SYSTEM', `Mendaftarkan Router PPPoE baru untuk "${customerName}"`);
-    }
-    setShowModal(false);
+    const pkg = packages.find(p => p.name === selectedPkg);
+
+    const payload = {
+      customer_name: customerName.trim(),
+      pppoe_user: pppoeUser.trim(),
+      pppoe_pass: pppoePass.trim(),
+      router_ip: routerIp.trim() || null,
+      package_id: pkg ? pkg.id : null,
+      package_name: pkg ? pkg.name : null,
+      status: status,
+      isolir: status === 'Isolated'
+    };
+
+    const url = editingId ? `/api/routers/${editingId}` : '/api/routers';
+    const method = editingId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          fetchRouters();
+          addSystemLog('SYSTEM', editingId ? `Mengubah profil router PPPoE pelanggan: "${customerName}"` : `Mendaftarkan Router PPPoE baru untuk "${customerName}"`);
+          setShowModal(false);
+        } else {
+          setErrorMsg(json.message || 'Gagal menyimpan router.');
+        }
+      })
+      .catch(err => {
+        setErrorMsg('Error: ' + err.message);
+      });
   };
 
   const handleDelete = (id, name) => {
@@ -96,9 +103,18 @@ export default function RouterList({ routers, setRouters, packages, addSystemLog
       confirmText: 'Ya, Hapus',
       variant: 'danger',
       onConfirm: () => {
-        setRouters(routers.filter(r => r.id !== id));
-        addSystemLog('SYSTEM', `Menghapus router PPPoE pelanggan: "${name}"`);
-        if(addNotification) addNotification(`Router "${name}" dihapus`, 'success');
+        fetch(`/api/routers/${id}`, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) {
+              fetchRouters();
+              addSystemLog('SYSTEM', `Menghapus router PPPoE pelanggan: "${name}"`);
+              if(addNotification) addNotification(`Router "${name}" deleted`, 'success');
+            } else {
+              alert(json.message || 'Gagal menghapus router.');
+            }
+          })
+          .catch(err => alert('Error: ' + err.message));
       }
     });
   };
