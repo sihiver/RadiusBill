@@ -187,12 +187,7 @@ async function ensureGroupPolicy(pkg) {
   const groupName  = buildGroupName(pkg);
   const rateLimit  = buildRateLimit(pkg);
 
-  // Upsert group check — always allow auth at group level
-  await query(`
-    INSERT INTO radgroupcheck (groupname, attribute, op, value)
-    VALUES ($1, 'Auth-Type', ':=', 'Local')
-    ON CONFLICT DO NOTHING
-  `, [groupName]);
+
 
   // Remove old group reply attrs and re-insert
   await query(`DELETE FROM radgroupreply WHERE groupname = $1`, [groupName]);

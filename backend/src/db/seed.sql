@@ -14,37 +14,21 @@ ON CONFLICT DO NOTHING;
 
 -- FreeRADIUS Group Policies
 -- hotspot-5mbps
-INSERT INTO radgroupcheck (groupname, attribute, op, value)
-VALUES ('hotspot-5mbps', 'Auth-Type', ':=', 'Local')
-ON CONFLICT DO NOTHING;
-
 INSERT INTO radgroupreply (groupname, attribute, op, value)
 VALUES ('hotspot-5mbps', 'Mikrotik-Rate-Limit', '=', '2M/5M')
 ON CONFLICT DO NOTHING;
 
 -- hotspot-2mbps
-INSERT INTO radgroupcheck (groupname, attribute, op, value)
-VALUES ('hotspot-2mbps', 'Auth-Type', ':=', 'Local')
-ON CONFLICT DO NOTHING;
-
 INSERT INTO radgroupreply (groupname, attribute, op, value)
 VALUES ('hotspot-2mbps', 'Mikrotik-Rate-Limit', '=', '1M/2M')
 ON CONFLICT DO NOTHING;
 
 -- pppoe-10mbps
-INSERT INTO radgroupcheck (groupname, attribute, op, value)
-VALUES ('pppoe-10mbps', 'Auth-Type', ':=', 'Local')
-ON CONFLICT DO NOTHING;
-
 INSERT INTO radgroupreply (groupname, attribute, op, value)
 VALUES ('pppoe-10mbps', 'Mikrotik-Rate-Limit', '=', '3M/10M')
 ON CONFLICT DO NOTHING;
 
 -- pppoe-20mbps
-INSERT INTO radgroupcheck (groupname, attribute, op, value)
-VALUES ('pppoe-20mbps', 'Auth-Type', ':=', 'Local')
-ON CONFLICT DO NOTHING;
-
 INSERT INTO radgroupreply (groupname, attribute, op, value)
 VALUES ('pppoe-20mbps', 'Mikrotik-Rate-Limit', '=', '5M/20M')
 ON CONFLICT DO NOTHING;
