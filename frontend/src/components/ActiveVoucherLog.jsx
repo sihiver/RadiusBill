@@ -5,6 +5,42 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Unused', 'Expired'
   const [selectedVoucher, setSelectedVoucher] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  // Helper to format bytes
+  const formatBytes = (bytes) => {
+    if (bytes === null || bytes === undefined) return '0 MB';
+    const num = Number(bytes);
+    if (isNaN(num) || num === 0) return '0 MB';
+    if (num < 1024) return num + ' B';
+    if (num < 1024 * 1024) return (num / 1024).toFixed(1) + ' KB';
+    if (num < 1024 * 1024 * 1024) return (num / (1024 * 1024)).toFixed(1) + ' MB';
+    return (num / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  };
+
+  useEffect(() => {
+    if (selectedVoucher) {
+      setLoadingSessions(true);
+      fetch(`/api/vouchers/sessions/${selectedVoucher.code}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            setSessions(json.data);
+          } else {
+            setSessions([]);
+          }
+          setLoadingSessions(false);
+        })
+        .catch(err => {
+          console.error('Error fetching sessions:', err);
+          setSessions([]);
+          setLoadingSessions(false);
+        });
+    } else {
+      setSessions([]);
+    }
+  }, [selectedVoucher]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -204,6 +240,14 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   };
 
   if (selectedVoucher) {
+    const currentUptime = sessions.reduce((acc, s) => {
+      if (!s.ended_at) {
+        const elapsed = Math.floor((Date.now() - new Date(s.started_at).getTime()) / 1000);
+        return acc + Math.max(0, elapsed);
+      }
+      return acc + (s.duration_secs || 0);
+    }, 0);
+
     return (
       <div className="w-full space-y-6 animate-fadeIn">
         {/* Header */}
@@ -317,7 +361,9 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
                 </div>
                 <div>
                   <p className="text-[11px] text-on-surface-variant font-semibold uppercase">Lama Sesi (Uptime)</p>
-                  <p className="font-mono text-[20px] font-bold text-on-surface">{selectedVoucher.status === 'Active' ? '01:45:22' : '-'}</p>
+                  <p className="font-mono text-[20px] font-bold text-on-surface">
+                    {sessions.length > 0 ? formatCountdown(currentUptime * 1000) : '-'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -328,7 +374,11 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
                 <h3 className="font-headline-sm text-headline-sm text-on-surface">Riwayat Sesi Lengkap</h3>
               </div>
               
-              {selectedVoucher.status === 'Unused' ? (
+              {loadingSessions ? (
+                <div className="text-center p-8 text-[14px] text-on-surface-variant">
+                  Memuat riwayat sesi...
+                </div>
+              ) : sessions.length === 0 ? (
                 <div className="text-center p-12 text-on-surface-variant text-[14px] italic">
                   Belum ada riwayat sesi. Voucher belum pernah digunakan.
                 </div>
@@ -344,29 +394,35 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-container font-mono text-on-surface">
-                      {selectedVoucher.status === 'Active' && (
-                        <tr className="bg-tertiary/5 hover:bg-tertiary/10 transition-colors border-l-4 border-l-tertiary">
-                          <td className="px-5 py-3 text-tertiary">Hari ini</td>
-                          <td className="px-5 py-3 text-tertiary font-bold flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-                            Aktif
-                          </td>
-                          <td className="px-5 py-3 font-bold text-tertiary">01:45:22</td>
-                          <td className="px-5 py-3 text-tertiary font-bold">45 MB</td>
-                        </tr>
-                      )}
-                      <tr className="hover:bg-surface-container-low/50 transition-colors">
-                        <td className="px-5 py-3 text-on-surface-variant">10/06 08:15</td>
-                        <td className="px-5 py-3 text-on-surface-variant">10/06 10:00</td>
-                        <td className="px-5 py-3">01:45:00</td>
-                        <td className="px-5 py-3 text-primary font-medium">120 MB</td>
-                      </tr>
-                      <tr className="hover:bg-surface-container-low/50 transition-colors">
-                        <td className="px-5 py-3 text-on-surface-variant">11/06 14:20</td>
-                        <td className="px-5 py-3 text-on-surface-variant">11/06 15:50</td>
-                        <td className="px-5 py-3">01:30:00</td>
-                        <td className="px-5 py-3 text-primary font-medium">85 MB</td>
-                      </tr>
+                      {sessions.map(sess => {
+                        const isActive = !sess.ended_at;
+                        const elapsed = isActive 
+                          ? Math.floor((Date.now() - new Date(sess.started_at).getTime()) / 1000) 
+                          : sess.duration_secs;
+                        return (
+                          <tr key={sess.radacctid} className={isActive ? "bg-tertiary/5 hover:bg-tertiary/10 transition-colors border-l-4 border-l-tertiary" : "hover:bg-surface-container-low/50 transition-colors"}>
+                            <td className={isActive ? "px-5 py-3 text-tertiary" : "px-5 py-3 text-on-surface-variant"}>
+                              {new Date(sess.started_at).toLocaleString('id-ID')}
+                            </td>
+                            <td className={isActive ? "px-5 py-3 text-tertiary font-bold flex items-center gap-1.5" : "px-5 py-3 text-on-surface-variant"}>
+                              {isActive ? (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                                  Aktif
+                                </>
+                              ) : (
+                                new Date(sess.ended_at).toLocaleString('id-ID')
+                              )}
+                            </td>
+                            <td className={isActive ? "px-5 py-3 font-bold text-tertiary" : "px-5 py-3"}>
+                              {formatCountdown(elapsed * 1000)}
+                            </td>
+                            <td className={isActive ? "px-5 py-3 text-tertiary font-bold" : "px-5 py-3 text-primary font-medium"}>
+                              {formatBytes(sess.used_bytes)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

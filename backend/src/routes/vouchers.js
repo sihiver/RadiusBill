@@ -77,6 +77,26 @@ router.get('/stats', asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 }));
 
+// ── GET /api/vouchers/sessions/:code ──────────────────────────────────────────
+router.get('/sessions/:code', asyncHandler(async (req, res) => {
+  const { code } = req.params;
+  const result = await db.query(`
+    SELECT 
+      radacctid,
+      acctstarttime AS started_at,
+      acctstoptime AS ended_at,
+      acctsessiontime AS duration_secs,
+      (acctinputoctets + acctoutputoctets) AS used_bytes,
+      framedipaddress::text AS ip_address,
+      callingstationid AS mac_address
+    FROM radacct
+    WHERE username = $1
+    ORDER BY acctstarttime DESC
+    LIMIT 100
+  `, [code]);
+  res.json({ success: true, data: result.rows });
+}));
+
 // ── GET /api/vouchers/:id ─────────────────────────────────────────────────────
 router.get('/:id', asyncHandler(async (req, res) => {
   const result = await db.query(`
