@@ -3,11 +3,13 @@
 CREATE OR REPLACE FUNCTION parse_mikrotik_time(t VARCHAR) RETURNS INTERVAL AS $$
 DECLARE
     res INTERVAL := '0 seconds';
+    match_arr TEXT[];
     part VARCHAR;
     val INT;
-    unit CHAR;
+    unit CHAR(1);
 BEGIN
-    FOR part IN SELECT regexp_matches(t, '(\d+[wdhms])', 'gi') LOOP
+    FOR match_arr IN SELECT regexp_matches(t, '(\d+[wdhms])', 'gi') LOOP
+        part := match_arr[1];
         val := regexp_replace(part, '[^0-9]', '', 'g')::INT;
         unit := lower(regexp_replace(part, '[0-9]', '', 'g'));
         IF unit = 'w' THEN res := res + (val || ' weeks')::INTERVAL;
