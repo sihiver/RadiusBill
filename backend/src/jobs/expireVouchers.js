@@ -69,16 +69,16 @@ async function runExpireVouchers() {
         if (v.status === 'Active') {
           // Find active session
           const sessRes = await dbPool.query(`
-            SELECT nasipaddress::text, acctsessionid
+            SELECT nasipaddress::text, acctsessionid, framedipaddress::text AS framed_ip
             FROM radacct
             WHERE username = $1 AND acctstoptime IS NULL
             ORDER BY acctstarttime DESC
             LIMIT 1
           `, [v.code]);
           if (sessRes.rows[0]) {
-            const { nasipaddress, acctsessionid } = sessRes.rows[0];
+            const { nasipaddress, acctsessionid, framed_ip } = sessRes.rows[0];
             if (nasipaddress) {
-              await radius.sendDisconnectRequest(v.code, nasipaddress, acctsessionid);
+              await radius.sendDisconnectRequest(v.code, nasipaddress, acctsessionid, framed_ip);
             }
           }
         }
