@@ -402,7 +402,7 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
                     type="text" 
                     value={duration} 
                     onChange={(e) => setDuration(e.target.value)}
-                    placeholder="e.g. 12 Jam, Unlimited" 
+                    placeholder="e.g. 12h, 1d, 30m, Unlimited" 
                     required
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
@@ -413,7 +413,7 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
                     type="text" 
                     value={validity} 
                     onChange={(e) => setValidity(e.target.value)}
-                    placeholder="e.g. 30 Hari, 1 Hari" 
+                    placeholder="e.g. 30d, 1d, 12h" 
                     required
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />

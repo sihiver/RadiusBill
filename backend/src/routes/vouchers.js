@@ -142,16 +142,37 @@ router.post('/generate', asyncHandler(async (req, res) => {
     return new Date(now.getTime() + n * 86400 * 1000); // Hari
   }
 
-  // Calculate quota_seconds from duration string (e.g. "12 Jam" -> 43200)
+  // Calculate quota_seconds from duration string (e.g. "12h" -> 43200)
   function parseDuration(duration) {
     if (!duration || duration.toLowerCase() === 'unlimited') return 0;
-    const match = duration.match(/(\d+)\s*(Hari|Jam|Menit)/i);
-    if (!match) return 0;
-    const [, num, unit] = match;
+    
+    let totalSeconds = 0;
+    const regex = /(\d+)\s*([wdhms])/gi;
+    let match;
+    let matchedMikrotik = false;
+    
+    while ((match = regex.exec(duration)) !== null) {
+      matchedMikrotik = true;
+      const val = parseInt(match[1]);
+      const unit = match[2].toLowerCase();
+      if (unit === 'w') totalSeconds += val * 7 * 86400;
+      else if (unit === 'd') totalSeconds += val * 86400;
+      else if (unit === 'h') totalSeconds += val * 3600;
+      else if (unit === 'm') totalSeconds += val * 60;
+      else if (unit === 's') totalSeconds += val;
+    }
+    
+    if (matchedMikrotik) return totalSeconds;
+    
+    // Fallback to old format
+    const oldMatch = duration.match(/(\d+)\s*(Hari|Jam|Menit)/i);
+    if (!oldMatch) return 0;
+    const [, num, unit] = oldMatch;
     const n = parseInt(num);
     if (/menit/i.test(unit)) return n * 60;
     if (/jam/i.test(unit))   return n * 3600;
     if (/hari/i.test(unit))  return n * 86400;
+    
     return 0;
   }
 
