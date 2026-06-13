@@ -53,35 +53,42 @@ BEGIN
        (TG_OP = 'UPDATE' AND OLD.acctstarttime IS NULL AND NEW.acctstarttime IS NOT NULL) THEN
         
         -- Find voucher
-        SELECT package_id, status, quota_seconds INTO v_pkg_id, v_status, v_quota_seconds
+        SELECT package_id, status, quota_seconds, mac_binding, mac_address 
+        INTO v_pkg_id, v_status, v_quota_seconds, v_mac_binding, v_mac_address
         FROM vouchers
         WHERE code = NEW.username;
 
-        IF FOUND AND v_status = 'Unused' THEN
-            -- Fetch package validity
-            SELECT validity INTO v_validity
-            FROM packages
-            WHERE id = v_pkg_id;
-
-            -- Default validity 1 day
-            v_interval := INTERVAL '1 day';
-
-            -- Parse validity (Mikrotik format & old format)
-            IF v_validity IS NOT NULL THEN
-                v_interval := parse_mikrotik_time(v_validity);
+        IF FOUND THEN
+            -- Enforce MAC Binding on First Login
+            IF v_mac_binding = TRUE AND (v_mac_address IS NULL OR v_mac_address = '') THEN
+                IF NOT EXISTS (SELECT 1 FROM radcheck WHERE username = NEW.username AND attribute = 'Calling-Station-Id') THEN
+                    INSERT INTO radcheck (username, attribute, op, value)
+                    VALUES (NEW.username, 'Calling-Station-Id', '==', NEW.callingstationid);
+                END IF;
             END IF;
-            IF v_interval = '0 seconds'::INTERVAL THEN
+
+            -- Handle Activation
+            IF v_status = 'Unused' THEN
+                SELECT validity INTO v_validity
+                FROM packages
+                WHERE id = v_pkg_id;
+
                 v_interval := INTERVAL '1 day';
-            END IF;
 
-            -- Activate voucher (status = 'Active')
-            -- (We only set expires_at based on validity. Quota is handled via used_seconds)
-            UPDATE vouchers
-            SET status = 'Active',
-                activated_at = NEW.acctstarttime,
-                expires_at = NEW.acctstarttime + v_interval,
-                updated_at = NOW()
-            WHERE code = NEW.username;
+                IF v_validity IS NOT NULL THEN
+                    v_interval := parse_mikrotik_time(v_validity);
+                END IF;
+                IF v_interval = '0 seconds'::INTERVAL THEN
+                    v_interval := INTERVAL '1 day';
+                END IF;
+
+                UPDATE vouchers
+                SET status = 'Active',
+                    activated_at = NEW.acctstarttime,
+                    expires_at = NEW.acctstarttime + v_interval,
+                    updated_at = NOW()
+                WHERE code = NEW.username;
+            END IF;
         END IF;
 
         -- Update member status to active session
