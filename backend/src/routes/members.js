@@ -238,7 +238,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   if (!mRes.rows[0]) throw createError(404, 'Member tidak ditemukan');
   const m = mRes.rows[0];
 
-  await db.query('UPDATE members SET is_active = FALSE WHERE id = $1', [req.params.id]);
+  await db.query('DELETE FROM members WHERE id = $1', [req.params.id]);
   await radius.removeUserFromRadius(m.username);
   await cacheDelPattern('members:*');
   res.json({ success: true, message: `Member "${m.name}" dihapus` });

@@ -484,7 +484,7 @@ authorize {
 	-sql
 
 	# MAC Binding Check
-	if (Calling-Station-Id) {
+	if (Calling-Station-Id && control:Auth-Type != Reject && Framed-Protocol != PPP) {
 		update control {
 			Tmp-String-0 := "%{sql: SELECT mac_address FROM vouchers WHERE code = '%{User-Name}' AND mac_binding = true UNION SELECT mac_address FROM members WHERE username = '%{User-Name}' AND mac_binding = true LIMIT 1}"
 			Tmp-String-1 := "%{sql: SELECT value FROM system_settings WHERE key = 'msg_mac_locked'}"

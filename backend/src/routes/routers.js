@@ -64,6 +64,17 @@ router.post('/', asyncHandler(async (req, res) => {
   const { error, value } = routerSchema.validate(req.body);
   if (error) throw error;
 
+  // Check uniqueness across vouchers and members
+  const checkConflict = await db.query(`
+    SELECT 1 FROM vouchers WHERE code = $1
+    UNION
+    SELECT 1 FROM members WHERE username = $1
+  `, [value.pppoe_user]);
+  
+  if (checkConflict.rows.length > 0) {
+    throw createError(400, 'Username PPPoE ini sudah digunakan oleh Member Hotspot atau Voucher. Gunakan username lain (misal: pppoe_' + value.pppoe_user + ').');
+  }
+
   const result = await db.query(`
     INSERT INTO routers (customer_name, pppoe_user, pppoe_pass, router_ip, package_id, package_name, status, isolir)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -109,6 +120,19 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const oldRes = await db.query('SELECT * FROM routers WHERE id = $1', [req.params.id]);
   if (!oldRes.rows[0]) throw createError(404, 'Router tidak ditemukan');
   const old = oldRes.rows[0];
+
+  // Check uniqueness across vouchers and members if username changed
+  if (old.pppoe_user !== value.pppoe_user) {
+    const checkConflict = await db.query(`
+      SELECT 1 FROM vouchers WHERE code = $1
+      UNION
+      SELECT 1 FROM members WHERE username = $1
+    `, [value.pppoe_user]);
+    
+    if (checkConflict.rows.length > 0) {
+      throw createError(400, 'Username PPPoE ini sudah digunakan oleh Member Hotspot atau Voucher. Gunakan username lain (misal: pppoe_' + value.pppoe_user + ').');
+    }
+  }
 
   const result = await db.query(`
     UPDATE routers
