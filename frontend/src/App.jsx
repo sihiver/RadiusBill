@@ -419,11 +419,12 @@ export default function App() {
     fetchRadiusLogs();
   }, []);
 
-  // Poll RADIUS status & logs periodically
+  // Poll RADIUS status, logs, and vouchers periodically
   useEffect(() => {
     const timer = setInterval(() => {
       fetchRadiusStatus();
       fetchRadiusLogs();
+      fetchVouchers();
     }, 15000);
     return () => clearInterval(timer);
   }, []);
