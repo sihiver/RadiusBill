@@ -1,0 +1,5 @@
+-- Migration 008: Alter members expiry_date to TIMESTAMP WITH TIME ZONE
+
+ALTER TABLE members 
+ALTER COLUMN expiry_date TYPE TIMESTAMP WITH TIME ZONE 
+USING expiry_date::TIMESTAMP WITH TIME ZONE;

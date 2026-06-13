@@ -109,6 +109,79 @@ async function runExpireVouchers() {
   }
 }
 
+async function runExpireMembers() {
+  const client = await require('../db/pool').getClient();
+  const radius = require('../services/radiusService');
+  const { cacheDelPattern } = require('../services/cacheService');
+
+  try {
+    await client.query('BEGIN');
+    
+    // Find expired members OR members that are not active
+    const expiredRes = await client.query(`
+      SELECT m.id, m.username, m.name, m.active_session
+      FROM members m
+      WHERE (m.expiry_date <= NOW() OR m.is_active = FALSE)
+      FOR UPDATE SKIP LOCKED
+    `);
+
+    if (expiredRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return 0;
+    }
+
+    let processedCount = 0;
+    
+    // Get dynamic reject message
+    const dbPool = require('../db/pool');
+    const settingsRes = await dbPool.query("SELECT value FROM system_settings WHERE key = 'msg_voucher_expired'");
+    const rejectMsg = settingsRes.rows[0]?.value || "Maaf, Voucher Anda telah Habis/Kedaluwarsa.";
+
+    for (const m of expiredRes.rows) {
+      try {
+        // Disconnect if active session
+        if (m.active_session) {
+          const sessRes = await dbPool.query(`
+            SELECT nasipaddress::text, acctsessionid, framedipaddress::text AS framed_ip
+            FROM radacct
+            WHERE username = $1 AND acctstoptime IS NULL
+            ORDER BY acctstarttime DESC
+            LIMIT 1
+          `, [m.username]);
+          
+          if (sessRes.rows[0] && sessRes.rows[0].nasipaddress) {
+            await radius.sendDisconnectRequest(m.username, sessRes.rows[0].nasipaddress, sessRes.rows[0].acctsessionid, sessRes.rows[0].framed_ip);
+          }
+        }
+        
+        // Ensure rejected in FreeRADIUS
+        await radius.rejectUserWithReason(m.username, rejectMsg);
+        
+        // Also ensure is_active is false in DB to avoid confusion
+        await client.query('UPDATE members SET is_active = FALSE WHERE id = $1', [m.id]);
+        
+        processedCount++;
+      } catch (err) {
+        console.error(`[ExpireMembersJob] Failed for member ${m.username}:`, err.message);
+      }
+    }
+
+    await client.query('COMMIT');
+    if (processedCount > 0) {
+      await cacheDelPattern('members:*');
+      console.log(`[ExpireMembersJob] Processed/Rejected ${processedCount} expired/inactive member(s)`);
+    }
+    return processedCount;
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[ExpireMembersJob] Error:', err.message);
+    return 0;
+  } finally {
+    client.release();
+  }
+}
+
 /**
  * Start the cron job.
  * Default schedule: every 5 minutes (x/5 x x x x)
@@ -118,9 +191,10 @@ function startExpireJob() {
   console.log(`[ExpireJob] Starting cron: "${schedule}"`);
 
   cron.schedule(schedule, async () => {
-    console.log('[ExpireJob] Running voucher expiry check...');
+    console.log('[ExpireJob] Running voucher and member expiry check...');
     await runExpireVouchers();
+    await runExpireMembers();
   });
 }
 
-module.exports = { startExpireJob, runExpireVouchers };
+module.exports = { startExpireJob, runExpireVouchers, runExpireMembers };

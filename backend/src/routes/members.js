@@ -100,10 +100,19 @@ router.post('/', asyncHandler(async (req, res) => {
   const { error, value } = memberSchema.validate(req.body);
   if (error) throw error;
 
-  // Default expiry: 30 days from now
-  const expiryDate = value.expiry_date || (() => {
-    const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split('T')[0];
-  })();
+  let expiryDate = value.expiry_date;
+  if (!expiryDate) {
+    if (value.package_id) {
+      const pkgRes = await db.query('SELECT validity FROM packages WHERE id = $1', [value.package_id]);
+      if (pkgRes.rows[0] && pkgRes.rows[0].validity) {
+        const expRes = await db.query(`SELECT NOW() + parse_mikrotik_time($1) AS exp`, [pkgRes.rows[0].validity]);
+        expiryDate = expRes.rows[0].exp;
+      }
+    }
+    if (!expiryDate) {
+      const d = new Date(); d.setDate(d.getDate() + 30); expiryDate = d.toISOString();
+    }
+  }
 
   const result = await db.query(`
     INSERT INTO members (name, username, password, phone, email, package_id, package_name,
@@ -141,17 +150,29 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const { error, value } = memberSchema.validate(req.body);
   if (error) throw error;
 
+  let expiryDate = value.expiry_date;
+  if (!expiryDate && value.package_id) {
+    // If no explicit expiry provided but package changed, we could auto-calculate.
+    // However, usually PUT preserves expiry unless explicitly changed or null.
+    // If it's explicitly null in the request, we calculate it from package.
+    const pkgRes = await db.query('SELECT validity FROM packages WHERE id = $1', [value.package_id]);
+    if (pkgRes.rows[0] && pkgRes.rows[0].validity) {
+      const expRes = await db.query(`SELECT NOW() + parse_mikrotik_time($1) AS exp`, [pkgRes.rows[0].validity]);
+      expiryDate = expRes.rows[0].exp;
+    }
+  }
+
   const result = await db.query(`
     UPDATE members
     SET name=$1, username=$2, password=$3, phone=$4, email=$5,
         package_id=$6, package_name=$7, mac_binding=$8, mac_address=$9,
-        balance=$10, expiry_date=$11, is_active=$12
+        balance=$10, expiry_date=COALESCE($11, expiry_date), is_active=$12
     WHERE id=$13
     RETURNING *
   `, [value.name, value.username, value.password, value.phone, value.email,
       value.package_id, value.package_name, value.mac_binding,
       value.mac_binding ? value.mac_address : null,
-      value.balance, value.expiry_date, value.is_active, req.params.id]);
+      value.balance, expiryDate, value.is_active, req.params.id]);
 
   if (!result.rows[0]) throw createError(404, 'Member tidak ditemukan');
 
@@ -177,13 +198,20 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
 
   const result = await db.query(`
     UPDATE members
-    SET expiry_date = GREATEST(expiry_date, CURRENT_DATE) + INTERVAL '${parseInt(days)} days'
+    SET expiry_date = GREATEST(expiry_date, NOW()) + INTERVAL '${parseInt(days)} days',
+        is_active = TRUE
     WHERE id = $1
     RETURNING *
   `, [req.params.id]);
 
   if (!result.rows[0]) throw createError(404, 'Member tidak ditemukan');
   await cacheDelPattern('members:*');
+  
+  // Need to un-reject in RADIUS if they were rejected
+  await radius.unisolirUser(result.rows[0].username);
+  // Optional: re-sync password to clear Auth-Type Reject
+  await radius.syncUserToRadius(result.rows[0].username, result.rows[0].password, null, null);
+  
   res.json({ success: true, data: result.rows[0], message: `Paket diperpanjang ${days} hari` });
 }));
 
