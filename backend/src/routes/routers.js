@@ -89,10 +89,14 @@ router.post('/', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
+      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+      if (rtr.router_ip) {
+        replyAttrs['Framed-IP-Address'] = rtr.router_ip;
+      }
       await radius.syncUserToRadius(
         rtr.pppoe_user, rtr.pppoe_pass,
         radius.buildGroupName(pkg),
-        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
+        replyAttrs
       );
 
       // Log transaction for router registration
@@ -156,10 +160,14 @@ router.put('/:id', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
+      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+      if (rtr.router_ip) {
+        replyAttrs['Framed-IP-Address'] = rtr.router_ip;
+      }
       await radius.syncUserToRadius(
         rtr.pppoe_user, rtr.pppoe_pass,
         radius.buildGroupName(pkg),
-        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
+        replyAttrs
       );
     }
   }
