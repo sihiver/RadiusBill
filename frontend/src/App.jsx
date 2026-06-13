@@ -235,6 +235,8 @@ export default function App() {
           let uiExpiresAt = undefined;
           let timeLeftStr = isUnused ? (v.duration || v.validity || '-') : '-';
           
+          let finalStatus = v.status;
+
           if (v.status === 'Active') {
              const quota = v.quota_seconds || 0;
              if (quota > 0) {
@@ -242,9 +244,11 @@ export default function App() {
                  if (v.session_start) {
                      // Online!
                      uiExpiresAt = new Date(v.session_start).getTime() + rem * 1000;
+                     if (uiExpiresAt <= Date.now()) finalStatus = 'Expired';
                      timeLeftStr = ''; 
                  } else {
                      // Offline!
+                     if (rem <= 0) finalStatus = 'Expired';
                      const h = String(Math.floor(rem / 3600)).padStart(2, '0');
                      const m = String(Math.floor((rem % 3600) / 60)).padStart(2, '0');
                      const s = String(rem % 60).padStart(2, '0');
@@ -252,6 +256,7 @@ export default function App() {
                  }
              } else if (v.expires_at) {
                  uiExpiresAt = new Date(v.expires_at).getTime();
+                 if (uiExpiresAt <= Date.now()) finalStatus = 'Expired';
                  timeLeftStr = '';
              }
           }
@@ -262,7 +267,7 @@ export default function App() {
             password: v.password,
             package: v.package_name,
             price: v.price,
-            status: v.status,
+            status: finalStatus,
             ipAddress: v.ip_address || '-',
             macAddress: v.mac_address || '',
             activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
