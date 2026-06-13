@@ -112,6 +112,8 @@ router.get('/logs', asyncHandler(async (req, res) => {
           CASE WHEN reply = 'Access-Accept' THEN 'AUTH' ELSE 'REJECT' END AS log_type,
           reply,
           callingstationid AS mac_address,
+          NULL AS ip_address,
+          NULL AS session_id,
           authdate         AS created_at
         FROM radpostauth
         ORDER BY authdate DESC
@@ -124,6 +126,8 @@ router.get('/logs', asyncHandler(async (req, res) => {
           'ACCT'              AS log_type,
           acctterminatecause  AS reply,
           callingstationid    AS mac_address,
+          framedipaddress::text AS ip_address,
+          acctsessionid       AS session_id,
           acctstarttime       AS created_at
         FROM radacct
         ORDER BY acctstarttime DESC
