@@ -80,4 +80,15 @@ router.post('/test-mikrotik', asyncHandler(async (req, res) => {
   }
 }));
 
+// POST /api/settings/mikrotik/setup-isolir
+router.post('/mikrotik/setup-isolir', asyncHandler(async (req, res) => {
+  const { app_ip } = req.body;
+  if (!app_ip) return res.status(400).json({ success: false, message: 'IP Aplikasi diperlukan' });
+  
+  const mikrotik = require('../services/mikrotikService');
+  await mikrotik.setupIsolirRules(app_ip);
+  
+  res.json({ success: true, message: 'Aturan Isolir NAT berhasil dipasang di MikroTik' });
+}));
+
 module.exports = router;

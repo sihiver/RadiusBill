@@ -5,6 +5,7 @@ const Joi     = require('joi');
 const db      = require('../db/pool');
 const { cacheDelPattern } = require('../services/cacheService');
 const radius  = require('../services/radiusService');
+const mikrotik = require('../services/mikrotikService');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
 
 const routerSchema = Joi.object({
@@ -207,6 +208,7 @@ router.post('/:id/isolir', asyncHandler(async (req, res) => {
   const rtr = rtrRes.rows[0];
 
   await radius.isolirUser(rtr.pppoe_user);
+  await mikrotik.disconnectPPPoEUser(rtr.pppoe_user);
 
   await db.query(`
     UPDATE routers
@@ -225,6 +227,25 @@ router.post('/:id/unisolir', asyncHandler(async (req, res) => {
   const rtr = rtrRes.rows[0];
 
   await radius.unisolirUser(rtr.pppoe_user);
+  
+  // Re-sync rate limit
+  if (rtr.package_id) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [rtr.package_id]);
+    if (pkgRes.rows[0]) {
+      const pkg = pkgRes.rows[0];
+      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+      if (rtr.router_ip) {
+        replyAttrs['Framed-IP-Address'] = rtr.router_ip;
+      }
+      await radius.syncUserToRadius(
+        rtr.pppoe_user, rtr.pppoe_pass,
+        radius.buildGroupName(pkg),
+        replyAttrs
+      );
+    }
+  }
+
+  await mikrotik.disconnectPPPoEUser(rtr.pppoe_user);
 
   await db.query(`
     UPDATE routers

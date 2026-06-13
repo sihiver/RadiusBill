@@ -144,6 +144,29 @@ export default function SystemSettings({ addNotification }) {
     });
   };
 
+  const handleSetupIsolir = () => {
+    const appIp = prompt('Masukkan IP Server Aplikasi Billing ini (IP lokal/publik yang akan diakses pengguna saat diisolir):', '192.168.1.10');
+    if (!appIp) return;
+    
+    addNotification('Sedang menyuntikkan NAT Isolir ke MikroTik...', 'info');
+    fetch('/api/settings/mikrotik/setup-isolir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_ip: appIp })
+    })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        addNotification(json.message, 'success');
+      } else {
+        addNotification('Gagal: ' + json.message, 'error');
+      }
+    })
+    .catch(err => {
+      addNotification(`Gagal mengatur Isolir: ${err.message}`, 'error');
+    });
+  };
+
   return (
     <div className="w-full space-y-6 animate-fadeIn">
       {/* Title */}
@@ -321,11 +344,17 @@ export default function SystemSettings({ addNotification }) {
                   </div>
                 </div>
 
-                <div className="pt-4 flex items-center justify-between">
-                  <button onClick={() => handleTestConnection('Mikrotik API')} className="px-4 py-2 text-primary hover:bg-primary/10 rounded-lg transition-colors font-label-md flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">wifi_tethering</span>
-                    Test Koneksi
-                  </button>
+                <div className="pt-4 flex items-center justify-between border-t border-surface-variant mt-2">
+                  <div className="flex gap-3">
+                    <button onClick={() => handleTestConnection('Mikrotik API')} className="px-4 py-2 text-primary hover:bg-primary/10 rounded-lg transition-colors font-label-md flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px]">wifi_tethering</span>
+                      Test Koneksi
+                    </button>
+                    <button onClick={handleSetupIsolir} className="px-4 py-2 text-error hover:bg-error/10 rounded-lg transition-colors font-label-md flex items-center gap-2" title="Injeksi Rule Redirect Firewall NAT secara otomatis">
+                      <span className="material-symbols-outlined text-[18px]">security</span>
+                      Setup Isolir Rule (NAT)
+                    </button>
+                  </div>
                   <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
                     Simpan Pengaturan
                   </button>

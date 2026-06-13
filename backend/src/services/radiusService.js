@@ -86,22 +86,29 @@ async function removeUserFromRadius(username) {
 }
 
 /**
- * Isolir a PPPoE user: add Auth-Type = Reject to radcheck.
- * FreeRADIUS will reject all authentication attempts for this user.
+ * Isolir a PPPoE user: assign Mikrotik-Address-List = ISOLIR and limit speed.
+ * This allows the user to stay connected but redirected by firewall.
  */
 async function isolirUser(username, reason = '') {
   const client = await getClient();
   try {
     await client.query('BEGIN');
-    // Remove existing Auth-Type for this user
+    
+    // Ensure no old Reject Auth-Type or old Address-List
+    await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute = 'Auth-Type'`, [username]);
+    await client.query(`DELETE FROM radreply WHERE username = $1 AND attribute IN ('Mikrotik-Address-List', 'Mikrotik-Rate-Limit')`, [username]);
+    
+    // Insert new Isolir parameters
     await client.query(`
-      DELETE FROM radcheck WHERE username = $1 AND attribute = 'Auth-Type'
+      INSERT INTO radreply (username, attribute, op, value)
+      VALUES ($1, 'Mikrotik-Address-List', ':=', 'ISOLIR')
     `, [username]);
-    // Insert Auth-Type = Reject
+    
     await client.query(`
-      INSERT INTO radcheck (username, attribute, op, value)
-      VALUES ($1, 'Auth-Type', ':=', 'Reject')
+      INSERT INTO radreply (username, attribute, op, value)
+      VALUES ($1, 'Mikrotik-Rate-Limit', ':=', '128k/128k')
     `, [username]);
+
     await client.query('COMMIT');
     return true;
   } catch (err) {
@@ -147,13 +154,23 @@ async function rejectUserWithReason(username, message) {
 }
 
 /**
- * Remove isolir: delete Auth-Type = Reject from radcheck.
+ * Remove isolir: delete Address-List.
+ * Note: After calling this, the caller must re-sync the user's package Rate-Limit.
  */
 async function unisolirUser(username) {
-  await query(`
-    DELETE FROM radcheck WHERE username = $1 AND attribute = 'Auth-Type'
-  `, [username]);
-  return true;
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute = 'Auth-Type'`, [username]);
+    await client.query(`DELETE FROM radreply WHERE username = $1 AND attribute = 'Mikrotik-Address-List'`, [username]);
+    await client.query('COMMIT');
+    return true;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**
