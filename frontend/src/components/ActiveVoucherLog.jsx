@@ -222,13 +222,18 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   };
 
   const handleClearExpired = () => {
-    if (window.confirm("Hapus semua voucher yang sudah Expired? (Pindahkan ke database log)")) {
+    if (window.confirm("Hapus PERMANEN semua histori voucher yang sudah Expired dari sistem? (Tidak bisa dikembalikan)")) {
+      // 1. Paksa pindahkan yang baru expired ke log
       fetch('/api/vouchers/expire-now', { method: 'POST' })
+        .then(() => {
+          // 2. Hapus permanen semua log
+          return fetch('/api/voucher-logs/clear/all', { method: 'DELETE' });
+        })
         .then(res => res.json())
         .then(json => {
           if (json.success) {
             fetchVouchers();
-            addSystemLog('SYSTEM', 'Pembersihan manual voucher expired dilakukan.');
+            addSystemLog('SYSTEM', 'Semua voucher expired dihapus permanen dari sistem.');
           } else {
             alert(json.message || 'Gagal membersihkan.');
           }

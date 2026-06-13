@@ -18,14 +18,21 @@ async function runExpireVouchers() {
   try {
     await client.query('BEGIN');
 
-    // 1. Find expired vouchers (Active/Unused with expires_at in the past OR used_seconds >= quota_seconds)
+    // 1. Find expired vouchers (Active/Unused with expires_at in the past OR used_seconds + active_session_time >= quota_seconds)
     const expired = await client.query(`
-      SELECT * FROM vouchers
+      SELECT v.* FROM vouchers v
       WHERE (
-          (expires_at IS NOT NULL AND expires_at < NOW())
-          OR (quota_seconds > 0 AND used_seconds >= quota_seconds)
+          (v.expires_at IS NOT NULL AND v.expires_at < NOW())
+          OR (v.quota_seconds > 0 AND 
+              (v.used_seconds + COALESCE((
+                SELECT EXTRACT(EPOCH FROM (NOW() - acctstarttime))
+                FROM radacct 
+                WHERE username = v.code AND acctstoptime IS NULL
+                ORDER BY acctstarttime DESC LIMIT 1
+              ), 0)) >= v.quota_seconds
+          )
         )
-        AND status IN ('Active', 'Unused')
+        AND v.status IN ('Active', 'Unused')
       FOR UPDATE SKIP LOCKED
     `);
 
