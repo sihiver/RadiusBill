@@ -89,8 +89,8 @@ BEGIN
         -- Update member status to active session
         UPDATE members
         SET active_session = TRUE,
-            ip_address = NEW.framedipaddress::TEXT,
-            mac_address = NEW.callingstationid,
+            ip_address = COALESCE(NEW.framedipaddress::TEXT, ip_address),
+            mac_address = COALESCE(mac_address, NEW.callingstationid),
             session_start = NEW.acctstarttime,
             updated_at = NOW()
         WHERE username = NEW.username;
@@ -126,7 +126,7 @@ BEGIN
         ),
         used_seconds = v_used_seconds,
         ip_address = COALESCE(NEW.framedipaddress::TEXT, ip_address),
-        mac_address = COALESCE(NEW.callingstationid, mac_address),
+        mac_address = COALESCE(mac_address, NEW.callingstationid),
         session_id = COALESCE(NEW.acctsessionid, session_id),
         updated_at = NOW()
     WHERE code = NEW.username;

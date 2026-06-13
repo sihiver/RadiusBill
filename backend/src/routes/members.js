@@ -209,8 +209,21 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
   
   // Need to un-reject in RADIUS if they were rejected
   await radius.unisolirUser(result.rows[0].username);
-  // Optional: re-sync password to clear Auth-Type Reject
-  await radius.syncUserToRadius(result.rows[0].username, result.rows[0].password, null, null);
+  
+  // Re-sync password and package attributes to clear Auth-Type Reject
+  if (result.rows[0].package_id) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [result.rows[0].package_id]);
+    if (pkgRes.rows[0]) {
+      await radius.syncUserToRadius(
+        result.rows[0].username, 
+        result.rows[0].password,
+        radius.buildGroupName(pkgRes.rows[0]),
+        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkgRes.rows[0]) }
+      );
+    }
+  } else {
+    await radius.syncUserToRadius(result.rows[0].username, result.rows[0].password, 'hotspot-member', {});
+  }
   
   res.json({ success: true, data: result.rows[0], message: `Paket diperpanjang ${days} hari` });
 }));
