@@ -189,7 +189,8 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
   const result = await db.query(`
     UPDATE members
     SET expiry_date = GREATEST(expiry_date, NOW()) + INTERVAL '${parseInt(days)} days',
-        is_active = TRUE
+        is_active = TRUE,
+        mac_address = NULL
     WHERE id = $1
     RETURNING *
   `, [req.params.id]);
