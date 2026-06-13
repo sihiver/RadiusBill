@@ -15,8 +15,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
   const [speedDownload, setSpeedDownload] = useState('5 Mbps');
   const [validity, setValidity] = useState('30 Hari');
   const [duration, setDuration] = useState('Unlimited');
-  const [price, setPrice] = useState(50000); // Harga Modal
-  const [sellingPrice, setSellingPrice] = useState(60000); // Harga Jual
+  const [costPrice, setCostPrice] = useState(50000); // Harga Modal
+  const [price, setPrice] = useState(60000); // Harga Jual
 
   const openAddModal = () => {
     setEditingId(null);
@@ -29,8 +29,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
     setSpeedDownload('5 Mbps');
     setValidity('30 Hari');
     setDuration('Unlimited');
-    setPrice(50000);
-    setSellingPrice(60000);
+    setCostPrice(50000);
+    setPrice(60000);
     setShowModal(true);
   };
 
@@ -45,8 +45,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
     setSpeedDownload(pkg.speedDownload);
     setValidity(pkg.validity);
     setDuration(pkg.duration || 'Unlimited');
+    setCostPrice(pkg.cost_price || 0);
     setPrice(pkg.price);
-    setSellingPrice(pkg.sellingPrice || pkg.price);
     setShowModal(true);
   };
 
@@ -68,8 +68,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
       speed_upload: speedType === 'fix' ? speedUpload : (speedType === 'dinamis' ? speedUpTo : 'Mikrotik Profile'),
       speed_download: speedType === 'fix' ? speedDownload : (speedType === 'dinamis' ? speedUpTo : 'Mikrotik Profile'),
       duration,
-      validity,
-      price: Number(sellingPrice || price),
+      cost_price: Number(costPrice),
+      price: Number(price),
       description: `speedType=${speedType};speedUpTo=${speedUpTo}`,
       is_active: true
     };
@@ -163,11 +163,11 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
                 </span>
                 <div className="text-right">
                   <span className="font-display-lg text-[22px] font-bold text-on-surface">
-                    <span className="text-body-md text-on-surface-variant font-normal">Rp</span> {(pkg.sellingPrice || pkg.price).toLocaleString('id-ID')}
+                    <span className="text-body-md text-on-surface-variant font-normal">Rp</span> {pkg.price.toLocaleString('id-ID')}
                   </span>
-                  {(pkg.sellingPrice && pkg.sellingPrice !== pkg.price) && (
+                  {(pkg.cost_price !== undefined && pkg.cost_price !== pkg.price) && (
                     <div className="text-[10px] text-on-surface-variant font-medium mt-[-4px]">
-                      Modal: Rp {pkg.price.toLocaleString('id-ID')}
+                      Modal: Rp {pkg.cost_price.toLocaleString('id-ID')}
                     </div>
                   )}
                 </div>
@@ -306,8 +306,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Harga Modal (Rp)</label>
                   <input 
                     type="number" 
-                    value={price} 
-                    onChange={(e) => setPrice(e.target.value)}
+                    value={costPrice} 
+                    onChange={(e) => setCostPrice(e.target.value)}
                     placeholder="e.g. 5000" 
                     required
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
@@ -320,8 +320,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Harga Jual (Rp) *</label>
                   <input 
                     type="number" 
-                    value={sellingPrice} 
-                    onChange={(e) => setSellingPrice(e.target.value)}
+                    value={price} 
+                    onChange={(e) => setPrice(e.target.value)}
                     placeholder="e.g. 7000" 
                     required
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"

@@ -15,6 +15,7 @@ const packageSchema = Joi.object({
   speed_download: Joi.string().max(20).default('5 Mbps'),
   duration:       Joi.string().max(50).default('Unlimited'),
   validity:       Joi.string().max(50).default('30 Hari'),
+  cost_price:     Joi.number().integer().min(0).default(0),
   price:          Joi.number().integer().min(0).required(),
   description:    Joi.string().max(500).allow('', null),
   is_active:      Joi.boolean().default(true),
@@ -50,11 +51,11 @@ router.post('/', asyncHandler(async (req, res) => {
   if (error) throw error;
 
   const result = await db.query(`
-    INSERT INTO packages (name, type, speed_upload, speed_download, duration, validity, price, description, is_active)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    INSERT INTO packages (name, type, speed_upload, speed_download, duration, validity, cost_price, price, description, is_active)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING *
   `, [value.name, value.type, value.speed_upload, value.speed_download,
-      value.duration, value.validity, value.price, value.description, value.is_active]);
+      value.duration, value.validity, value.cost_price, value.price, value.description, value.is_active]);
 
   // Ensure group policy in FreeRADIUS for this package
   await radius.ensureGroupPolicy(result.rows[0]);
@@ -71,11 +72,11 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const result = await db.query(`
     UPDATE packages
     SET name=$1, type=$2, speed_upload=$3, speed_download=$4,
-        duration=$5, validity=$6, price=$7, description=$8, is_active=$9
-    WHERE id=$10
+        duration=$5, validity=$6, cost_price=$7, price=$8, description=$9, is_active=$10
+    WHERE id=$11
     RETURNING *
   `, [value.name, value.type, value.speed_upload, value.speed_download,
-      value.duration, value.validity, value.price, value.description, value.is_active,
+      value.duration, value.validity, value.cost_price, value.price, value.description, value.is_active,
       req.params.id]);
 
   if (!result.rows[0]) throw createError(404, 'Paket tidak ditemukan');

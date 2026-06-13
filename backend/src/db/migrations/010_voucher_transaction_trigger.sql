@@ -19,7 +19,7 @@ BEGIN
 
         IF FOUND AND v_status = 'Unused' THEN
             -- Fetch package duration/validity, price, and name
-            SELECT duration, validity, price, name INTO v_duration, v_validity, v_price, v_pkg_name
+            SELECT duration, validity, cost_price, name INTO v_duration, v_validity, v_price, v_pkg_name
             FROM packages
             WHERE id = v_pkg_id;
 

@@ -141,7 +141,7 @@ router.post('/', asyncHandler(async (req, res) => {
       await db.query(`
         INSERT INTO transactions (type, reference_id, amount, description)
         VALUES ('member', $1, $2, $3)
-      `, [member.username, pkg.price, `Pendaftaran member ${member.username} paket ${pkg.name}`]);
+      `, [member.username, pkg.cost_price, `Pendaftaran member ${member.username} paket ${pkg.name}`]);
     }
   } else {
     await radius.syncUserToRadius(member.username, member.password, 'hotspot-member');
@@ -223,7 +223,7 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
       await db.query(`
         INSERT INTO transactions (type, reference_id, amount, description)
         VALUES ('member', $1, $2, $3)
-      `, [result.rows[0].username, pkg.price, `Perpanjangan member ${result.rows[0].username} paket ${pkg.name} (${days} hari)`]);
+      `, [result.rows[0].username, pkg.cost_price, `Perpanjangan member ${result.rows[0].username} paket ${pkg.name} (${days} hari)`]);
     }
   } else {
     await radius.syncUserToRadius(result.rows[0].username, result.rows[0].password, 'hotspot-member', {});
