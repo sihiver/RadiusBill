@@ -82,7 +82,12 @@ async function runExpireVouchers() {
             }
           }
         }
-        await radius.rejectUserWithReason(v.code, "Maaf, Voucher Anda telah Habis/Kedaluwarsa.");
+
+        // Get dynamic reject message
+        const settingsRes = await dbPool.query("SELECT value FROM system_settings WHERE key = 'msg_voucher_expired'");
+        const rejectMsg = settingsRes.rows[0]?.value || "Maaf, Voucher Anda telah Habis/Kedaluwarsa.";
+        
+        await radius.rejectUserWithReason(v.code, rejectMsg);
       } catch (err) {
         console.error(`[ExpireJob] Failed to disconnect/remove ${v.code}:`, err.message);
       }

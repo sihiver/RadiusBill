@@ -26,6 +26,11 @@ export default function SystemSettings({ addNotification }) {
     autoSync: '30'
   });
 
+  const [customMessages, setCustomMessages] = useState({
+    voucherExpired: 'Maaf, Voucher Anda telah Habis/Kedaluwarsa.',
+    macLocked: 'Maaf, Voucher ini sudah terkunci di perangkat lain.'
+  });
+
   // Load from backend on mount
   useEffect(() => {
     fetch('/api/settings')
@@ -56,6 +61,10 @@ export default function SystemSettings({ addNotification }) {
             language: data.app_prefs_lang || 'id',
             autoSync: data.auto_sync_interval || '30'
           });
+          setCustomMessages({
+            voucherExpired: data.msg_voucher_expired || 'Maaf, Voucher Anda telah Habis/Kedaluwarsa.',
+            macLocked: data.msg_mac_locked || 'Maaf, Voucher ini sudah terkunci di perangkat lain.'
+          });
         }
       })
       .catch(err => console.error('Error fetching settings:', err));
@@ -77,7 +86,10 @@ export default function SystemSettings({ addNotification }) {
       
       app_prefs_theme: appPreferences.theme,
       app_prefs_lang: appPreferences.language,
-      auto_sync_interval: appPreferences.autoSync
+      auto_sync_interval: appPreferences.autoSync,
+      
+      msg_voucher_expired: customMessages.voucherExpired,
+      msg_mac_locked: customMessages.macLocked
     };
     
     fetch('/api/settings', {
@@ -161,6 +173,13 @@ export default function SystemSettings({ addNotification }) {
           >
             <span className="material-symbols-outlined text-[20px]">tune</span>
             Preferensi Aplikasi
+          </button>
+          <button 
+            onClick={() => setActiveTab('messages')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-label-md text-left ${activeTab === 'messages' ? 'bg-primary text-on-primary shadow-sm' : 'hover:bg-surface-container text-on-surface-variant'}`}
+          >
+            <span className="material-symbols-outlined text-[20px]">chat</span>
+            Pesan Kustom
           </button>
         </div>
 
@@ -369,6 +388,46 @@ export default function SystemSettings({ addNotification }) {
                 <div className="pt-4 flex items-center justify-end">
                   <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
                     Simpan Preferensi
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Custom Messages Settings */}
+            {activeTab === 'messages' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-surface-variant pb-4 mb-4">
+                  <h3 className="font-title-md text-title-md text-on-surface">Pesan Penolakan (Custom Reject Messages)</h3>
+                  <p className="text-[13px] text-on-surface-variant mt-1">Pesan yang ditampilkan di halaman login Mikrotik ketika akses voucher ditolak.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Pesan: Voucher Kedaluwarsa / Kuota Habis</label>
+                    <input 
+                      type="text" 
+                      value={customMessages.voucherExpired}
+                      onChange={(e) => setCustomMessages({...customMessages, voucherExpired: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <p className="text-[11px] text-on-surface-variant">Ditampilkan ketika masa aktif atau batas kuota voucher telah tercapai.</p>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Pesan: MAC Address Terkunci (Device Beda)</label>
+                    <input 
+                      type="text" 
+                      value={customMessages.macLocked}
+                      onChange={(e) => setCustomMessages({...customMessages, macLocked: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <p className="text-[11px] text-on-surface-variant">Ditampilkan ketika seseorang mencoba menggunakan voucher yang sudah terikat dengan perangkat lain (jika MAC Binding aktif).</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-end">
+                  <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
+                    Simpan Pesan
                   </button>
                 </div>
               </div>
