@@ -64,12 +64,17 @@ router.get('/sessions', asyncHandler(async (req, res) => {
 router.post('/sessions/:id/disconnect', asyncHandler(async (req, res) => {
   const radacctid = req.params.id;
   
-  // Find session to get username
-  const sessRes = await db.query('SELECT username FROM radacct WHERE radacctid = $1', [radacctid]);
+  // Find session to get username and connection details
+  const sessRes = await db.query('SELECT username, nasipaddress::text, acctsessionid, framedipaddress::text AS framed_ip FROM radacct WHERE radacctid = $1', [radacctid]);
   if (!sessRes.rows[0]) {
     return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
   }
-  const { username } = sessRes.rows[0];
+  const { username, nasipaddress, acctsessionid, framed_ip } = sessRes.rows[0];
+
+  // Send physical disconnect command to NAS (Mikrotik)
+  if (nasipaddress) {
+    await radius.sendDisconnectRequest(username, nasipaddress, acctsessionid, framed_ip);
+  }
 
   // Terminate session in radacct
   await db.query(`

@@ -199,6 +199,52 @@ async function ensureGroupPolicy(pkg) {
   return groupName;
 }
 
+/**
+ * Send a RADIUS Disconnect-Request (PoD) to the NAS using radclient.
+ * @param {string} username     Voucher code or member username
+ * @param {string} nasIp        IP address of the NAS (Mikrotik)
+ * @param {string} sessionId    Acct-Session-Id (optional)
+ * @param {string} framedIp     Framed-IP-Address (optional)
+ */
+async function sendDisconnectRequest(username, nasIp, sessionId, framedIp) {
+  const { exec } = require('child_process');
+  
+  let secret = 'testing123'; // fallback
+  try {
+    const nasRes = await query('SELECT secret FROM nas WHERE nasname = $1', [nasIp]);
+    if (nasRes.rows[0]) {
+      secret = nasRes.rows[0].secret;
+    }
+  } catch (err) {
+    console.error('[RadiusService] Error fetching NAS secret:', err.message);
+  }
+
+  const port = 3799;
+  let input = `User-Name = "${username}"`;
+  if (sessionId) {
+    input += `, Acct-Session-Id = "${sessionId}"`;
+  }
+  if (framedIp && framedIp !== '-') {
+    input += `, Framed-IP-Address = "${framedIp}"`;
+  }
+
+  const cmd = `echo '${input}' | radclient -t 2 -r 2 -x ${nasIp}:${port} disconnect '${secret}'`;
+  console.log('[RadiusService] Executing disconnect command:', cmd);
+
+  return new Promise((resolve) => {
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`[RadiusService] Disconnect error: ${error.message}`);
+        console.error(`[RadiusService] stderr: ${stderr}`);
+        resolve(false);
+      } else {
+        console.log(`[RadiusService] Disconnect success stdout: ${stdout}`);
+        resolve(true);
+      }
+    });
+  });
+}
+
 module.exports = {
   syncUserToRadius,
   removeUserFromRadius,
@@ -209,4 +255,5 @@ module.exports = {
   buildGroupName,
   buildRateLimit,
   ensureGroupPolicy,
+  sendDisconnectRequest,
 };

@@ -249,6 +249,23 @@ router.post('/:id/disconnect', asyncHandler(async (req, res) => {
   if (!vRes.rows[0]) throw createError(404, 'Voucher tidak ditemukan');
   const v = vRes.rows[0];
 
+  // Send physical disconnect command to NAS (Mikrotik) if it's active
+  if (v.status === 'Active') {
+    const sessRes = await db.query(`
+      SELECT nasipaddress::text, acctsessionid, framedipaddress::text AS framed_ip
+      FROM radacct
+      WHERE username = $1 AND acctstoptime IS NULL
+      ORDER BY acctstarttime DESC
+      LIMIT 1
+    `, [v.code]);
+    if (sessRes.rows[0]) {
+      const { nasipaddress, acctsessionid, framed_ip } = sessRes.rows[0];
+      if (nasipaddress) {
+        await radius.sendDisconnectRequest(v.code, nasipaddress, acctsessionid, framed_ip);
+      }
+    }
+  }
+
   // Move to voucher_logs with reason 'admin_kick'
   const client = await db.getClient();
   try {

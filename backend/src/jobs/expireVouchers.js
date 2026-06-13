@@ -58,13 +58,29 @@ async function runExpireVouchers() {
     await client.query('COMMIT');
     movedCount = expired.rows.length;
 
-    // 4. Remove from FreeRADIUS radcheck (async, after commit)
-    const codes = expired.rows.map(v => v.code);
-    for (const code of codes) {
+    // 4. Remove from FreeRADIUS radcheck & physical disconnect (async, after commit)
+    const dbPool = require('../db/pool');
+    for (const v of expired.rows) {
       try {
-        await radius.removeUserFromRadius(code);
+        if (v.status === 'Active') {
+          // Find active session
+          const sessRes = await dbPool.query(`
+            SELECT nasipaddress::text, acctsessionid
+            FROM radacct
+            WHERE username = $1 AND acctstoptime IS NULL
+            ORDER BY acctstarttime DESC
+            LIMIT 1
+          `, [v.code]);
+          if (sessRes.rows[0]) {
+            const { nasipaddress, acctsessionid } = sessRes.rows[0];
+            if (nasipaddress) {
+              await radius.sendDisconnectRequest(v.code, nasipaddress, acctsessionid);
+            }
+          }
+        }
+        await radius.removeUserFromRadius(v.code);
       } catch (err) {
-        console.error(`[ExpireJob] Failed to remove ${code} from RADIUS:`, err.message);
+        console.error(`[ExpireJob] Failed to disconnect/remove ${v.code}:`, err.message);
       }
     }
 
