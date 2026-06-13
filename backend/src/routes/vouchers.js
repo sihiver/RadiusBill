@@ -40,7 +40,8 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const [dataRes, countRes] = await Promise.all([
     db.query(`
-      SELECT v.*, p.speed_upload, p.speed_download, p.duration, p.validity
+      SELECT v.*, p.speed_upload, p.speed_download, p.duration, p.validity,
+             (SELECT acctstarttime FROM radacct WHERE username = v.code AND acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 1) as session_start
       FROM vouchers v
       LEFT JOIN packages p ON p.id = v.package_id
       ${where}
@@ -141,22 +142,37 @@ router.post('/generate', asyncHandler(async (req, res) => {
     return new Date(now.getTime() + n * 86400 * 1000); // Hari
   }
 
+  // Calculate quota_seconds from duration string (e.g. "12 Jam" -> 43200)
+  function parseDuration(duration) {
+    if (!duration || duration.toLowerCase() === 'unlimited') return 0;
+    const match = duration.match(/(\d+)\s*(Hari|Jam|Menit)/i);
+    if (!match) return 0;
+    const [, num, unit] = match;
+    const n = parseInt(num);
+    if (/menit/i.test(unit)) return n * 60;
+    if (/jam/i.test(unit))   return n * 3600;
+    if (/hari/i.test(unit))  return n * 86400;
+    return 0;
+  }
+
   const client = await db.getClient();
   const generated = [];
 
   try {
     await client.query('BEGIN');
 
+    const quotaSecs = parseDuration(pkg.duration);
+
     for (let i = 0; i < value.quantity; i++) {
       const code     = value.prefix + randomCode(value.code_length);
       const password = value.format === 'same' ? code : randomCode(6);
-      const expiresAt = parseValidity(pkg.validity);
+      const expiresAt = null;
 
       const vRes = await client.query(`
-        INSERT INTO vouchers (code, password, package_id, package_name, price, status, mac_binding, expires_at)
-        VALUES ($1, $2, $3, $4, $5, 'Unused', $6, $7)
+        INSERT INTO vouchers (code, password, package_id, package_name, price, status, mac_binding, expires_at, quota_seconds)
+        VALUES ($1, $2, $3, $4, $5, 'Unused', $6, $7, $8)
         RETURNING *
-      `, [code, password, pkg.id, pkg.name, pkg.price, value.mac_binding, expiresAt]);
+      `, [code, password, pkg.id, pkg.name, pkg.price, value.mac_binding, expiresAt, quotaSecs]);
 
       generated.push(vRes.rows[0]);
     }
@@ -172,10 +188,14 @@ router.post('/generate', asyncHandler(async (req, res) => {
   // Sync all generated vouchers to FreeRADIUS radcheck
   const groupName  = radius.buildGroupName(pkg);
   const rateLimit  = radius.buildRateLimit(pkg);
+  const quotaSecs  = parseDuration(pkg.duration);
+  
   for (const v of generated) {
-    await radius.syncUserToRadius(v.code, v.password, groupName, {
-      'Mikrotik-Rate-Limit': rateLimit
-    });
+    const replyAttrs = { 'Mikrotik-Rate-Limit': rateLimit };
+    if (quotaSecs > 0) {
+      replyAttrs['Session-Timeout'] = quotaSecs;
+    }
+    await radius.syncUserToRadius(v.code, v.password, groupName, replyAttrs);
   }
 
   await cacheDelPattern('vouchers:*');

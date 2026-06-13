@@ -63,14 +63,12 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   }, []);
 
   const formatCountdown = (ms) => {
-    if (ms <= 0) return 'Waktu Habis';
+    if (ms <= 0) return '00:00:00';
     const totalSec = Math.floor(ms / 1000);
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-    if (h > 0) return `${h} Jam ${m} Mnt ${s} Dtk`;
-    if (m > 0) return `${m} Menit ${s} Detik`;
-    return `${s} Detik`;
+    const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+    const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+    const s = String(totalSec % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
   };
 
   // Filter vouchers based on search and status select

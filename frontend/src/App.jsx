@@ -231,6 +231,31 @@ export default function App() {
       if (jsonVouchers.success) {
         const mappedVouchers = jsonVouchers.data.map(v => {
           const isUnused = v.status === 'Unused';
+          
+          let uiExpiresAt = undefined;
+          let timeLeftStr = isUnused ? (v.duration || v.validity || '-') : '-';
+          
+          if (v.status === 'Active') {
+             const quota = v.quota_seconds || 0;
+             if (quota > 0) {
+                 const rem = Math.max(0, quota - (v.used_seconds || 0));
+                 if (v.session_start) {
+                     // Online!
+                     uiExpiresAt = new Date(v.session_start).getTime() + rem * 1000;
+                     timeLeftStr = ''; 
+                 } else {
+                     // Offline!
+                     const h = String(Math.floor(rem / 3600)).padStart(2, '0');
+                     const m = String(Math.floor((rem % 3600) / 60)).padStart(2, '0');
+                     const s = String(rem % 60).padStart(2, '0');
+                     timeLeftStr = `${h}:${m}:${s}`;
+                 }
+             } else if (v.expires_at) {
+                 uiExpiresAt = new Date(v.expires_at).getTime();
+                 timeLeftStr = '';
+             }
+          }
+
           return {
             id: v.id,
             code: v.code,
@@ -242,8 +267,8 @@ export default function App() {
             macAddress: v.mac_address || '',
             activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
             usedBytes: formatBytes(v.used_bytes),
-            timeLeft: isUnused ? (v.duration || v.validity || '-') : (v.expires_at ? '' : '-'),
-            expiresAt: (v.status === 'Active' && v.expires_at) ? new Date(v.expires_at).getTime() : undefined,
+            timeLeft: timeLeftStr,
+            expiresAt: uiExpiresAt,
           };
         });
         combined = [...combined, ...mappedVouchers];
