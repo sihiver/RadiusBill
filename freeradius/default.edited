@@ -1036,6 +1036,22 @@ post-auth {
 	Post-Auth-Type REJECT {
 		# log failed authentications in SQL, too.
 		-sql
+
+		if (!&reply:Reply-Message) {
+			update control {
+				Tmp-String-2 := "%{sql: SELECT value FROM system_settings WHERE key = 'msg_invalid_voucher'}"
+			}
+			if (&control:Tmp-String-2 != '') {
+				update reply {
+					Reply-Message := "%{control:Tmp-String-2}"
+				}
+			} else {
+				update reply {
+					Reply-Message := "Voucher tidak valid atau salah ketik."
+				}
+			}
+		}
+
 		attr_filter.access_reject
 
 		# Insert EAP-Failure message if the request was

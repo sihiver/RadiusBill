@@ -28,7 +28,8 @@ export default function SystemSettings({ addNotification }) {
 
   const [customMessages, setCustomMessages] = useState({
     voucherExpired: 'Maaf, Voucher Anda telah Habis/Kedaluwarsa.',
-    macLocked: 'Maaf, Voucher ini sudah terkunci di perangkat lain.'
+    macLocked: 'Maaf, Voucher ini sudah terkunci di perangkat lain.',
+    invalidVoucher: 'Maaf, Voucher tidak ditemukan atau salah ketik.'
   });
 
   // Load from backend on mount
@@ -63,7 +64,8 @@ export default function SystemSettings({ addNotification }) {
           });
           setCustomMessages({
             voucherExpired: data.msg_voucher_expired || 'Maaf, Voucher Anda telah Habis/Kedaluwarsa.',
-            macLocked: data.msg_mac_locked || 'Maaf, Voucher ini sudah terkunci di perangkat lain.'
+            macLocked: data.msg_mac_locked || 'Maaf, Voucher ini sudah terkunci di perangkat lain.',
+            invalidVoucher: data.msg_invalid_voucher || 'Maaf, Voucher tidak ditemukan atau salah ketik.'
           });
         }
       })
@@ -89,7 +91,8 @@ export default function SystemSettings({ addNotification }) {
       auto_sync_interval: appPreferences.autoSync,
       
       msg_voucher_expired: customMessages.voucherExpired,
-      msg_mac_locked: customMessages.macLocked
+      msg_mac_locked: customMessages.macLocked,
+      msg_invalid_voucher: customMessages.invalidVoucher
     };
     
     fetch('/api/settings', {
@@ -422,6 +425,17 @@ export default function SystemSettings({ addNotification }) {
                       className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
                     />
                     <p className="text-[11px] text-on-surface-variant">Ditampilkan ketika seseorang mencoba menggunakan voucher yang sudah terikat dengan perangkat lain (jika MAC Binding aktif).</p>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-on-surface">Pesan: Voucher Tidak Ditemukan / Salah</label>
+                    <input 
+                      type="text" 
+                      value={customMessages.invalidVoucher}
+                      onChange={(e) => setCustomMessages({...customMessages, invalidVoucher: e.target.value})}
+                      className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <p className="text-[11px] text-on-surface-variant">Ditampilkan ketika pengguna salah mengetik kode voucher atau voucher memang tidak ada di database.</p>
                   </div>
                 </div>
 
