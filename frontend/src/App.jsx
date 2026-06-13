@@ -220,8 +220,8 @@ export default function App() {
   const fetchVouchers = async () => {
     try {
       const [resVouchers, resLogs] = await Promise.all([
-        fetch('/api/vouchers'),
-        fetch('/api/voucher-logs')
+        fetch('/api/vouchers?limit=10000'),
+        fetch('/api/voucher-logs?limit=10000')
       ]);
       const jsonVouchers = await resVouchers.json();
       const jsonLogs = await resLogs.json();
