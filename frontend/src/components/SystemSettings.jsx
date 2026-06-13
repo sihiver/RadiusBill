@@ -9,7 +9,8 @@ export default function SystemSettings({ addNotification }) {
     port: '1812',
     dbUser: 'radius',
     dbPass: 'radpass',
-    secret: 'testing123'
+    secret: 'testing123',
+    staleTimeout: '15'
   });
 
   const [mikrotikConfig, setMikrotikConfig] = useState({
@@ -38,7 +39,8 @@ export default function SystemSettings({ addNotification }) {
               port: data.radius_port || '5432',
               dbUser: data.radius_user || 'radius',
               dbPass: data.radius_pass || 'radpass',
-              secret: data.radius_secret || 'testing123'
+              secret: data.radius_secret || 'testing123',
+              staleTimeout: data.stale_session_timeout_minutes || '15'
             });
           }
           if (data.mikrotik_host) {
@@ -66,6 +68,7 @@ export default function SystemSettings({ addNotification }) {
       radius_user: radiusConfig.dbUser,
       radius_pass: radiusConfig.dbPass,
       radius_secret: radiusConfig.secret,
+      stale_session_timeout_minutes: radiusConfig.staleTimeout,
       
       mikrotik_host: mikrotikConfig.host,
       mikrotik_port: mikrotikConfig.port,
@@ -219,6 +222,20 @@ export default function SystemSettings({ addNotification }) {
                       className="w-full px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
                     />
                     <p className="text-[11px] text-on-surface-variant">Shared secret yang dikonfigurasi di clients.conf</p>
+                  </div>
+                  
+                  <div className="space-y-1.5 md:col-span-2 border-t border-surface-variant pt-4 mt-2">
+                    <label className="text-[13px] font-semibold text-on-surface">Pembersihan Sesi Otomatis (Stale Session Timeout)</label>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="number" 
+                        value={radiusConfig.staleTimeout}
+                        onChange={(e) => setRadiusConfig({...radiusConfig, staleTimeout: e.target.value})}
+                        className="w-24 px-4 py-2 bg-surface-container-low border border-surface-variant rounded-lg font-mono text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors"
+                      />
+                      <span className="text-[13px] text-on-surface-variant">Menit</span>
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant">Durasi tunggu sebelum sistem memutus otomatis sesi yang menggantung tanpa adanya laporan (Interim-Update) dari Mikrotik. Set 0 untuk menonaktifkan.</p>
                   </div>
                 </div>
 

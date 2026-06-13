@@ -11,6 +11,7 @@ const { connectRedis }     = require('./db/redis');
 const { testConnection }   = require('./db/pool');
 const { errorHandler }     = require('./middleware/errorHandler');
 const { startExpireJob }   = require('./jobs/expireVouchers');
+const { startStaleSessionJob } = require('./jobs/cleanupStaleSessions');
 
 // Routes
 const packagesRouter    = require('./routes/packages');
@@ -94,6 +95,7 @@ async function bootstrap() {
 
     // 3. Start cron jobs
     startExpireJob();
+    startStaleSessionJob();
 
     // 4. Start HTTP server
     app.listen(PORT, () => {
