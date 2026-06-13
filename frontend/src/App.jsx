@@ -8,6 +8,7 @@ import BrowserSessions from './components/BrowserSessions';
 import RouterList from './components/RouterList';
 import MonitoringIsolir from './components/MonitoringIsolir';
 import SystemSettings from './components/SystemSettings';
+import ReportDashboard from './components/ReportDashboard';
 
 // ─── localStorage helpers ───────────────────────────────────────────────────
 function loadState(key, fallbackFn) {
@@ -582,6 +583,7 @@ export default function App() {
     { id: 'sessions', name: 'Status Sesi', icon: 'sensors', section: 'member' },
     { id: 'routers', name: 'Daftar Router Rumah', icon: 'router', section: 'pppoe' },
     { id: 'monitoring', name: 'Monitoring & Isolir', icon: 'analytics', section: 'pppoe' },
+    { id: 'reports', name: 'Laporan', icon: 'bar_chart', section: 'pppoe' },
     { id: 'settings', name: 'Pengaturan Sistem', icon: 'settings', section: 'pppoe' },
   ];
 
@@ -604,6 +606,7 @@ export default function App() {
       case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} fetchMembers={fetchMembers} vouchers={vouchers} routers={routers} {...commonProps} />;
       case 'routers':    return <RouterList routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} packages={packages} {...commonProps} />;
       case 'monitoring': return <MonitoringIsolir routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} {...commonProps} />;
+      case 'reports':    return <ReportDashboard {...commonProps} />;
       case 'settings':   return <SystemSettings {...commonProps} />;
       default:           return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} fetchRadiusLogs={fetchRadiusLogs} {...commonProps} />;
     }

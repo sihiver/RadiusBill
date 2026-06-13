@@ -83,6 +83,12 @@ router.post('/', asyncHandler(async (req, res) => {
         radius.buildGroupName(pkg),
         { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
       );
+
+      // Log transaction for router registration
+      await db.query(`
+        INSERT INTO transactions (type, reference_id, amount, description)
+        VALUES ('pppoe', $1, $2, $3)
+      `, [rtr.pppoe_user, pkg.price, `Pendaftaran router PPPoE ${rtr.customer_name} paket ${pkg.name}`]);
     }
   }
 
@@ -182,6 +188,22 @@ router.post('/:id/unisolir', asyncHandler(async (req, res) => {
 
   await cacheDelPattern('routers:*');
   res.json({ success: true, message: `Isolir router "${rtr.customer_name}" dilepas` });
+}));
+
+// POST /api/routers/:id/pay — Bayar tagihan bulanan
+router.post('/:id/pay', asyncHandler(async (req, res) => {
+  const rtrRes = await db.query('SELECT r.*, p.price, p.name as pkg_name FROM routers r LEFT JOIN packages p ON p.id = r.package_id WHERE r.id = $1', [req.params.id]);
+  if (!rtrRes.rows[0]) throw createError(404, 'Router tidak ditemukan');
+  const rtr = rtrRes.rows[0];
+
+  const amount = rtr.price || 0;
+  
+  await db.query(`
+    INSERT INTO transactions (type, reference_id, amount, description)
+    VALUES ('pppoe', $1, $2, $3)
+  `, [rtr.pppoe_user, amount, `Pembayaran tagihan router PPPoE ${rtr.customer_name} paket ${rtr.pkg_name}`]);
+
+  res.json({ success: true, message: `Pembayaran tagihan router "${rtr.customer_name}" berhasil dicatat` });
 }));
 
 // DELETE /api/routers/:id

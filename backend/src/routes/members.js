@@ -136,6 +136,12 @@ router.post('/', asyncHandler(async (req, res) => {
         radius.buildGroupName(pkg),
         { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
       );
+
+      // Log transaction for member registration
+      await db.query(`
+        INSERT INTO transactions (type, reference_id, amount, description)
+        VALUES ('member', $1, $2, $3)
+      `, [member.username, pkg.price, `Pendaftaran member ${member.username} paket ${pkg.name}`]);
     }
   } else {
     await radius.syncUserToRadius(member.username, member.password, 'hotspot-member');
@@ -205,12 +211,19 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
   if (result.rows[0].package_id) {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [result.rows[0].package_id]);
     if (pkgRes.rows[0]) {
+      const pkg = pkgRes.rows[0];
       await radius.syncUserToRadius(
         result.rows[0].username, 
         result.rows[0].password,
-        radius.buildGroupName(pkgRes.rows[0]),
-        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkgRes.rows[0]) }
+        radius.buildGroupName(pkg),
+        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
       );
+
+      // Log transaction for member extension
+      await db.query(`
+        INSERT INTO transactions (type, reference_id, amount, description)
+        VALUES ('member', $1, $2, $3)
+      `, [result.rows[0].username, pkg.price, `Perpanjangan member ${result.rows[0].username} paket ${pkg.name} (${days} hari)`]);
     }
   } else {
     await radius.syncUserToRadius(result.rows[0].username, result.rows[0].password, 'hotspot-member', {});

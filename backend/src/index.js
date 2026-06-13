@@ -22,6 +22,7 @@ const routersRouter     = require('./routes/routers');
 const radiusRouter      = require('./routes/radius');
 const dashboardRouter   = require('./routes/dashboard');
 const settingsRouter    = require('./routes/settings');
+const reportsRouter     = require('./routes/reports');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -73,6 +74,7 @@ app.use('/api/routers',      routersRouter);
 app.use('/api/radius',       radiusRouter);
 app.use('/api/dashboard',    dashboardRouter);
 app.use('/api/settings',     settingsRouter);
+app.use('/api/reports',      reportsRouter);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
