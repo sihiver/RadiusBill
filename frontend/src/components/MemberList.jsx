@@ -255,11 +255,10 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
                     <td className="p-4">
                       {(() => {
                         if (!m.expiryDate) return <span className="text-on-surface-variant text-[11px]">-</span>;
-                        const today = new Date();
-                        today.setHours(0,0,0,0);
+                        const now = new Date();
                         const exp = new Date(m.expiryDate);
-                        const isExpired = exp < today;
-                        const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+                        const isExpired = exp < now;
+                        const diffDays = Math.max(0, Math.ceil((exp - now) / (1000 * 60 * 60 * 24)));
                         return (
                           <div>
                             <div className={`text-[12px] font-bold ${isExpired ? 'text-error' : 'text-green-600'}`}>

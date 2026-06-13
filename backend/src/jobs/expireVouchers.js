@@ -117,11 +117,18 @@ async function runExpireMembers() {
   try {
     await client.query('BEGIN');
     
-    // Find expired members OR members that are not active
+    // Find expired members OR members that are not active,
+    // AND who are not already rejected in FreeRADIUS.
     const expiredRes = await client.query(`
       SELECT m.id, m.username, m.name, m.active_session
       FROM members m
       WHERE (m.expiry_date <= NOW() OR m.is_active = FALSE)
+      AND NOT EXISTS (
+        SELECT 1 FROM radcheck rc 
+        WHERE rc.username = m.username 
+        AND rc.attribute = 'Auth-Type' 
+        AND rc.value = 'Reject'
+      )
       FOR UPDATE SKIP LOCKED
     `);
 
@@ -157,8 +164,8 @@ async function runExpireMembers() {
         // Ensure rejected in FreeRADIUS
         await radius.rejectUserWithReason(m.username, rejectMsg);
         
-        // Also ensure is_active is false in DB to avoid confusion
-        await client.query('UPDATE members SET is_active = FALSE WHERE id = $1', [m.id]);
+        // Removed: We do NOT set is_active = FALSE here because is_active = FALSE means soft-deleted,
+        // which makes the member disappear from the list. The member is naturally expired based on expiry_date.
         
         processedCount++;
       } catch (err) {
