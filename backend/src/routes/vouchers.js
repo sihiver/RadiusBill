@@ -41,7 +41,8 @@ router.get('/', asyncHandler(async (req, res) => {
   const [dataRes, countRes] = await Promise.all([
     db.query(`
       SELECT v.*, p.speed_upload, p.speed_download, p.duration, p.validity,
-             (SELECT acctstarttime FROM radacct WHERE username = v.code AND acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 1) as session_start
+             (SELECT acctstarttime FROM radacct WHERE username = v.code AND acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 1) as session_start,
+             (SELECT acctsessiontime FROM radacct WHERE username = v.code AND acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 1) as current_session_time
       FROM vouchers v
       LEFT JOIN packages p ON p.id = v.package_id
       ${where}

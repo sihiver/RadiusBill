@@ -240,7 +240,10 @@ export default function App() {
           if (v.status === 'Active') {
              const quota = v.quota_seconds || 0;
              if (quota > 0) {
-                 const rem = Math.max(0, quota - (v.used_seconds || 0));
+                 const currSessTime = v.current_session_time || 0;
+                 const prevUsed = Math.max(0, (v.used_seconds || 0) - currSessTime);
+                 const rem = Math.max(0, quota - prevUsed);
+                 
                  if (v.session_start) {
                      // Online!
                      uiExpiresAt = new Date(v.session_start).getTime() + rem * 1000;
@@ -248,10 +251,11 @@ export default function App() {
                      timeLeftStr = ''; 
                  } else {
                      // Offline!
-                     if (rem <= 0) finalStatus = 'Expired';
-                     const h = String(Math.floor(rem / 3600)).padStart(2, '0');
-                     const m = String(Math.floor((rem % 3600) / 60)).padStart(2, '0');
-                     const s = String(rem % 60).padStart(2, '0');
+                     const offlineRem = Math.max(0, quota - (v.used_seconds || 0));
+                     if (offlineRem <= 0) finalStatus = 'Expired';
+                     const h = String(Math.floor(offlineRem / 3600)).padStart(2, '0');
+                     const m = String(Math.floor((offlineRem % 3600) / 60)).padStart(2, '0');
+                     const s = String(offlineRem % 60).padStart(2, '0');
                      timeLeftStr = `${h}:${m}:${s}`;
                  }
              } else if (v.expires_at) {
