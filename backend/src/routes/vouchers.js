@@ -258,18 +258,6 @@ router.put('/:id', asyncHandler(async (req, res) => {
   res.json({ success: true, data: result.rows[0], message: 'Voucher diperbarui' });
 }));
 
-// ── DELETE /api/vouchers/:id ─────────────────────────────────────────────────
-router.delete('/:id', asyncHandler(async (req, res) => {
-  const vRes = await db.query('SELECT * FROM vouchers WHERE id = $1', [req.params.id]);
-  if (!vRes.rows[0]) throw createError(404, 'Voucher tidak ditemukan');
-
-  await db.query('DELETE FROM vouchers WHERE id = $1', [req.params.id]);
-  await radius.removeUserFromRadius(vRes.rows[0].code);
-  await cacheDelPattern('vouchers:*');
-  await cacheDelPattern('stats:*');
-  res.json({ success: true, message: `Voucher ${vRes.rows[0].code} dihapus` });
-}));
-
 // ── DELETE /api/vouchers/bulk — Bulk delete ───────────────────────────────────
 router.delete('/bulk', asyncHandler(async (req, res) => {
   const { ids } = req.body;
@@ -283,6 +271,18 @@ router.delete('/bulk', asyncHandler(async (req, res) => {
   await cacheDelPattern('vouchers:*');
   await cacheDelPattern('stats:*');
   res.json({ success: true, message: `${vRes.rows.length} voucher dihapus` });
+}));
+
+// ── DELETE /api/vouchers/:id ─────────────────────────────────────────────────
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const vRes = await db.query('SELECT * FROM vouchers WHERE id = $1', [req.params.id]);
+  if (!vRes.rows[0]) throw createError(404, 'Voucher tidak ditemukan');
+
+  await db.query('DELETE FROM vouchers WHERE id = $1', [req.params.id]);
+  await radius.removeUserFromRadius(vRes.rows[0].code);
+  await cacheDelPattern('vouchers:*');
+  await cacheDelPattern('stats:*');
+  res.json({ success: true, message: `Voucher ${vRes.rows[0].code} dihapus` });
 }));
 
 // ── POST /api/vouchers/:id/disconnect — Force disconnect / kick ───────────────

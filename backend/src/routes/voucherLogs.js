@@ -60,13 +60,6 @@ router.get('/', asyncHandler(async (req, res) => {
   });
 }));
 
-// ── GET /api/voucher-logs/:id ─────────────────────────────────────────────────
-router.get('/:id', asyncHandler(async (req, res) => {
-  const result = await db.query('SELECT * FROM voucher_logs WHERE id = $1', [req.params.id]);
-  if (!result.rows[0]) throw createError(404, 'Log voucher tidak ditemukan');
-  res.json({ success: true, data: result.rows[0] });
-}));
-
 // ── GET /api/voucher-logs/summary — Statistics of expired vouchers ─────────────
 router.get('/summary/stats', asyncHandler(async (req, res) => {
   const result = await db.query(`
@@ -87,11 +80,11 @@ router.get('/summary/stats', asyncHandler(async (req, res) => {
   res.json({ success: true, data: result.rows });
 }));
 
-// ── DELETE /api/voucher-logs/:id — Delete log entry ─────────────────────────
-router.delete('/:id', asyncHandler(async (req, res) => {
-  const result = await db.query('DELETE FROM voucher_logs WHERE id = $1 RETURNING *', [req.params.id]);
-  if (!result.rows[0]) throw createError(404, 'Log tidak ditemukan');
-  res.json({ success: true, message: 'Log voucher dihapus' });
+// ── GET /api/voucher-logs/:id ─────────────────────────────────────────────────
+router.get('/:id', asyncHandler(async (req, res) => {
+  const result = await db.query('SELECT * FROM voucher_logs WHERE id = $1', [req.params.id]);
+  if (!result.rows[0]) throw createError(404, 'Log voucher tidak ditemukan');
+  res.json({ success: true, data: result.rows[0] });
 }));
 
 // ── DELETE /api/voucher-logs/bulk — Bulk delete logs ─────────────────────────
@@ -106,6 +99,13 @@ router.delete('/bulk/delete', asyncHandler(async (req, res) => {
 router.delete('/clear/all', asyncHandler(async (req, res) => {
   const result = await db.query('DELETE FROM voucher_logs RETURNING id');
   res.json({ success: true, message: `${result.rows.length} log voucher hangus dihapus semua` });
+}));
+
+// ── DELETE /api/voucher-logs/:id — Delete log entry ─────────────────────────
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const result = await db.query('DELETE FROM voucher_logs WHERE id = $1 RETURNING *', [req.params.id]);
+  if (!result.rows[0]) throw createError(404, 'Log tidak ditemukan');
+  res.json({ success: true, message: 'Log voucher dihapus' });
 }));
 
 module.exports = router;
