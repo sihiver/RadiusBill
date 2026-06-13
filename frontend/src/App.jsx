@@ -563,7 +563,7 @@ export default function App() {
       case 'generator':  return <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />;
       case 'log':        return <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} {...commonProps} />;
       case 'members':    return <MemberList members={members} setMembers={setMembers} fetchMembers={fetchMembers} packages={packages} {...commonProps} />;
-      case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} fetchMembers={fetchMembers} {...commonProps} />;
+      case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} fetchMembers={fetchMembers} vouchers={vouchers} routers={routers} {...commonProps} />;
       case 'routers':    return <RouterList routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} packages={packages} {...commonProps} />;
       case 'monitoring': return <MonitoringIsolir routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} {...commonProps} />;
       case 'settings':   return <SystemSettings {...commonProps} />;

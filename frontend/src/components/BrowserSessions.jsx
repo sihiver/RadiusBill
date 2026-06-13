@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function BrowserSessions({ members, setMembers, fetchMembers, addSystemLog }) {
+export default function BrowserSessions({ members, setMembers, fetchMembers, vouchers, routers, addSystemLog }) {
   const [search, setSearch] = useState('');
   const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,13 +33,33 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, add
         if (json.success) {
           const mapped = json.data.map(s => {
             const member = members.find(m => m.username === s.username);
+            const voucher = vouchers?.find(v => v.code === s.username);
+            const router = routers?.find(r => r.pppoeUser === s.username);
+
+            let name = s.username;
+            let pkg = '-';
+
+            if (member) {
+              name = member.name;
+              pkg = member.package;
+            } else if (voucher) {
+              name = `Voucher: ${voucher.code}`;
+              pkg = voucher.package;
+            } else if (router) {
+              name = router.customerName;
+              pkg = router.package;
+            } else {
+              name = s.username.startsWith('RW-') ? 'Voucher Guest' : 'Pelanggan PPPoE';
+              pkg = s.username.startsWith('RW-') ? 'Voucher' : 'PPPoE';
+            }
+
             return {
               id: s.radacctid,
-              name: member ? member.name : (s.username.startsWith('RW-') ? 'Voucher Guest' : 'Pelanggan PPPoE'),
+              name,
               username: s.username,
               ipAddress: s.ip_address,
               macAddress: s.mac_address || '-',
-              package: member ? member.package : (s.username.startsWith('RW-') ? 'Voucher' : 'PPPoE'),
+              package: pkg,
               startedAt: s.started_at,
               inputOctets: s.input_octets,
               outputOctets: s.output_octets,
