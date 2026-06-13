@@ -1,0 +1,46 @@
+# PANDUAN CUSTOM REPLY-MESSAGE UNTUK MAC BINDING
+# File ini berisi script yang perlu Anda pasang secara manual ke dalam sistem operasi.
+# Karena file FreeRADIUS merupakan file sistem (root/sudo), saya tidak bisa mengubahnya langsung.
+
+# =========================================================================
+# LOKASI FILE YANG HARUS DIUBAH:
+# /etc/freeradius/3.0/sites-enabled/default  (Atau tanpa 3.0 tergantung versi)
+# =========================================================================
+
+Langkah-langkah:
+1. Buka file konfigurasi utama FreeRADIUS menggunakan terminal:
+   sudo nano /etc/freeradius/3.0/sites-enabled/default
+   (Atau sudo nano /etc/freeradius/sites-enabled/default)
+
+2. Cari bagian `authorize {` (gunakan Ctrl+W lalu ketik `authorize {`)
+
+3. Scroll ke bawah di dalam blok authorize tersebut sampai Anda menemukan baris yang memanggil modul SQL:
+   `-sql`
+
+4. TEPAT DI BAWAH baris `-sql` tersebut, salin dan tempelkan blok script di bawah ini:
+
+        if (Calling-Station-Id) {
+            update control {
+                Tmp-String-0 := "%{sql: SELECT mac_address FROM vouchers WHERE code = '%{User-Name}' AND mac_binding = true}"
+            }
+            if (&control:Tmp-String-0 != '' && &control:Tmp-String-0 != "%{Calling-Station-Id}") {
+                update reply {
+                    Reply-Message := "Maaf, Voucher ini sudah terkunci di perangkat lain."
+                }
+                reject
+            }
+        }
+
+5. Simpan file (Ctrl+O, Enter) dan keluar (Ctrl+X).
+
+6. Restart service FreeRADIUS untuk menerapkan perubahan:
+   sudo systemctl restart freeradius
+
+# =========================================================================
+# PENJELASAN CARA KERJA:
+# Script di atas menggunakan bahasa 'unlang' milik FreeRADIUS.
+# Script akan memotong proses login jika mendeteksi MAC Binding aktif.
+# Jika MAC Address yang login ("Calling-Station-Id") tidak sama dengan 
+# MAC Address yang ada di database ("mac_address" di tabel vouchers), 
+# maka FreeRADIUS akan langsung mengirim pesan penolakan khusus dan membatalkan login.
+# =========================================================================

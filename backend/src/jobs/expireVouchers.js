@@ -82,7 +82,7 @@ async function runExpireVouchers() {
             }
           }
         }
-        await radius.removeUserFromRadius(v.code);
+        await radius.rejectUserWithReason(v.code, "Maaf, Voucher Anda telah Habis/Kedaluwarsa.");
       } catch (err) {
         console.error(`[ExpireJob] Failed to disconnect/remove ${v.code}:`, err.message);
       }

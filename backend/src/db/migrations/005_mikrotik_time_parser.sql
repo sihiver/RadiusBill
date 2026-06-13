@@ -59,13 +59,8 @@ BEGIN
         WHERE code = NEW.username;
 
         IF FOUND THEN
-            -- Enforce MAC Binding on First Login
-            IF v_mac_binding = TRUE AND (v_mac_address IS NULL OR v_mac_address = '') THEN
-                IF NOT EXISTS (SELECT 1 FROM radcheck WHERE username = NEW.username AND attribute = 'Calling-Station-Id') THEN
-                    INSERT INTO radcheck (username, attribute, op, value)
-                    VALUES (NEW.username, 'Calling-Station-Id', '==', NEW.callingstationid);
-                END IF;
-            END IF;
+            -- MAC Binding is handled by FreeRADIUS unlang script in sites-enabled/default.
+            -- The trigger only updates vouchers.mac_address below on first login.
 
             -- Handle Activation
             IF v_status = 'Unused' THEN

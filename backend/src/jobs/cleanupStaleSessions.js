@@ -46,6 +46,27 @@ async function runCleanupStaleSessions() {
       RETURNING r.radacctid, r.username
     `, [timeoutMinutes]);
 
+    // Cleanup expired radius messages older than 7 days
+    await client.query(`
+      WITH old_logs AS (
+        SELECT code FROM voucher_logs
+        WHERE moved_at < NOW() - INTERVAL '7 days'
+      )
+      DELETE FROM radcheck r
+      USING old_logs o
+      WHERE r.username = o.code AND r.attribute = 'Auth-Type' AND r.value = 'Reject';
+    `);
+
+    await client.query(`
+      WITH old_logs AS (
+        SELECT code FROM voucher_logs
+        WHERE moved_at < NOW() - INTERVAL '7 days'
+      )
+      DELETE FROM radreply r
+      USING old_logs o
+      WHERE r.username = o.code AND r.attribute = 'Reply-Message';
+    `);
+
     await client.query('COMMIT');
 
     if (res.rowCount > 0) {

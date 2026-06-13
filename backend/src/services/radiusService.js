@@ -113,6 +113,40 @@ async function isolirUser(username, reason = '') {
 }
 
 /**
+ * Reject a user completely with a custom message.
+ * Clears old settings and sets Auth-Type = Reject and Reply-Message.
+ */
+async function rejectUserWithReason(username, message) {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    // Clear old auth/reply attributes and groups
+    await client.query(`DELETE FROM radcheck     WHERE username = $1`, [username]);
+    await client.query(`DELETE FROM radreply     WHERE username = $1`, [username]);
+    await client.query(`DELETE FROM radusergroup WHERE username = $1`, [username]);
+    
+    // Set Reject & Custom Message
+    await client.query(`
+      INSERT INTO radcheck (username, attribute, op, value)
+      VALUES ($1, 'Auth-Type', ':=', 'Reject')
+    `, [username]);
+    
+    await client.query(`
+      INSERT INTO radreply (username, attribute, op, value)
+      VALUES ($1, 'Reply-Message', ':=', $2)
+    `, [username, message]);
+
+    await client.query('COMMIT');
+    return true;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Remove isolir: delete Auth-Type = Reject from radcheck.
  */
 async function unisolirUser(username) {
@@ -248,6 +282,7 @@ async function sendDisconnectRequest(username, nasIp, sessionId, framedIp) {
 module.exports = {
   syncUserToRadius,
   removeUserFromRadius,
+  rejectUserWithReason,
   isolirUser,
   unisolirUser,
   getActiveSessions,
