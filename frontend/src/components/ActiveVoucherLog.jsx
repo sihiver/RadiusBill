@@ -623,20 +623,27 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
                       {v.usedBytes}
                     </td>
                     
-                    {/* Time Left */}
-                    <td className="p-4 font-mono font-semibold">
-                      {v.expiresAt !== undefined ? (() => {
-                        const remaining = v.expiresAt - Date.now();
-                        const expired = remaining <= 0 && v.status === 'Active';
-                        return (
-                          <span className={expired ? 'text-error font-bold' : v.status === 'Active' ? 'text-primary' : 'text-on-surface-variant'}>
-                            {formatCountdown(remaining)}
+                    {/* Time Left & Valid Until */}
+                    <td className="p-4">
+                      <div className="font-mono font-semibold">
+                        {v.expiresAt !== undefined ? (() => {
+                          const remaining = v.expiresAt - Date.now();
+                          const expired = remaining <= 0 && v.status === 'Active';
+                          return (
+                            <span className={expired ? 'text-error font-bold' : v.status === 'Active' ? 'text-primary' : 'text-on-surface-variant'}>
+                              {formatCountdown(remaining)}
+                            </span>
+                          );
+                        })() : (
+                          <span className={v.status === 'Active' ? 'text-primary' : 'text-on-surface-variant'}>
+                            {v.timeLeft}
                           </span>
-                        );
-                      })() : (
-                        <span className={v.status === 'Active' ? 'text-primary' : 'text-on-surface-variant'}>
-                          {v.timeLeft}
-                        </span>
+                        )}
+                      </div>
+                      {v.validUntil && v.validUntil !== '-' && (
+                        <div className="text-[10px] text-on-surface-variant mt-1">
+                          Aktif s/d: <br/>{v.validUntil}
+                        </div>
                       )}
                     </td>
                     

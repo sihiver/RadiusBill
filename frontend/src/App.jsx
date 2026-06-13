@@ -269,6 +269,7 @@ export default function App() {
             usedBytes: formatBytes(v.used_bytes),
             timeLeft: timeLeftStr,
             expiresAt: uiExpiresAt,
+            validUntil: v.expires_at ? new Date(v.expires_at).toLocaleString('id-ID') : '-',
           };
         });
         combined = [...combined, ...mappedVouchers];
