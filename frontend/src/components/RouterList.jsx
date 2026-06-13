@@ -17,6 +17,45 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
   // Search filter
   const [search, setSearch] = useState('');
 
+  const handleToggleIsolir = (router) => {
+    const isNowIsolated = router.status !== 'Isolated';
+    const action = isNowIsolated ? 'isolir' : 'unisolir';
+    
+    requestConfirm({
+      title: isNowIsolated ? 'Isolasi Router PPPoE' : 'Buka Isolasi Router PPPoE',
+      message: isNowIsolated 
+        ? `Apakah Anda yakin ingin memblokir akses internet untuk pelanggan "${router.customerName}" (@${router.pppoeUser})?`
+        : `Apakah Anda yakin ingin memulihkan akses internet untuk pelanggan "${router.customerName}" (@${router.pppoeUser})?`,
+      confirmText: isNowIsolated ? 'Ya, Isolir' : 'Ya, Buka Isolir',
+      cancelText: 'Batal',
+      variant: isNowIsolated ? 'danger' : 'success',
+      onConfirm: () => {
+        fetch(`/api/routers/${router.id}/${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: 'Tunggakan tagihan' })
+        })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            if(addNotification) addNotification(json.message, 'success');
+            if (isNowIsolated) {
+              addSystemLog('REJECT', `Isolir Aktif: Akun PPPoE @${router.pppoeUser} diblokir (Tunggakan Tagihan)`, 'REJECT-BILL', router.routerIp);
+            } else {
+              addSystemLog('AUTH', `Isolir Dimatikan: Akun PPPoE @${router.pppoeUser} kembali diaktifkan`, router.routerIp, 'PPPoE');
+            }
+            fetchRouters();
+          } else {
+            if(addNotification) addNotification(`Gagal mengubah status isolir: ${json.message}`, 'error');
+          }
+        })
+        .catch(err => {
+          if(addNotification) addNotification(`Gagal mengubah status isolir: ${err.message}`, 'error');
+        });
+      }
+    });
+  };
+
   const pppoePackages = packages.filter(p => p.type === 'PPPoE');
 
   const openAddModal = () => {
@@ -171,19 +210,21 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                 <th className="p-4">Router IP Address</th>
                 <th className="p-4">Paket Langganan</th>
                 <th className="p-4">Status Koneksi</th>
+                <th className="p-4 text-center">Isolir</th>
                 <th className="p-4 text-center">Tindakan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
               {filteredRouters.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-on-surface-variant italic">
+                  <td colSpan="7" className="p-8 text-center text-on-surface-variant italic">
                     Tidak ada router PPPoE ditemukan.
                   </td>
                 </tr>
               ) : (
-                filteredRouters.map((r) => (
-                  <tr key={r.id} className="hover:bg-surface-container-lowest/50 transition-colors">
+                filteredRouters.map((r) => {
+                  return (
+                  <tr key={r.id} className={`hover:bg-surface-container-lowest/50 transition-colors ${r.status === 'Isolated' ? 'bg-red-50/30' : ''}`}>
                     {/* Customer Name */}
                     <td className="p-4 font-bold text-on-surface text-[14px]">
                       {r.customerName}
@@ -224,6 +265,21 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                       </div>
                     </td>
 
+                    {/* Isolir Toggle Switch */}
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center">
+                        <label className="relative inline-flex items-center cursor-pointer" title={r.status === 'Isolated' ? 'Buka Isolir' : 'Isolir'}>
+                          <input 
+                            type="checkbox" 
+                            checked={r.status === 'Isolated'}
+                            onChange={() => handleToggleIsolir(r)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-surface-container rounded-full peer peer-focus:ring-2 peer-focus:ring-error/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-error"></div>
+                        </label>
+                      </div>
+                    </td>
+
                     {/* Actions */}
                     <td className="p-4 text-center">
                       <div className="flex justify-center gap-1.5">
@@ -244,7 +300,8 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

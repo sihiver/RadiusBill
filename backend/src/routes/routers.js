@@ -59,6 +59,20 @@ router.get('/:id', asyncHandler(async (req, res) => {
   res.json({ success: true, data: result.rows[0] });
 }));
 
+// GET /api/routers/traffic
+router.get('/traffic', asyncHandler(async (req, res) => {
+  const usersStr = req.query.users;
+  if (!usersStr) {
+    return res.json({ success: true, data: {} });
+  }
+
+  const pppoeUsers = usersStr.split(',');
+  const { getTrafficForPPPoE } = require('../services/mikrotikService');
+  
+  const trafficData = await getTrafficForPPPoE(pppoeUsers);
+  res.json({ success: true, data: trafficData });
+}));
+
 // POST /api/routers
 router.post('/', asyncHandler(async (req, res) => {
   const { error, value } = routerSchema.validate(req.body);
