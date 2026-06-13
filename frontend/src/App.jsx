@@ -327,6 +327,8 @@ export default function App() {
           expiryDate: m.expiry_date ? m.expiry_date.split('T')[0] : '',
           activeSession: m.active_session,
           ipAddress: m.ip_address || '-',
+          macBinding: m.mac_binding,
+          macAddress: m.mac_address || '',
           sessionStartedAt: m.session_start ? new Date(m.session_start).getTime() : undefined
         }));
         setMembers(mapped);

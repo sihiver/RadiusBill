@@ -121,7 +121,7 @@ router.post('/', asyncHandler(async (req, res) => {
     RETURNING *
   `, [value.name, value.username, value.password, value.phone, value.email,
       value.package_id, value.package_name, value.mac_binding,
-      value.mac_binding ? value.mac_address : null,
+      value.mac_binding ? (value.mac_address || null) : null,
       value.balance, expiryDate, value.is_active]);
 
   const member = result.rows[0];
@@ -151,16 +151,6 @@ router.put('/:id', asyncHandler(async (req, res) => {
   if (error) throw error;
 
   let expiryDate = value.expiry_date;
-  if (!expiryDate && value.package_id) {
-    // If no explicit expiry provided but package changed, we could auto-calculate.
-    // However, usually PUT preserves expiry unless explicitly changed or null.
-    // If it's explicitly null in the request, we calculate it from package.
-    const pkgRes = await db.query('SELECT validity FROM packages WHERE id = $1', [value.package_id]);
-    if (pkgRes.rows[0] && pkgRes.rows[0].validity) {
-      const expRes = await db.query(`SELECT NOW() + parse_mikrotik_time($1) AS exp`, [pkgRes.rows[0].validity]);
-      expiryDate = expRes.rows[0].exp;
-    }
-  }
 
   const result = await db.query(`
     UPDATE members
@@ -171,7 +161,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     RETURNING *
   `, [value.name, value.username, value.password, value.phone, value.email,
       value.package_id, value.package_name, value.mac_binding,
-      value.mac_binding ? value.mac_address : null,
+      value.mac_binding ? (value.mac_address || null) : null,
       value.balance, expiryDate, value.is_active, req.params.id]);
 
   if (!result.rows[0]) throw createError(404, 'Member tidak ditemukan');
