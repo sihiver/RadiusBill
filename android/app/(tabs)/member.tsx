@@ -305,7 +305,7 @@ export default function MemberScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.pageTitle, { color: colors.text }]}>Manajemen Member</Text>
+
       <View style={styles.searchContainer}>
         <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
           <Text style={styles.addBtnText}>+ Tambah Member</Text>

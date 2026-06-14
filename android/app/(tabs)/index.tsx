@@ -105,7 +105,7 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.scrollContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={[styles.pageTitle, { color: colors.text }]}>Dashboard Utama</Text>
+
 
       <View style={styles.grid}>
         <View style={[styles.fullCard, { backgroundColor: colors.card }]}>

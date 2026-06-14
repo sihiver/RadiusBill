@@ -178,7 +178,7 @@ export default function VoucherScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.pageTitle, { color: colors.text }]}>Manajemen Voucher</Text>
+
       <FlatList
         data={filteredVouchers}
         keyExtractor={(item) => item.id.toString()}

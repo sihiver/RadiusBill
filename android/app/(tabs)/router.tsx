@@ -98,7 +98,7 @@ export default function RouterScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.pageTitle, { color: colors.text }]}>Router PPPoE</Text>
+
       <FlatList
         data={filteredRouters}
         keyExtractor={(item) => item.id.toString()}
