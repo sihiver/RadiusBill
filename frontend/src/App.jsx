@@ -350,10 +350,11 @@ export default function App() {
           customerName: r.customer_name,
           pppoeUser: r.pppoe_user,
           pppoePass: r.pppoe_pass,
-          routerIp: r.router_ip || '-',
+          routerIp: r.active_ip || '-',
           package: r.package_name || '-',
           status: r.status,
-          isolir: r.isolir
+          isolir: r.isolir,
+          expiry_date: r.expiry_date
         }));
         setRouters(mapped);
       }

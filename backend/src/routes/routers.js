@@ -38,7 +38,15 @@ router.get('/', asyncHandler(async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const result = await db.query(`
-    SELECT r.*, p.speed_upload, p.speed_download, p.duration
+    SELECT r.*, 
+           COALESCE(r.router_ip::text, (
+             SELECT framedipaddress::text 
+             FROM radacct 
+             WHERE username = r.pppoe_user 
+               AND acctstoptime IS NULL 
+             ORDER BY acctstarttime DESC LIMIT 1
+           )) as active_ip,
+           p.speed_upload, p.speed_download, p.duration
     FROM routers r
     LEFT JOIN packages p ON p.id = r.package_id
     ${where}
@@ -51,7 +59,15 @@ router.get('/', asyncHandler(async (req, res) => {
 // GET /api/routers/:id
 router.get('/:id', asyncHandler(async (req, res) => {
   const result = await db.query(`
-    SELECT r.*, p.speed_upload, p.speed_download
+    SELECT r.*, 
+           COALESCE(r.router_ip::text, (
+             SELECT framedipaddress::text 
+             FROM radacct 
+             WHERE username = r.pppoe_user 
+               AND acctstoptime IS NULL 
+             ORDER BY acctstarttime DESC LIMIT 1
+           )) as active_ip,
+           p.speed_upload, p.speed_download
     FROM routers r
     LEFT JOIN packages p ON p.id = r.package_id
     WHERE r.id = $1

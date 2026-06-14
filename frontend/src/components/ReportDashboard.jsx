@@ -5,6 +5,10 @@ const ReportDashboard = ({ addNotification }) => {
   const [revenueData, setRevenueData] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Month filter state (defaults to current YYYY-MM)
+  const currentMonthStr = new Date().toISOString().slice(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
+  
   // Pagination state for revenue table
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
@@ -12,9 +16,10 @@ const ReportDashboard = ({ addNotification }) => {
   const fetchReports = async () => {
     setLoading(true);
     try {
+      const qs = selectedMonth ? `?month=${selectedMonth}` : '';
       const [sumRes, revRes] = await Promise.all([
-        fetch('/api/reports/summary').then(r => r.json()),
-        fetch('/api/reports/revenue').then(r => r.json())
+        fetch(`/api/reports/summary${qs}`).then(r => r.json()),
+        fetch(`/api/reports/revenue${qs}`).then(r => r.json())
       ]);
 
       if (sumRes.success) setSummary(sumRes.data);
@@ -31,7 +36,7 @@ const ReportDashboard = ({ addNotification }) => {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [selectedMonth]);
 
   if (loading) {
     return (
@@ -64,12 +69,23 @@ const ReportDashboard = ({ addNotification }) => {
     <div className="flex-1 flex flex-col h-full bg-surface-container-lowest overflow-y-auto">
       <div className="p-4 sm:p-8 max-w-6xl mx-auto w-full space-y-6">
         
-        {/* Header */}
-        <div>
-          <h1 className="text-display-sm font-bold text-on-surface">Laporan Keuangan</h1>
-          <p className="text-body-lg text-on-surface-variant mt-2">
-            Ringkasan pendapatan dari penjualan voucher, member, dan router PPPoE.
-          </p>
+        {/* Header with Filter */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-display-sm font-bold text-on-surface">Laporan Keuangan</h1>
+            <p className="text-body-lg text-on-surface-variant mt-2">
+              Ringkasan pendapatan dari penjualan voucher, member, dan router PPPoE.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-label-md font-semibold text-on-surface-variant">Pilih Bulan:</label>
+            <input 
+              type="month" 
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-2 border border-surface-variant rounded-lg bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -78,7 +94,7 @@ const ReportDashboard = ({ addNotification }) => {
             <div className="bg-primary-container/20 border border-primary/10 rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-2">
                 <span className="material-symbols-outlined text-primary">account_balance_wallet</span>
-                <h3 className="font-label-md text-on-surface-variant">Pendapatan Bulan Ini</h3>
+                <h3 className="font-label-md text-on-surface-variant">Pendapatan Bulan {selectedMonth}</h3>
               </div>
               <p className="text-display-sm font-bold text-primary">{formatCurrency(summary.revenue_this_month)}</p>
             </div>
@@ -116,7 +132,7 @@ const ReportDashboard = ({ addNotification }) => {
           <div className="p-4 sm:p-6 border-b border-surface-variant flex items-center justify-between">
             <h2 className="text-title-lg font-semibold text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined">receipt_long</span>
-              Riwayat Pendapatan Harian (30 Hari Terakhir)
+              Riwayat Pendapatan Harian ({selectedMonth === currentMonthStr ? '30 Hari Terakhir' : `Bulan ${selectedMonth}`})
             </h2>
             <button 
               onClick={fetchReports}
@@ -138,7 +154,7 @@ const ReportDashboard = ({ addNotification }) => {
               <tbody className="divide-y divide-surface-variant">
                 {revenueData.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="p-8 text-center text-outline">Belum ada transaksi dalam 30 hari terakhir.</td>
+                    <td colSpan="4" className="p-8 text-center text-outline">Belum ada transaksi di periode ini.</td>
                   </tr>
                 ) : (
                   currentRows.map((row, idx) => (
