@@ -708,7 +708,7 @@ export default function App() {
               </button>
               
               <div className={`overflow-hidden transition-all duration-300 ${expandedSections[section] ? 'max-h-[800px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
-                <ul className="space-y-1">
+                <ul className="space-y-1 ml-6 border-l border-slate-800/50 pl-2">
                   {tabs.filter(t => t.section === section).map(tab => (
                   <li key={tab.id}>
                     <button
