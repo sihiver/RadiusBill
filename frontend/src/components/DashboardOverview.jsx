@@ -108,12 +108,11 @@ export default function DashboardOverview({
       }
 
       const allAmt = hotspotAmt + pppoeAmt;
-      const formatM = (val) => (val / 1000000).toFixed(1);
       const formatLabel = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
-      result.all.push({ day: dayName, amt: formatM(allAmt), label: formatLabel(allAmt) });
-      result.hotspot.push({ day: dayName, amt: formatM(hotspotAmt), label: formatLabel(hotspotAmt) });
-      result.pppoe.push({ day: dayName, amt: formatM(pppoeAmt), label: formatLabel(pppoeAmt) });
+      result.all.push({ day: dayName, amt: allAmt, label: formatLabel(allAmt) });
+      result.hotspot.push({ day: dayName, amt: hotspotAmt, label: formatLabel(hotspotAmt) });
+      result.pppoe.push({ day: dayName, amt: pppoeAmt, label: formatLabel(pppoeAmt) });
     });
 
     return result;
@@ -123,8 +122,24 @@ export default function DashboardOverview({
   const activeChart = currentChartData[chartFilter];
 
   // Dynamic Y-axis maximum
-  const maxAmtInChart = Math.max(...activeChart.map(i => Number(i.amt)), 1); // Avoid div by 0
-  const maxAxisValue = Math.ceil(maxAmtInChart / 5) * 5 || 5; // Round up to nearest 5M (e.g. 5, 10, 15...)
+  const maxAmtInChart = Math.max(...activeChart.map(i => i.amt), 0);
+  
+  // Compute nice scale
+  let maxAxisValue = 100000; // default minimum scale 100k
+  if (maxAmtInChart > 0) {
+    const magnitude = Math.pow(10, Math.floor(Math.log10(maxAmtInChart)));
+    // If leading digit is small, snap to 4, 8 etc for cleaner 4-divisions
+    const leading = maxAmtInChart / magnitude;
+    let multiplier = Math.ceil(leading);
+    if (multiplier <= 2) multiplier = 2; // steps of 0.5
+    else if (multiplier <= 4) multiplier = 4; // steps of 1
+    else if (multiplier <= 8) multiplier = 8; // steps of 2
+    else multiplier = 10;
+    
+    maxAxisValue = multiplier * magnitude;
+  }
+  
+  const compactFormat = (val) => new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(val);
 
   return (
     <div className="w-full space-y-6">
@@ -300,11 +315,11 @@ export default function DashboardOverview({
             {/* Simulated Area Chart */}
             <div className="w-full h-full relative flex items-end justify-between px-2 pb-6 pt-10">
               {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-label-sm font-label-sm text-outline pr-2 pb-6">
-                <span>{maxAxisValue}M</span>
-                <span>{(maxAxisValue * 0.75).toFixed(1)}M</span>
-                <span>{(maxAxisValue * 0.5).toFixed(1)}M</span>
-                <span>{(maxAxisValue * 0.25).toFixed(1)}M</span>
+              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[10px] font-label-sm text-outline pr-2 pb-6">
+                <span>{compactFormat(maxAxisValue)}</span>
+                <span>{compactFormat(maxAxisValue * 0.75)}</span>
+                <span>{compactFormat(maxAxisValue * 0.5)}</span>
+                <span>{compactFormat(maxAxisValue * 0.25)}</span>
                 <span>0</span>
               </div>
               
@@ -315,11 +330,13 @@ export default function DashboardOverview({
                   return (
                     <div 
                       key={idx}
-                      className="w-10 bg-primary/20 rounded-t-lg relative group hover:bg-primary/40 transition-colors cursor-pointer border-t-2 border-primary flex justify-center"
+                      className="w-10 rounded-t-lg relative group cursor-pointer border-t-2 border-primary flex justify-center"
                       style={{ height: `${percentage}%` }}
                       onMouseEnter={() => setHoveredBar(idx)}
                       onMouseLeave={() => setHoveredBar(null)}
                     >
+                      {/* Background Bar (Opacity Fix) */}
+                      <div className="absolute inset-0 bg-primary opacity-20 group-hover:opacity-40 transition-opacity rounded-t-sm"></div>
                       {/* Tooltip */}
                       <div className={`absolute -top-10 bg-inverse-surface text-inverse-on-surface text-[10px] font-mono px-2 py-1 rounded shadow-lg transition-opacity duration-200 z-30 whitespace-nowrap ${
                         hoveredBar === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -328,8 +345,8 @@ export default function DashboardOverview({
                       </div>
                       
                       {/* Bar label for values */}
-                      <span className="text-[10px] font-semibold text-primary absolute -top-5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {item.amt}M
+                      <span className="text-[10px] font-semibold text-primary absolute -top-5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        {compactFormat(item.amt)}
                       </span>
                     </div>
                   );
