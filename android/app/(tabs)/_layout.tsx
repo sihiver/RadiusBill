@@ -42,6 +42,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="router"
+        options={{
+          title: 'PPPoE',
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{ ios: 'router', android: 'router', web: 'router' }}
+              tintColor={color}
+              size={28}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="member"
         options={{
           title: 'Member',
