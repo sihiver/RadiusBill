@@ -100,8 +100,11 @@ export default function DashboardScreen() {
   return (
     <ScrollView 
       style={styles.container}
+      contentContainerStyle={styles.scrollContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
+      <Text style={styles.pageTitle}>Dashboard Utama</Text>
+
       <View style={styles.grid}>
         <View style={styles.fullCard}>
           <Text style={styles.cardTitle}>Estimasi Pendapatan</Text>
@@ -162,7 +165,16 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 40,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 16,
   },
   grid: {
     flexDirection: 'row',

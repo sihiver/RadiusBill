@@ -4,13 +4,14 @@ import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 import { Picker } from '@react-native-picker/picker';
 import * as Print from 'expo-print';
+import { useSearch } from './_layout';
 
 export default function MemberScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [members, setMembers] = useState([]);
   const [packages, setPackages] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { searchQuery } = useSearch();
   
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -76,7 +77,7 @@ export default function MemberScreen() {
       const method = formData.id ? 'PUT' : 'POST';
       const endpoint = formData.id ? `/members/${formData.id}` : '/members';
       
-      const payload = { ...formData };
+      const payload: any = { ...formData };
       if (formData.id && !payload.password) {
         delete payload.password; // dont send empty password on update
       }
@@ -243,13 +244,8 @@ export default function MemberScreen() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.pageTitle}>Manajemen Member</Text>
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Cari nama, username, atau HP..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
         <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
           <Text style={styles.addBtnText}>+ Tambah Member</Text>
         </TouchableOpacity>
@@ -342,21 +338,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  searchContainer: {
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e293b',
     paddingHorizontal: 16,
     paddingTop: 16,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 8,
     backgroundColor: 'transparent',
-  },
-  searchInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    color: '#1e293b',
   },
   listContainer: {
     padding: 16,

@@ -3,12 +3,13 @@ import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput, Tou
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 import * as Print from 'expo-print';
+import { useSearch } from './_layout';
 
 export default function VoucherScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [vouchers, setVouchers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { searchQuery } = useSearch();
 
   const fetchVouchers = async () => {
     try {
@@ -120,19 +121,12 @@ export default function VoucherScreen() {
 
   const filteredVouchers = vouchers.filter((v: any) => 
     v.code?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    v.package?.toLowerCase().includes(searchQuery.toLowerCase())
+    v.package_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Cari kode voucher atau paket..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
+      <Text style={styles.pageTitle}>Manajemen Voucher</Text>
       <FlatList
         data={filteredVouchers}
         keyExtractor={(item) => item.id.toString()}
@@ -158,21 +152,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  searchContainer: {
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e293b',
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: 'transparent',
-  },
-  searchInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    color: '#1e293b',
   },
   listContainer: {
     padding: 16,

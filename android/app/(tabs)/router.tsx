@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
+import { useSearch } from './_layout';
 
 export default function RouterScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [routers, setRouters] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { searchQuery } = useSearch();
 
   const fetchRouters = async () => {
     try {
@@ -95,14 +96,7 @@ export default function RouterScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Cari nama pelanggan atau IP..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
+      <Text style={styles.pageTitle}>Router PPPoE</Text>
       <FlatList
         data={filteredRouters}
         keyExtractor={(item) => item.id.toString()}
@@ -128,21 +122,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  searchContainer: {
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e293b',
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: 'transparent',
-  },
-  searchInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    color: '#1e293b',
   },
   listContainer: {
     padding: 16,
