@@ -8,13 +8,13 @@ const { asyncHandler } = require('../middleware/errorHandler');
 router.get('/revenue', asyncHandler(async (req, res) => {
   const result = await db.query(`
     SELECT 
-      DATE_TRUNC('day', created_at) as date,
+      TO_CHAR(created_at, 'YYYY-MM-DD') as date,
       type,
       SUM(amount) as total_amount,
       COUNT(*) as transaction_count
     FROM transactions
     WHERE created_at >= NOW() - INTERVAL '30 days'
-    GROUP BY DATE_TRUNC('day', created_at), type
+    GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD'), type
     ORDER BY date DESC
   `);
 

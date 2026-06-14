@@ -123,7 +123,7 @@ const ReportDashboard = ({ addNotification }) => {
                   revenueData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-surface-container-lowest/50 transition-colors">
                       <td className="p-4 text-body-md text-on-surface">
-                        {new Date(row.date).toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {new Date(row.date + 'T12:00:00').toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
                       </td>
                       <td className="p-4">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${
