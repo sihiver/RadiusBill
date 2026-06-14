@@ -100,7 +100,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <FontAwesome name="arrow-left" size={20} color="#1e293b" />
@@ -108,7 +108,8 @@ export default function SettingsScreen() {
         <Text style={styles.pageTitle}>Pengaturan Printer</Text>
       </View>
 
-      <View style={styles.content}>
+      <View style={styles.container}>
+        <View style={styles.content}>
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <FontAwesome name="bluetooth-b" size={20} color="#3b82f6" />
@@ -156,10 +157,11 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.testBtn} onPress={testPrint} disabled={!connectedDevice && !!BluetoothManager}>
-          <Text style={styles.testBtnText}>Test Print</Text>
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.testBtn} onPress={testPrint} disabled={!connectedDevice && !!BluetoothManager}>
+            <Text style={styles.testBtnText}>Test Print</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
