@@ -1,20 +1,38 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, Image, TextInput } from 'react-native';
+import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
+import { Picker } from '@react-native-picker/picker';
 
 export default function MemberScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [members, setMembers] = useState([]);
+  const [packages, setPackages] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    id: null,
+    name: '',
+    username: '',
+    password: '',
+    phone: '',
+    package_id: '',
+  });
 
-  const fetchMembers = async () => {
+  const fetchData = async () => {
     try {
-      const response = await apiFetch('/members');
-      setMembers(response.data || []);
+      const [membersRes, packagesRes] = await Promise.all([
+        apiFetch('/members'),
+        apiFetch('/packages?type=Hotspot')
+      ]);
+      setMembers(membersRes.data || []);
+      setPackages(packagesRes.data || []);
     } catch (error) {
-      console.error('Failed to fetch members', error);
+      console.error('Failed to fetch data', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -22,12 +40,91 @@ export default function MemberScreen() {
   };
 
   useEffect(() => {
-    fetchMembers();
+    fetchData();
   }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchMembers();
+    fetchData();
+  };
+
+  const openAddModal = () => {
+    setFormData({ id: null, name: '', username: '', password: '', phone: '', package_id: '' });
+    setModalVisible(true);
+  };
+
+  const openEditModal = (member: any) => {
+    setFormData({
+      id: member.id,
+      name: member.name || '',
+      username: member.username || '',
+      password: '', // do not fill password
+      phone: member.phone || '',
+      package_id: member.package_id || '',
+    });
+    setModalVisible(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.username) {
+      Alert.alert('Error', 'Nama dan Username wajib diisi');
+      return;
+    }
+    setSaving(true);
+    try {
+      const method = formData.id ? 'PUT' : 'POST';
+      const endpoint = formData.id ? `/members/${formData.id}` : '/members';
+      
+      const payload = { ...formData };
+      if (formData.id && !payload.password) {
+        delete payload.password; // dont send empty password on update
+      }
+
+      await apiFetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      setModalVisible(false);
+      fetchData();
+    } catch (error: any) {
+      Alert.alert('Gagal', error.message || 'Gagal menyimpan member');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    Alert.alert('Konfirmasi', 'Yakin ingin menghapus member ini?', [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Hapus', style: 'destructive', onPress: async () => {
+        try {
+          await apiFetch(`/members/${id}`, { method: 'DELETE' });
+          fetchData();
+        } catch (error: any) {
+          Alert.alert('Gagal', error.message || 'Gagal menghapus member');
+        }
+      }}
+    ]);
+  };
+
+  const handleExtend = (id: number) => {
+    Alert.alert('Perpanjang', 'Perpanjang masa aktif member ini (30 hari)?', [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Perpanjang', onPress: async () => {
+        try {
+          await apiFetch(`/members/${id}/extend`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ days: 30 })
+          });
+          fetchData();
+        } catch (error: any) {
+          Alert.alert('Gagal', error.message || 'Gagal memperpanjang member');
+        }
+      }}
+    ]);
   };
 
   const getStatusColor = (status: string) => {
@@ -67,9 +164,21 @@ export default function MemberScreen() {
           <Text style={styles.value}>{item.package || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Jatuh Tempo:</Text>
-          <Text style={styles.value}>{item.expiresAt || '-'}</Text>
+          <Text style={styles.label}>Tgl Kedaluwarsa:</Text>
+          <Text style={styles.value}>{item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '-'}</Text>
         </View>
+      </View>
+
+      <View style={styles.cardActions}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => openEditModal(item)}>
+          <Text style={styles.actionBtnText}>Edit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#10b981'}]} onPress={() => handleExtend(item.id)}>
+          <Text style={[styles.actionBtnText, {color: '#fff'}]}>Perpanjang</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item.id)}>
+          <Text style={[styles.actionBtnText, {color: '#ef4444'}]}>Hapus</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -98,6 +207,9 @@ export default function MemberScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
+          <Text style={styles.addBtnText}>+ Tambah Member</Text>
+        </TouchableOpacity>
       </View>
       <FlatList
         data={filteredMembers}
@@ -111,6 +223,69 @@ export default function MemberScreen() {
           </View>
         }
       />
+
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{formData.id ? 'Edit Member' : 'Tambah Member'}</Text>
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Nama Lengkap"
+              value={formData.name}
+              onChangeText={(text) => setFormData({...formData, name: text})}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Username"
+              value={formData.username}
+              onChangeText={(text) => setFormData({...formData, username: text})}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={formData.id ? "Password (Kosongkan jika tidak diubah)" : "Password"}
+              secureTextEntry
+              value={formData.password}
+              onChangeText={(text) => setFormData({...formData, password: text})}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="No. HP"
+              keyboardType="phone-pad"
+              value={formData.phone}
+              onChangeText={(text) => setFormData({...formData, phone: text})}
+            />
+
+            <Text style={styles.pickerLabel}>Pilih Paket:</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.package_id}
+                onValueChange={(itemValue) => setFormData({...formData, package_id: itemValue})}
+                style={styles.picker}
+              >
+                <Picker.Item label="-- Pilih Paket --" value="" />
+                {packages.map((pkg: any) => (
+                  <Picker.Item key={pkg.id} label={`${pkg.name} (Rp ${pkg.price})`} value={pkg.id} />
+                ))}
+              </Picker>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalCancelText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSave} disabled={saving}>
+                <Text style={styles.modalSaveText}>{saving ? 'Menyimpan...' : 'Simpan'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -229,5 +404,102 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#94a3b8',
     textAlign: 'center',
+  },
+  addBtn: {
+    backgroundColor: '#4D44E3',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    backgroundColor: 'transparent',
+  },
+  actionBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#f1f5f9',
+  },
+  actionBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#64748b',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#1e293b',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    fontSize: 14,
+  },
+  pickerLabel: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 4,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    backgroundColor: 'transparent',
+  },
+  modalCancelBtn: {
+    padding: 12,
+  },
+  modalCancelText: {
+    color: '#64748b',
+    fontWeight: 'bold',
+  },
+  modalSaveBtn: {
+    backgroundColor: '#4D44E3',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  modalSaveText: {
+    color: '#fff',
+    fontWeight: 'bold',
   }
 });
