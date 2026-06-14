@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext } from 'react';
 import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
+import { Link, Tabs, router } from 'expo-router';
 import { Platform, Pressable, View, Text, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -115,7 +115,7 @@ export default function TabLayout() {
       <Modal transparent visible={isProfileMenuVisible} onRequestClose={() => setIsProfileMenuVisible(false)} animationType="fade">
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.1)' }} onPress={() => setIsProfileMenuVisible(false)} activeOpacity={1}>
           <View style={{ position: 'absolute', top: 50, right: 16, backgroundColor: 'white', borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4, minWidth: 150 }}>
-            <TouchableOpacity style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }} onPress={() => { setIsProfileMenuVisible(false); Alert.alert('Info', 'Menu Pengaturan belum tersedia'); }}>
+            <TouchableOpacity style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }} onPress={() => { setIsProfileMenuVisible(false); router.push('/settings'); }}>
               <Text style={{ fontSize: 16, color: '#334155' }}>Pengaturan</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ padding: 12 }} onPress={() => { setIsProfileMenuVisible(false); Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin logout?', [{ text: 'Batal', style: 'cancel' }, { text: 'Logout', style: 'destructive', onPress: () => Alert.alert('Info', 'Sistem login belum tersedia') }]); }}>
