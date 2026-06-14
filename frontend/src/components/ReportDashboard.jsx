@@ -4,6 +4,10 @@ const ReportDashboard = ({ addNotification }) => {
   const [summary, setSummary] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Pagination state for revenue table
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
   const fetchReports = async () => {
     setLoading(true);
@@ -14,7 +18,10 @@ const ReportDashboard = ({ addNotification }) => {
       ]);
 
       if (sumRes.success) setSummary(sumRes.data);
-      if (revRes.success) setRevenueData(revRes.data);
+      if (revRes.success) {
+        setRevenueData(revRes.data);
+        setCurrentPage(1); // Reset page on refresh
+      }
     } catch (err) {
       addNotification('error', 'Gagal memuat laporan: ' + err.message);
     } finally {
@@ -37,6 +44,20 @@ const ReportDashboard = ({ addNotification }) => {
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+  };
+
+  // Pagination calculations
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = revenueData.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(revenueData.length / rowsPerPage);
+
+  const nextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
   return (
@@ -120,7 +141,7 @@ const ReportDashboard = ({ addNotification }) => {
                     <td colSpan="4" className="p-8 text-center text-outline">Belum ada transaksi dalam 30 hari terakhir.</td>
                   </tr>
                 ) : (
-                  revenueData.map((row, idx) => (
+                  currentRows.map((row, idx) => (
                     <tr key={idx} className="hover:bg-surface-container-lowest/50 transition-colors">
                       <td className="p-4 text-body-md text-on-surface">
                         {new Date(row.date + 'T12:00:00').toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -144,6 +165,34 @@ const ReportDashboard = ({ addNotification }) => {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {revenueData.length > 0 && (
+            <div className="p-4 border-t border-surface-variant flex items-center justify-between bg-surface-container-lowest">
+              <span className="text-body-sm text-on-surface-variant">
+                Menampilkan <span className="font-semibold text-on-surface">{indexOfFirstRow + 1}</span> hingga <span className="font-semibold text-on-surface">{Math.min(indexOfLastRow, revenueData.length)}</span> dari <span className="font-semibold text-on-surface">{revenueData.length}</span> baris
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-on-surface-variant"
+                >
+                  <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                </button>
+                <span className="text-label-md font-semibold text-on-surface px-2">
+                  {currentPage} / {totalPages || 1}
+                </span>
+                <button
+                  onClick={nextPage}
+                  disabled={currentPage >= totalPages}
+                  className="p-2 rounded-lg border border-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-on-surface-variant"
+                >
+                  <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
