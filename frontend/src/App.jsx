@@ -138,7 +138,10 @@ const defaultRouters = () => [
 export default function App() {
   // ── Core UI state ─────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState(() => loadState('active_tab', 'dashboard'));
+  const [expandedSections, setExpandedSections] = useState(() => loadState('expanded_sections', { core: true, kontrol: false, system: false }));
+  
   useEffect(() => { saveState('active_tab', activeTab); }, [activeTab]);
+  useEffect(() => { saveState('expanded_sections', expandedSections); }, [expandedSections]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [radiusStatus, setRadiusStatus] = useState('Connected');
@@ -647,12 +650,22 @@ export default function App() {
         </div>
 
         {/* Nav sections */}
-        <div className="flex-1 overflow-y-auto space-y-5 px-2 select-none">
+        <div className="flex-1 overflow-y-auto space-y-2 px-2 select-none">
           {Object.entries(sectionLabels).map(([section, label]) => (
-            <div key={section}>
-              <p className="px-3 text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-2">{label}</p>
-              <ul className="space-y-1">
-                {tabs.filter(t => t.section === section).map(tab => (
+            <div key={section} className="mb-2">
+              <button 
+                onClick={() => setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))}
+                className="w-full flex justify-between items-center px-3 py-2 font-label-md uppercase text-slate-400 font-bold hover:text-white transition-colors rounded-lg hover:bg-slate-800/30"
+              >
+                {label}
+                <span className={`material-symbols-outlined text-[18px] transition-transform duration-300 ${expandedSections[section] ? 'rotate-180' : ''}`}>
+                  expand_more
+                </span>
+              </button>
+              
+              <div className={`overflow-hidden transition-all duration-300 ${expandedSections[section] ? 'max-h-[800px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                <ul className="space-y-1">
+                  {tabs.filter(t => t.section === section).map(tab => (
                   <li key={tab.id}>
                     <button
                       onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }}
@@ -664,8 +677,9 @@ export default function App() {
                       {tab.name}
                     </button>
                   </li>
-                ))}
-              </ul>
+                  ))}
+                </ul>
+              </div>
             </div>
           ))}
         </div>
