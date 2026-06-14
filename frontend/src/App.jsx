@@ -139,6 +139,7 @@ export default function App() {
   // ── Core UI state ─────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState(() => loadState('active_tab', 'dashboard'));
   const [expandedSections, setExpandedSections] = useState(() => loadState('expanded_sections', { core: true, kontrol: false, system: false }));
+  const [activeVoucherTab, setActiveVoucherTab] = useState('log');
   
   useEffect(() => { saveState('active_tab', activeTab); }, [activeTab]);
   useEffect(() => { saveState('expanded_sections', expandedSections); }, [expandedSections]);
@@ -597,17 +598,16 @@ export default function App() {
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', section: 'core' },
     { id: 'packages', name: 'Paket', icon: 'inventory_2', section: 'core' },
-    { id: 'generator', name: 'Generator Voucher', icon: 'confirmation_number', section: 'kontrol' },
-    { id: 'log', name: 'Voucher', icon: 'history', section: 'kontrol' },
-    { id: 'members', name: 'Daftar Member', icon: 'group', section: 'kontrol' },
-    { id: 'routers', name: 'Daftar Router Rumah', icon: 'router', section: 'kontrol' },
+    { id: 'log', name: 'Voucher', icon: 'confirmation_number', section: 'kontrol' },
+    { id: 'members', name: 'Member', icon: 'group', section: 'kontrol' },
+    { id: 'routers', name: 'PPPoE', icon: 'router', section: 'kontrol' },
     { id: 'sessions', name: 'Status Sesi', icon: 'sensors', section: 'system' },
     { id: 'reports', name: 'Laporan', icon: 'bar_chart', section: 'system' },
-    { id: 'settings', name: 'Pengaturan Sistem', icon: 'settings', section: 'system' },
+    { id: 'settings', name: 'Pengaturan', icon: 'settings', section: 'system' },
   ];
 
   const sectionConfig = {
-    kontrol: { label: 'Kontrol Pengguna', icon: 'manage_accounts' }
+    kontrol: { label: 'Pengguna', icon: 'manage_accounts' }
   };
 
   const renderActiveComponent = () => {
@@ -616,8 +616,31 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':  return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} fetchRadiusLogs={fetchRadiusLogs} {...commonProps} />;
       case 'packages':   return <PackageManagement packages={packages} setPackages={setPackages} fetchPackages={fetchPackages} {...commonProps} />;
-      case 'generator':  return <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />;
-      case 'log':        return <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} {...commonProps} />;
+      case 'log':        return (
+        <div className="space-y-4 animate-fadeIn">
+          <div className="flex gap-2 border-b border-surface-variant pb-3 mb-4">
+            <button 
+              onClick={() => setActiveVoucherTab('log')} 
+              className={`px-5 py-2 font-label-md rounded-lg transition-all flex items-center gap-2 ${activeVoucherTab === 'log' ? 'bg-primary text-white shadow-sm' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'}`}
+            >
+              <span className="material-symbols-outlined text-[18px]">list_alt</span>
+              Daftar Voucher
+            </button>
+            <button 
+              onClick={() => setActiveVoucherTab('generator')} 
+              className={`px-5 py-2 font-label-md rounded-lg transition-all flex items-center gap-2 ${activeVoucherTab === 'generator' ? 'bg-primary text-white shadow-sm' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'}`}
+            >
+              <span className="material-symbols-outlined text-[18px]">add_circle</span>
+              Buat Voucher Baru
+            </button>
+          </div>
+          {activeVoucherTab === 'log' ? (
+            <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} {...commonProps} />
+          ) : (
+            <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />
+          )}
+        </div>
+      );
       case 'members':    return <MemberList members={members} setMembers={setMembers} fetchMembers={fetchMembers} packages={packages} {...commonProps} />;
       case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} fetchMembers={fetchMembers} vouchers={vouchers} routers={routers} {...commonProps} />;
       case 'routers':    return <RouterList routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} packages={packages} {...commonProps} />;
