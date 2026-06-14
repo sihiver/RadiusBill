@@ -344,15 +344,28 @@ export default function SystemSettings({ addNotification }) {
                   </div>
                 </div>
 
+                <div className="mt-4 p-4 bg-tertiary-container/30 border border-tertiary/20 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-tertiary mt-0.5 text-[20px]">info</span>
+                    <div>
+                      <h4 className="font-semibold text-[14px] text-on-surface">Panduan Isolir Captive Portal</h4>
+                      <p className="text-[13px] text-on-surface-variant mt-1 leading-relaxed">
+                        Tombol <strong>Setup Isolir Hotspot</strong> akan membuat IP Pool, Bridge, Hotspot Server, dan Profile PPPoE Isolir secara otomatis di MikroTik. <br/>
+                        <strong>PENTING:</strong> Setelah ditekan, Anda wajib mengedit file <code className="bg-surface-variant px-1.5 py-0.5 rounded text-[12px]">hotspot/login.html</code> di menu <em>Files</em> MikroTik untuk membuat halaman pemberitahuan tunggakan.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-4 flex items-center justify-between border-t border-surface-variant mt-2">
                   <div className="flex gap-3">
                     <button onClick={() => handleTestConnection('Mikrotik API')} className="px-4 py-2 text-primary hover:bg-primary/10 rounded-lg transition-colors font-label-md flex items-center gap-2">
                       <span className="material-symbols-outlined text-[18px]">wifi_tethering</span>
                       Test Koneksi
                     </button>
-                    <button onClick={handleSetupIsolir} className="px-4 py-2 text-error hover:bg-error/10 rounded-lg transition-colors font-label-md flex items-center gap-2" title="Injeksi Rule Redirect Firewall NAT secara otomatis">
+                    <button onClick={handleSetupIsolir} className="px-4 py-2 text-error hover:bg-error/10 rounded-lg transition-colors font-label-md flex items-center gap-2" title="Setup Hotspot Captive Portal & Profile PPPoE Isolir otomatis">
                       <span className="material-symbols-outlined text-[18px]">security</span>
-                      Setup Isolir Rule (NAT)
+                      Setup Isolir Hotspot (Captive Portal)
                     </button>
                   </div>
                   <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">

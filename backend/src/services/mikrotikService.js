@@ -188,20 +188,11 @@ async function disconnectPPPoEUser(username) {
 }
 
 /**
- * Injects the NAT redirect rules into MikroTik for the ISOLIR address list.
+ * Setup Web-Proxy and Firewall rules for Isolir.
  */
 async function setupIsolirRules(appIp) {
   const config = await getMikrotikConfig();
   if (!config.host || !config.user) throw new Error('Konfigurasi MikroTik belum lengkap.');
-
-  let targetIp = appIp;
-  let targetPort = '80'; // Default port
-  
-  if (appIp.includes(':')) {
-    const parts = appIp.split(':');
-    targetIp = parts[0];
-    targetPort = parts[1];
-  }
 
   const client = new RouterOSAPI({
     host: config.host,
@@ -217,83 +208,99 @@ async function setupIsolirRules(appIp) {
   try {
     await client.connect();
     
-    // Check if rule already exists
-    let existing = [];
-    try {
-      existing = await client.write('/ip/firewall/nat/print', [
-        '?src-address-list=ISOLIR',
-        '?action=dst-nat'
-      ]);
-    } catch (e) {
-      if (e.message && e.message.includes('!empty')) {
-        existing = [];
-      } else {
-        throw e;
+    const ensureEntity = async (path, nameField, nameValue, addParams) => {
+      try {
+        const existing = await client.write(`${path}/print`, [`?${nameField}=${nameValue}`]);
+        if (existing.length === 0) {
+          await client.write(`${path}/add`, addParams);
+          console.log(`[MikroTik] Added ${path} -> ${nameValue}`);
+        }
+      } catch (err) {
+        console.warn(`[MikroTik] Note: Ensure failed for ${path} -> ${nameValue}. Error:`, err.message);
       }
+    };
+
+    // 1. Aktifkan Web Proxy di port 8080
+    try {
+      await client.write('/ip/proxy/set', [
+        '=enabled=yes',
+        '=port=8080'
+      ]);
+      console.log('[MikroTik] Web Proxy enabled on port 8080');
+    } catch (e) {
+      console.warn('[MikroTik] Failed to set Web Proxy:', e.message);
     }
 
-    if (existing.length === 0) {
-      try {
-        await client.write('/ip/firewall/nat/add', [
-          '=chain=dstnat',
-          '=src-address-list=ISOLIR',
-          '=protocol=tcp',
-          '=dst-port=80,443',
-          '=action=dst-nat',
-          `=to-addresses=${targetIp}`,
-          `=to-ports=${targetPort}`,
-          '=comment=Billing-Radius-Isolir-Redirect'
-        ]);
-        console.log(`[MikroTik] Injected ISOLIR NAT Rule pointing to ${targetIp}:${targetPort}`);
-      } catch (e) {
-        if (e.message && e.message.includes('!empty')) {
-          console.log(`[MikroTik] Injected ISOLIR NAT Rule pointing to ${targetIp}:${targetPort} (ignored !empty)`);
-        } else {
-          throw e;
-        }
-      }
-    } else {
-      // Update existing rule
-      try {
-        await client.write('/ip/firewall/nat/set', [
-          `=.id=${existing[0]['.id']}`,
-          `=to-addresses=${targetIp}`,
-          `=to-ports=${targetPort}`
-        ]);
-        console.log(`[MikroTik] Updated ISOLIR NAT Rule pointing to ${targetIp}:${targetPort}`);
-      } catch (e) {
-        if (e.message && e.message.includes('!empty')) {
-          console.log(`[MikroTik] Updated ISOLIR NAT Rule pointing to ${targetIp}:${targetPort} (ignored !empty)`);
-        } else {
-          throw e;
-        }
-      }
-    }
-    
-    // Ensure rule is at the top (order 0)
-    const newRule = await client.write('/ip/firewall/nat/print', [
-      '?src-address-list=ISOLIR',
-      '?action=dst-nat'
+    // 2. Proxy Access Rule: Redirect to Billing App Isolir page
+    // Note: /ip/proxy/access does not support src-address-list, but since we ONLY redirect ISOLIR clients 
+    // to port 8080 via NAT, we can safely apply this rule universally.
+    const isolirUrl = `http://${appIp}/isolir.html`;
+    await ensureEntity('/ip/proxy/access', 'comment', 'Isolir-Proxy-Redirect', [
+      '=action=redirect',
+      `=action-data=${isolirUrl}`,
+      '=comment=Isolir-Proxy-Redirect'
     ]);
-    if (newRule.length > 0) {
-      try {
-        await client.write('/ip/firewall/nat/move', [
-          `=numbers=${newRule[0]['.id']}`,
-          '=destination=0'
-        ]);
-      } catch (e) {
-        if (e.message && e.message.includes('!empty')) {
-          // ignore
-        } else {
-          throw e;
-        }
-      }
-    }
+
+    // 3. NAT Redirect: Belokkan HTTP (Port 80) ke Web Proxy (8080), kecuali tujuan ke appIp
+    await ensureEntity('/ip/firewall/nat', 'comment', 'Isolir-NAT-HTTP', [
+      '=chain=dstnat',
+      '=src-address-list=ISOLIR',
+      `=dst-address=!${appIp}`,
+      '=protocol=tcp',
+      '=dst-port=80',
+      '=action=redirect',
+      '=to-ports=8080',
+      '=comment=Isolir-NAT-HTTP'
+    ]);
+
+    // 3b. Port Forward: Teruskan traffic ke http://${appIp}/ (port 80) ke port 3001
+    await ensureEntity('/ip/firewall/nat', 'comment', 'Isolir-Port-Forward', [
+      '=chain=dstnat',
+      '=protocol=tcp',
+      `=dst-address=${appIp}`,
+      '=dst-port=80',
+      '=action=dst-nat',
+      '=to-ports=3001',
+      '=comment=Isolir-Port-Forward'
+    ]);
+
+    // 3c. Masquerade Internal: Cegah asymmetric routing untuk koneksi dari klien ke appIp
+    await ensureEntity('/ip/firewall/nat', 'comment', 'Isolir-Masq-Billing', [
+      '=chain=srcnat',
+      `=dst-address=${appIp}`,
+      '=action=masquerade',
+      '=comment=Isolir-Masq-Billing'
+    ]);
+
+    // 4. Filter Rules: Izinkan DNS, Izinkan Akses ke Billing, Drop sisanya
+    await ensureEntity('/ip/firewall/filter', 'comment', 'Isolir-Allow-DNS', [
+      '=chain=forward',
+      '=src-address-list=ISOLIR',
+      '=protocol=udp',
+      '=dst-port=53',
+      '=action=accept',
+      '=comment=Isolir-Allow-DNS'
+    ]);
+
+    await ensureEntity('/ip/firewall/filter', 'comment', 'Isolir-Allow-Billing', [
+      '=chain=forward',
+      '=src-address-list=ISOLIR',
+      `=dst-address=${appIp}`,
+      '=action=accept',
+      '=comment=Isolir-Allow-Billing'
+    ]);
+
+    await ensureEntity('/ip/firewall/filter', 'comment', 'Isolir-Drop-Internet', [
+      '=chain=forward',
+      '=src-address-list=ISOLIR',
+      '=action=drop',
+      '=comment=Isolir-Drop-Internet'
+    ]);
 
     return true;
   } catch (err) {
-    console.error('[MikroTik] Error setting up isolir rules:', err.message);
-    throw err;
+    console.error('[MikroTik] Error setting up Web-Proxy Isolir:', err.message);
+    throw new Error('Gagal mengatur Isolir Web-Proxy di MikroTik: ' + err.message);
   } finally {
     client.close();
   }

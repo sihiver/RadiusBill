@@ -3,7 +3,7 @@
 // Handles base URL, error parsing, and common headers.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001/api`;
 
 /**
  * Core fetch wrapper with JSON parsing and error handling.

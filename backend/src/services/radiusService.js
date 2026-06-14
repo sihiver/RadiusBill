@@ -94,19 +94,14 @@ async function isolirUser(username, reason = '') {
   try {
     await client.query('BEGIN');
     
-    // Ensure no old Reject Auth-Type or old Address-List
+    // Ensure no old Reject Auth-Type or old Address-List or old Group
     await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute = 'Auth-Type'`, [username]);
-    await client.query(`DELETE FROM radreply WHERE username = $1 AND attribute IN ('Mikrotik-Address-List', 'Mikrotik-Rate-Limit')`, [username]);
+    await client.query(`DELETE FROM radreply WHERE username = $1 AND attribute IN ('Mikrotik-Address-List', 'Mikrotik-Rate-Limit', 'Mikrotik-Group')`, [username]);
     
     // Insert new Isolir parameters
     await client.query(`
       INSERT INTO radreply (username, attribute, op, value)
       VALUES ($1, 'Mikrotik-Address-List', ':=', 'ISOLIR')
-    `, [username]);
-    
-    await client.query(`
-      INSERT INTO radreply (username, attribute, op, value)
-      VALUES ($1, 'Mikrotik-Rate-Limit', ':=', '128k/128k')
     `, [username]);
 
     await client.query('COMMIT');
@@ -162,7 +157,7 @@ async function unisolirUser(username) {
   try {
     await client.query('BEGIN');
     await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute = 'Auth-Type'`, [username]);
-    await client.query(`DELETE FROM radreply WHERE username = $1 AND attribute = 'Mikrotik-Address-List'`, [username]);
+    await client.query(`DELETE FROM radreply WHERE username = $1 AND attribute IN ('Mikrotik-Address-List', 'Mikrotik-Rate-Limit', 'Mikrotik-Group')`, [username]);
     await client.query('COMMIT');
     return true;
   } catch (err) {
