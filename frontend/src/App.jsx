@@ -671,15 +671,9 @@ export default function App() {
           ))}
         </div>
 
-        {/* Footer: Sync + Settings + Logout */}
+        {/* Footer: Logout */}
         <div className="mt-auto px-4 pt-4 border-t border-slate-800 space-y-3">
-          <button onClick={handleSyncServer} disabled={radiusStatus === 'Syncing'} className="w-full py-2.5 px-4 bg-[#006e4b] hover:opacity-90 disabled:opacity-50 text-white font-label-md text-label-md rounded-lg transition-all flex items-center justify-center gap-2 active:scale-95">
-            <span className={`material-symbols-outlined text-[18px] ${radiusStatus === 'Syncing' ? 'animate-spin' : ''}`}>sync</span>
-            {radiusStatus === 'Syncing' ? 'Syncing...' : 'Sync Server'}
-          </button>
-          <div className="h-px bg-slate-800 w-full"></div>
           <ul className="space-y-1">
-            <li><button onClick={handleResetData} className="w-full flex items-center gap-3 px-2 py-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/40 transition-all font-label-md text-label-md text-left"><span className="material-symbols-outlined">settings_backup_restore</span>Reset Data</button></li>
             <li><button onClick={() => { if (confirm("Logout dari Dashboard?")) alert("Logout berhasil!"); }} className="w-full flex items-center gap-3 px-2 py-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/40 transition-all font-label-md text-label-md text-left"><span className="material-symbols-outlined">logout</span>Logout</button></li>
           </ul>
         </div>
