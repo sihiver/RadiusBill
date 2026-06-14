@@ -42,7 +42,8 @@ function errorHandler(err, req, res, next) {
 
   return res.status(status).json({
     success: false,
-    error: status === 500 ? 'Internal Server Error' : err.message,
+    error: status === 500 ? 'Internal Server Error' : 'Error',
+    message: err.message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }

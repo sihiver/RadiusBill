@@ -19,6 +19,8 @@ const packageSchema = Joi.object({
   price:          Joi.number().integer().min(0).required(),
   description:    Joi.string().max(500).allow('', null),
   is_active:      Joi.boolean().default(true),
+  billing_type:   Joi.string().valid('masa_aktif', 'fixed_date').default('masa_aktif'),
+  fixed_date:     Joi.number().integer().min(1).max(31).allow(null).default(null),
 });
 
 // GET /api/packages
@@ -51,11 +53,11 @@ router.post('/', asyncHandler(async (req, res) => {
   if (error) throw error;
 
   const result = await db.query(`
-    INSERT INTO packages (name, type, speed_upload, speed_download, duration, validity, cost_price, price, description, is_active)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    INSERT INTO packages (name, type, speed_upload, speed_download, duration, validity, cost_price, price, description, is_active, billing_type, fixed_date)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
   `, [value.name, value.type, value.speed_upload, value.speed_download,
-      value.duration, value.validity, value.cost_price, value.price, value.description, value.is_active]);
+      value.duration, value.validity, value.cost_price, value.price, value.description, value.is_active, value.billing_type, value.fixed_date]);
 
   // Ensure group policy in FreeRADIUS for this package
   await radius.ensureGroupPolicy(result.rows[0]);
@@ -72,11 +74,11 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const result = await db.query(`
     UPDATE packages
     SET name=$1, type=$2, speed_upload=$3, speed_download=$4,
-        duration=$5, validity=$6, cost_price=$7, price=$8, description=$9, is_active=$10
-    WHERE id=$11
+        duration=$5, validity=$6, cost_price=$7, price=$8, description=$9, is_active=$10, billing_type=$11, fixed_date=$12
+    WHERE id=$13
     RETURNING *
   `, [value.name, value.type, value.speed_upload, value.speed_download,
-      value.duration, value.validity, value.cost_price, value.price, value.description, value.is_active,
+      value.duration, value.validity, value.cost_price, value.price, value.description, value.is_active, value.billing_type, value.fixed_date,
       req.params.id]);
 
   if (!result.rows[0]) throw createError(404, 'Paket tidak ditemukan');

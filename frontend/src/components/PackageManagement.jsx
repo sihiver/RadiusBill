@@ -17,6 +17,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
   const [duration, setDuration] = useState('Unlimited');
   const [costPrice, setCostPrice] = useState(50000); // Harga Modal
   const [price, setPrice] = useState(60000); // Harga Jual
+  const [billingType, setBillingType] = useState('masa_aktif'); // masa_aktif, fixed_date
+  const [fixedDate, setFixedDate] = useState(1); // 1-31
 
   const openAddModal = () => {
     setEditingId(null);
@@ -31,6 +33,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
     setDuration('Unlimited');
     setCostPrice(50000);
     setPrice(60000);
+    setBillingType('masa_aktif');
+    setFixedDate(1);
     setShowModal(true);
   };
 
@@ -47,6 +51,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
     setDuration(pkg.duration || 'Unlimited');
     setCostPrice(pkg.cost_price || 0);
     setPrice(pkg.price);
+    setBillingType(pkg.billing_type || 'masa_aktif');
+    setFixedDate(pkg.fixed_date || 1);
     setShowModal(true);
   };
 
@@ -71,7 +77,9 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
       cost_price: Number(costPrice),
       price: Number(price),
       description: `speedType=${speedType};speedUpTo=${speedUpTo}`,
-      is_active: true
+      is_active: true,
+      billing_type: billingType,
+      fixed_date: billingType === 'fixed_date' ? Number(fixedDate) : null
     };
 
     const url = editingId ? `/api/packages/${editingId}` : '/api/packages';
@@ -89,7 +97,7 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
           addSystemLog('SYSTEM', editingId ? `Mengubah paket: "${name}"` : `Menambahkan paket baru: "${name}"`);
           setShowModal(false);
         } else {
-          setErrorMsg(json.message || 'Gagal menyimpan paket.');
+          setErrorMsg(json.message || json.error || 'Gagal menyimpan paket.');
         }
       })
       .catch(err => {
@@ -212,20 +220,41 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
                     </div>
                   </>
                 )}
-                <div>
-                  <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Durasi</p>
-                  <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
-                    <span className="material-symbols-outlined text-[14px] text-amber-600">hourglass_empty</span>
-                    {pkg.duration || 'Unlimited'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Masa Aktif</p>
-                  <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
-                    <span className="material-symbols-outlined text-[14px] text-purple-600">event_available</span>
-                    {pkg.validity}
-                  </p>
-                </div>
+                {pkg.billing_type === 'fixed_date' ? (
+                  <>
+                    <div>
+                      <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Sistem Penagihan</p>
+                      <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[14px] text-indigo-600">calendar_month</span>
+                        Jatuh Tempo
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Tanggal Tagih</p>
+                      <p className="font-bold text-error flex items-center justify-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[14px]">event</span>
+                        Tgl {pkg.fixed_date || 1}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Durasi</p>
+                      <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[14px] text-amber-600">hourglass_empty</span>
+                        {pkg.duration || 'Unlimited'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-on-surface-variant text-[10px] uppercase font-semibold">Masa Aktif</p>
+                      <p className="font-bold text-on-surface flex items-center justify-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[14px] text-purple-600">event_available</span>
+                        {pkg.validity}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -253,9 +282,9 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
       {/* Add/Edit Modal */}
       {showModal && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-xl max-w-md w-full shadow-2xl border border-surface-variant overflow-hidden animate-slideIn">
+          <div className="bg-surface-container-lowest rounded-xl max-w-md w-full shadow-2xl border border-surface-variant overflow-hidden animate-slideIn flex flex-col max-h-[90vh]">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low">
+            <div className="px-6 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low shrink-0">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">
                 {editingId ? 'Edit Paket Bandwidth' : 'Tambah Paket Bandwidth'}
               </h3>
@@ -268,7 +297,8 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
             </div>
 
             {/* Modal Body / Form */}
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto">
               {errorMsg && (
                 <div className="bg-error-container text-on-error-container px-4 py-2 rounded-lg text-sm mb-2 flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">error</span>
@@ -397,31 +427,61 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Durasi Kuota Waktu</label>
-                  <input 
-                    type="text" 
-                    value={duration} 
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="e.g. 12h, 1d, 30m, Unlimited" 
-                    required
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Tipe Penagihan</label>
+                  <select 
+                    value={billingType} 
+                    onChange={(e) => setBillingType(e.target.value)}
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  />
+                  >
+                    <option value="masa_aktif">Masa Aktif Berjalan</option>
+                    <option value="fixed_date">Fix Jatuh Tempo (Tanggal Tetap)</option>
+                  </select>
                 </div>
-                <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Masa Aktif (Validity)</label>
-                  <input 
-                    type="text" 
-                    value={validity} 
-                    onChange={(e) => setValidity(e.target.value)}
-                    placeholder="e.g. 30d, 1d, 12h" 
-                    required
-                    className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  />
+                {billingType === 'fixed_date' && (
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Pilih Tanggal</label>
+                    <input 
+                      type="number" 
+                      min="1" max="31"
+                      value={fixedDate} 
+                      onChange={(e) => setFixedDate(e.target.value)}
+                      required
+                      className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {billingType === 'masa_aktif' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Durasi Kuota Waktu</label>
+                    <input 
+                      type="text" 
+                      value={duration} 
+                      onChange={(e) => setDuration(e.target.value)}
+                      placeholder="e.g. 12h, 1d, 30m, Unlimited" 
+                      required
+                      className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Masa Aktif (Validity)</label>
+                    <input 
+                      type="text" 
+                      value={validity} 
+                      onChange={(e) => setValidity(e.target.value)}
+                      placeholder="e.g. 30d, 1d, 12h" 
+                      required
+                      className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
                 </div>
+              )}
               </div>
 
               {/* Modal Footer */}
-              <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
+              <div className="px-6 py-4 flex justify-end gap-3 border-t border-surface-container bg-surface-container-low shrink-0">
                 <button 
                   type="button"
                   onClick={() => setShowModal(false)}

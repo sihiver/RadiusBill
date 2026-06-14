@@ -56,6 +56,33 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
     });
   };
 
+  const handleExtend = (id, customerName) => {
+    requestConfirm({
+      title: 'Perpanjang Masa Aktif',
+      message: `Apakah Anda yakin ingin memperpanjang paket PPPoE untuk "${customerName}" selama 30 hari? Status isolir akan otomatis dibuka.`,
+      confirmText: 'Ya, Perpanjang',
+      variant: 'primary',
+      onConfirm: () => {
+        fetch(`/api/routers/${id}/extend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days: 30 })
+        })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) {
+              fetchRouters();
+              addSystemLog('SYSTEM', `Memperpanjang paket PPPoE: "${customerName}"`);
+              if(addNotification) addNotification(`Paket router "${customerName}" berhasil diperpanjang`, 'success');
+            } else {
+              alert(json.message || 'Gagal memperpanjang paket.');
+            }
+          })
+          .catch(err => alert('Error: ' + err.message));
+      }
+    });
+  };
+
   const pppoePackages = packages.filter(p => p.type === 'PPPoE');
 
   const openAddModal = () => {
@@ -127,7 +154,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
           addSystemLog('SYSTEM', editingId ? `Mengubah profil router PPPoE pelanggan: "${customerName}"` : `Mendaftarkan Router PPPoE baru untuk "${customerName}"`);
           setShowModal(false);
         } else {
-          setErrorMsg(json.message || 'Gagal menyimpan router.');
+          setErrorMsg(json.message || json.error || 'Gagal menyimpan router.');
         }
       })
       .catch(err => {
@@ -209,6 +236,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                 <th className="p-4">PPPoE Credentials</th>
                 <th className="p-4">Router IP Address</th>
                 <th className="p-4">Paket Langganan</th>
+                <th className="p-4">Masa Aktif</th>
                 <th className="p-4">Status Koneksi</th>
                 <th className="p-4 text-center">Isolir</th>
                 <th className="p-4 text-center">Tindakan</th>
@@ -244,8 +272,29 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                     {/* Package */}
                     <td className="p-4">
                       <span className="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed-variant rounded text-[10px] font-bold">
-                        {r.package}
+                        {r.package_name || r.package || '-'}
                       </span>
+                    </td>
+
+                    {/* Active Period */}
+                    <td className="p-4">
+                      {(() => {
+                        if (!r.expiry_date) return <span className="text-on-surface-variant text-[11px]">-</span>;
+                        const now = new Date();
+                        const exp = new Date(r.expiry_date);
+                        const isExpired = exp < now;
+                        const diffDays = Math.max(0, Math.ceil((exp - now) / (1000 * 60 * 60 * 24)));
+                        return (
+                          <div>
+                            <div className={`text-[12px] font-bold ${isExpired ? 'text-error' : 'text-green-600'}`}>
+                              {isExpired ? 'Kedaluwarsa' : 'Aktif'}
+                            </div>
+                            <div className="text-[10px] text-on-surface-variant mt-0.5">
+                              s/d {exp.toLocaleDateString('id-ID')} {isExpired ? '' : `(${diffDays} hr)`}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Connection Status */}
@@ -284,6 +333,13 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                     <td className="p-4 text-center">
                       <div className="flex justify-center gap-1.5">
                         <button
+                          onClick={() => handleExtend(r.id, r.customerName || r.customer_name)}
+                          className="text-green-600 hover:bg-green-50 p-1.5 rounded transition-colors"
+                          title="Perpanjang Paket"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">update</span>
+                        </button>
+                        <button
                           onClick={() => openEditModal(r)}
                           className="text-primary hover:bg-primary/10 p-1.5 rounded transition-colors"
                           title="Edit Router"
@@ -311,8 +367,8 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
       {/* Add/Edit Modal */}
       {showModal && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-xl max-w-md w-full shadow-2xl border border-surface-variant overflow-hidden animate-slideIn">
-            <div className="px-6 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low">
+          <div className="bg-surface-container-lowest rounded-xl max-w-md w-full shadow-2xl border border-surface-variant overflow-hidden animate-slideIn flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low shrink-0">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">
                 {editingId ? 'Edit Router PPPoE' : 'Registrasi Router Rumah'}
               </h3>
@@ -324,7 +380,8 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto">
               {errorMsg && (
                 <div className="bg-error-container text-on-error-container px-4 py-2 rounded-lg text-sm mb-2 flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">error</span>
@@ -409,9 +466,40 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                     <option value="">Belum ada paket PPPoE</option>
                   )}
                 </select>
+
+                {(() => {
+                  const selectedPackageObj = packages.find(p => p.name === selectedPkg);
+                  if (!editingId && selectedPackageObj && selectedPackageObj.billing_type === 'fixed_date') {
+                    const fixedDate = selectedPackageObj.fixed_date || 1;
+                    const now = new Date();
+                    let nextExpiry = new Date(now.getFullYear(), now.getMonth(), fixedDate);
+                    if (nextExpiry <= now) {
+                      nextExpiry.setMonth(nextExpiry.getMonth() + 1);
+                    }
+                    const diffTime = nextExpiry - now;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    let proratePrice = Math.round((selectedPackageObj.price / 30) * diffDays);
+                    proratePrice = Math.round(proratePrice / 100) * 100;
+                    if (proratePrice > selectedPackageObj.price) proratePrice = selectedPackageObj.price;
+
+                    return (
+                      <div className="mt-3 bg-indigo-50 px-3 py-2.5 rounded-lg border border-indigo-100 flex items-start gap-2">
+                        <span className="material-symbols-outlined text-indigo-500 text-[18px] mt-0.5">info</span>
+                        <div>
+                          <p className="text-[12px] font-bold text-indigo-900">Tagihan Prorata Awal (Tgl {fixedDate})</p>
+                          <p className="text-[11px] text-indigo-700 leading-tight mt-0.5">
+                            Jatuh tempo pertama pada <b>{nextExpiry.toLocaleDateString('id-ID')}</b>. Estimasi tagihan awal ke pelanggan adalah <b>Rp {proratePrice.toLocaleString('id-ID')}</b> untuk pemakaian {diffDays} hari pertama.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
+              <div className="px-6 py-4 flex justify-end gap-3 border-t border-surface-container bg-surface-container-low shrink-0">
                 <button 
                   type="button"
                   onClick={() => setShowModal(false)}

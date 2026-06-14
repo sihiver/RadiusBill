@@ -196,6 +196,63 @@ async function runExpireMembers() {
   }
 }
 
+async function runExpireRouters() {
+  const client = await require('../db/pool').getClient();
+  const radius = require('../services/radiusService');
+  const mikrotik = require('../services/mikrotikService');
+  const { cacheDelPattern } = require('../services/cacheService');
+
+  try {
+    await client.query('BEGIN');
+
+    // Find expired routers that are not yet isolated
+    const expiredRes = await client.query(`
+      SELECT r.id, r.pppoe_user, r.customer_name
+      FROM routers r
+      WHERE r.expiry_date <= NOW() AND r.isolir = FALSE
+      FOR UPDATE SKIP LOCKED
+    `);
+
+    if (expiredRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return 0;
+    }
+
+    let processedCount = 0;
+
+    for (const r of expiredRes.rows) {
+      try {
+        await radius.isolirUser(r.pppoe_user);
+        await mikrotik.disconnectPPPoEUser(r.pppoe_user);
+
+        await client.query(`
+          UPDATE routers
+          SET status = 'Isolated', isolir = TRUE, isolir_reason = 'Masa aktif paket habis', isolir_since = NOW()
+          WHERE id = $1
+        `, [r.id]);
+
+        processedCount++;
+      } catch (err) {
+        console.error(`[ExpireRoutersJob] Failed for router ${r.pppoe_user}:`, err.message);
+      }
+    }
+
+    await client.query('COMMIT');
+    if (processedCount > 0) {
+      await cacheDelPattern('routers:*');
+      console.log(`[ExpireRoutersJob] Processed/Isolated ${processedCount} expired router(s)`);
+    }
+    return processedCount;
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[ExpireRoutersJob] Error:', err.message);
+    return 0;
+  } finally {
+    client.release();
+  }
+}
+
 /**
  * Start the cron job.
  * Default schedule: every 5 minutes (x/5 x x x x)
@@ -205,10 +262,11 @@ function startExpireJob() {
   console.log(`[ExpireJob] Starting cron: "${schedule}"`);
 
   cron.schedule(schedule, async () => {
-    console.log('[ExpireJob] Running voucher and member expiry check...');
+    console.log('[ExpireJob] Running voucher, member, and router expiry check...');
     await runExpireVouchers();
     await runExpireMembers();
+    await runExpireRouters();
   });
 }
 
-module.exports = { startExpireJob, runExpireVouchers, runExpireMembers };
+module.exports = { startExpireJob, runExpireVouchers, runExpireMembers, runExpireRouters };

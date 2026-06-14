@@ -90,35 +90,57 @@ router.post('/', asyncHandler(async (req, res) => {
     throw createError(400, 'Username PPPoE ini sudah digunakan oleh Member Hotspot atau Voucher. Gunakan username lain (misal: pppoe_' + value.pppoe_user + ').');
   }
 
+  // Calculate Expiry Date and Prorate
+  let newExpiryDate = new Date();
+  newExpiryDate.setDate(newExpiryDate.getDate() + 30); // Default for masa_aktif
+  let transactionAmount = 0;
+  let transactionDesc = '';
+  let pkg = null;
+
+  if (value.package_id) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
+    if (pkgRes.rows[0]) {
+      pkg = pkgRes.rows[0];
+      if (pkg.billing_type === 'fixed_date' && pkg.fixed_date) {
+        const { calculateProrate } = require('../utils/billingUtils');
+        const prorateInfo = calculateProrate(pkg.fixed_date, pkg.price);
+        newExpiryDate = prorateInfo.nextExpiryDate;
+        transactionAmount = prorateInfo.proratePrice;
+        transactionDesc = `Pendaftaran router PPPoE ${value.customer_name} paket ${pkg.name} (Prorata ${prorateInfo.prorateDays} hari)`;
+      } else {
+        transactionAmount = pkg.price; // Use price instead of cost_price for revenue
+        transactionDesc = `Pendaftaran router PPPoE ${value.customer_name} paket ${pkg.name}`;
+      }
+    }
+  }
+
   const result = await db.query(`
-    INSERT INTO routers (customer_name, pppoe_user, pppoe_pass, router_ip, package_id, package_name, status, isolir)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+    INSERT INTO routers (customer_name, pppoe_user, pppoe_pass, router_ip, package_id, package_name, status, isolir, expiry_date)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9)
     RETURNING *
   `, [value.customer_name, value.pppoe_user, value.pppoe_pass, value.router_ip,
-      value.package_id, value.package_name, value.status, value.isolir]);
+      value.package_id, value.package_name, value.status, value.isolir, newExpiryDate]);
 
   const rtr = result.rows[0];
 
   // Sync to FreeRADIUS
-  if (value.package_id) {
-    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
-    if (pkgRes.rows[0]) {
-      const pkg = pkgRes.rows[0];
-      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
-      if (rtr.router_ip) {
-        replyAttrs['Framed-IP-Address'] = rtr.router_ip;
-      }
-      await radius.syncUserToRadius(
-        rtr.pppoe_user, rtr.pppoe_pass,
-        radius.buildGroupName(pkg),
-        replyAttrs
-      );
+  if (pkg) {
+    const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+    if (rtr.router_ip) {
+      replyAttrs['Framed-IP-Address'] = rtr.router_ip;
+    }
+    await radius.syncUserToRadius(
+      rtr.pppoe_user, rtr.pppoe_pass,
+      radius.buildGroupName(pkg),
+      replyAttrs
+    );
 
-      // Log transaction for router registration
+    // Log transaction for router registration
+    if (transactionAmount > 0) {
       await db.query(`
         INSERT INTO transactions (type, reference_id, amount, description)
         VALUES ('pppoe', $1, $2, $3)
-      `, [rtr.pppoe_user, pkg.cost_price, `Pendaftaran router PPPoE ${rtr.customer_name} paket ${pkg.name}`]);
+      `, [rtr.pppoe_user, transactionAmount, transactionDesc]);
     }
   }
 
@@ -255,6 +277,72 @@ router.post('/:id/unisolir', asyncHandler(async (req, res) => {
 
   await cacheDelPattern('routers:*');
   res.json({ success: true, message: `Isolir router "${rtr.customer_name}" dilepas` });
+}));
+
+// POST /api/routers/:id/extend — Perpanjang masa aktif
+router.post('/:id/extend', asyncHandler(async (req, res) => {
+  const { days = 30 } = req.body;
+
+  const rtrRes = await db.query('SELECT r.*, p.billing_type, p.fixed_date, p.price, p.name as pkg_name FROM routers r LEFT JOIN packages p ON p.id = r.package_id WHERE r.id = $1', [req.params.id]);
+  if (!rtrRes.rows[0]) throw createError(404, 'Router tidak ditemukan');
+  const rtr = rtrRes.rows[0];
+
+  let newExpiryStr = `GREATEST(COALESCE(expiry_date, NOW()), NOW()) + INTERVAL '${parseInt(days)} days'`;
+  let transactionAmount = rtr.price || 0;
+  let transactionDesc = `Perpanjangan router PPPoE ${rtr.customer_name} paket ${rtr.pkg_name} (${days} hari)`;
+
+  if (rtr.billing_type === 'fixed_date' && rtr.fixed_date) {
+    newExpiryStr = `GREATEST(COALESCE(expiry_date, NOW()), NOW()) + INTERVAL '1 month'`;
+    transactionDesc = `Perpanjangan bulanan router PPPoE ${rtr.customer_name} paket ${rtr.pkg_name} (Tgl ${rtr.fixed_date})`;
+  }
+
+  const result = await db.query(`
+    UPDATE routers
+    SET expiry_date = ${newExpiryStr},
+        status = 'Online',
+        isolir = FALSE,
+        isolir_reason = NULL,
+        isolir_since = NULL
+    WHERE id = $1
+    RETURNING *
+  `, [req.params.id]);
+
+  const updatedRtr = result.rows[0];
+
+  await cacheDelPattern('routers:*');
+  
+  // Un-isolate in RADIUS
+  await radius.unisolirUser(updatedRtr.pppoe_user);
+  
+  // Re-sync rate limit
+  if (updatedRtr.package_id) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [updatedRtr.package_id]);
+    if (pkgRes.rows[0]) {
+      const pkg = pkgRes.rows[0];
+      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+      if (updatedRtr.router_ip) {
+        replyAttrs['Framed-IP-Address'] = updatedRtr.router_ip;
+      }
+      await radius.syncUserToRadius(
+        updatedRtr.pppoe_user, updatedRtr.pppoe_pass,
+        radius.buildGroupName(pkg),
+        replyAttrs
+      );
+
+      // Log transaction for extension
+      if (transactionAmount > 0) {
+        await db.query(`
+          INSERT INTO transactions (type, reference_id, amount, description)
+          VALUES ('pppoe', $1, $2, $3)
+        `, [updatedRtr.pppoe_user, transactionAmount, transactionDesc]);
+      }
+    }
+  }
+
+  // Also disconnect so they can reconnect without isolir list
+  await mikrotik.disconnectPPPoEUser(rtr.pppoe_user);
+
+  res.json({ success: true, data: updatedRtr, message: `Masa aktif diperpanjang ${days} hari` });
 }));
 
 // POST /api/routers/:id/pay — Bayar tagihan bulanan
