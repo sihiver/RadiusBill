@@ -594,21 +594,19 @@ export default function App() {
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', section: 'core' },
     { id: 'packages', name: 'Paket', icon: 'inventory_2', section: 'core' },
-    { id: 'generator', name: 'Generator Voucher', icon: 'confirmation_number', section: 'voucher' },
-    { id: 'log', name: 'Voucher', icon: 'history', section: 'voucher' },
-    { id: 'members', name: 'Daftar Member', icon: 'group', section: 'member' },
-    { id: 'sessions', name: 'Status Sesi', icon: 'sensors', section: 'member' },
-    { id: 'routers', name: 'Daftar Router Rumah', icon: 'router', section: 'pppoe' },
-
-    { id: 'reports', name: 'Laporan', icon: 'bar_chart', section: 'pppoe' },
-    { id: 'settings', name: 'Pengaturan Sistem', icon: 'settings', section: 'pppoe' },
+    { id: 'generator', name: 'Generator Voucher', icon: 'confirmation_number', section: 'kontrol' },
+    { id: 'log', name: 'Voucher', icon: 'history', section: 'kontrol' },
+    { id: 'members', name: 'Daftar Member', icon: 'group', section: 'kontrol' },
+    { id: 'routers', name: 'Daftar Router Rumah', icon: 'router', section: 'kontrol' },
+    { id: 'sessions', name: 'Status Sesi', icon: 'sensors', section: 'system' },
+    { id: 'reports', name: 'Laporan', icon: 'bar_chart', section: 'system' },
+    { id: 'settings', name: 'Pengaturan Sistem', icon: 'settings', section: 'system' },
   ];
 
   const sectionLabels = {
-    core: 'Core Settings',
-    voucher: 'Voucher Hotspot (Eceran)',
-    member: 'Member Hotspot (Bulanan Web)',
-    pppoe: 'Koneksi PPPoE (Bulanan Router)',
+    core: 'UTAMA',
+    kontrol: 'KONTROL PENGGUNA',
+    system: 'SISTEM & LAPORAN'
   };
 
   const renderActiveComponent = () => {
