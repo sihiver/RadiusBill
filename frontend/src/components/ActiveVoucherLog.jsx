@@ -270,7 +270,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
                 selectedVoucher.status === 'Unused' ? 'bg-surface-container-high text-on-surface-variant' :
                 'bg-error-container text-on-error-container'
               }`}>
-                {selectedVoucher.status === 'Active' ? 'Aktif' : selectedVoucher.status === 'Unused' ? 'Belum Dipakai' : 'Expired'}
+                {selectedVoucher.status === 'Active' ? 'Aktif' : selectedVoucher.status === 'Unused' ? 'Waiting' : 'Expired'}
               </span>
             </h2>
             <p className="font-mono text-[18px] font-bold text-primary mt-1">{selectedVoucher.code}</p>
@@ -604,7 +604,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
                         v.status === 'Unused' ? 'bg-surface-container-high text-on-surface-variant' :
                         'bg-error-container text-on-error-container'
                       }`}>
-                        {v.status === 'Active' ? 'Aktif' : v.status === 'Unused' ? 'Belum Dipakai' : 'Expired'}
+                        {v.status === 'Active' ? 'Aktif' : v.status === 'Unused' ? 'Waiting' : 'Expired'}
                       </span>
                     </td>
                     
