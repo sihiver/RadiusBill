@@ -330,13 +330,11 @@ export default function DashboardOverview({
                   return (
                     <div 
                       key={idx}
-                      className="w-10 rounded-t-lg relative group cursor-pointer border-t-2 border-primary flex justify-center"
+                      className="w-10 rounded-t-lg relative group cursor-pointer flex justify-center transition-all bg-primary hover:brightness-110"
                       style={{ height: `${percentage}%` }}
                       onMouseEnter={() => setHoveredBar(idx)}
                       onMouseLeave={() => setHoveredBar(null)}
                     >
-                      {/* Background Bar (Opacity Fix) */}
-                      <div className="absolute inset-0 bg-primary opacity-20 group-hover:opacity-40 transition-opacity rounded-t-sm"></div>
                       {/* Tooltip */}
                       <div className={`absolute -top-10 bg-inverse-surface text-inverse-on-surface text-[10px] font-mono px-2 py-1 rounded shadow-lg transition-opacity duration-200 z-30 whitespace-nowrap ${
                         hoveredBar === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'

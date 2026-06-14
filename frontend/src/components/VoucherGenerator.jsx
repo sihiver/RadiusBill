@@ -165,7 +165,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
               <select 
                 value={selectedPkgId} 
                 onChange={(e) => setSelectedPkgId(e.target.value)}
-                className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                className="w-full px-3.5 py-2 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
               >
                 {hotspotPackages.map(p => (
                   <option key={p.id} value={p.id}>{p.name} - Rp {p.price.toLocaleString('id-ID')}</option>
@@ -185,7 +185,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
                   max="500" 
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  className="w-full px-3.5 py-2 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
               </div>
               <div>
@@ -196,7 +196,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
                   max="12" 
                   value={codeLength}
                   onChange={(e) => setCodeLength(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  className="w-full px-3.5 py-2 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value)}
                 placeholder="e.g. HOT-"
-                className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                className="w-full px-3.5 py-2 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
               />
             </div>
 
