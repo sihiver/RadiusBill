@@ -3,9 +3,9 @@
 // Finds vouchers past their expires_at, MOVES them to voucher_logs,
 // and removes them from FreeRADIUS radcheck.
 // ─────────────────────────────────────────────────────────────────────────────
-const cron    = require('node-cron');
+const cron = require('node-cron');
 const { getClient } = require('../db/pool');
-const radius  = require('../services/radiusService');
+const radius = require('../services/radiusService');
 const { cacheDelPattern } = require('../services/cacheService');
 
 /**
@@ -93,7 +93,7 @@ async function runExpireVouchers() {
         // Get dynamic reject message
         const settingsRes = await dbPool.query("SELECT value FROM system_settings WHERE key = 'msg_voucher_expired'");
         const rejectMsg = settingsRes.rows[0]?.value || "Maaf, Voucher Anda telah Habis/Kedaluwarsa.";
-        
+
         await radius.rejectUserWithReason(v.code, rejectMsg);
       } catch (err) {
         console.error(`[ExpireJob] Failed to disconnect/remove ${v.code}:`, err.message);
@@ -123,7 +123,7 @@ async function runExpireMembers() {
 
   try {
     await client.query('BEGIN');
-    
+
     // Find expired members OR members that are not active,
     // AND who are not already rejected in FreeRADIUS.
     const expiredRes = await client.query(`
@@ -145,7 +145,7 @@ async function runExpireMembers() {
     }
 
     let processedCount = 0;
-    
+
     // Get dynamic reject message
     const dbPool = require('../db/pool');
     const settingsRes = await dbPool.query("SELECT value FROM system_settings WHERE key = 'msg_voucher_expired'");
@@ -162,18 +162,18 @@ async function runExpireMembers() {
             ORDER BY acctstarttime DESC
             LIMIT 1
           `, [m.username]);
-          
+
           if (sessRes.rows[0] && sessRes.rows[0].nasipaddress) {
             await radius.sendDisconnectRequest(m.username, sessRes.rows[0].nasipaddress, sessRes.rows[0].acctsessionid, sessRes.rows[0].framed_ip);
           }
         }
-        
+
         // Ensure rejected in FreeRADIUS
         await radius.rejectUserWithReason(m.username, rejectMsg);
-        
+
         // Removed: We do NOT set is_active = FALSE here because is_active = FALSE means soft-deleted,
         // which makes the member disappear from the list. The member is naturally expired based on expiry_date.
-        
+
         processedCount++;
       } catch (err) {
         console.error(`[ExpireMembersJob] Failed for member ${m.username}:`, err.message);
