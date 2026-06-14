@@ -759,7 +759,7 @@ export default function App() {
       {mobileMenuOpen && <div onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 bg-slate-900/50 z-30 md:hidden backdrop-blur-sm" />}
 
       {/* ── MAIN AREA ───────────────────────────────────────────────────────── */}
-      <div className="flex-1 md:ml-[280px] print:ml-0 min-h-screen flex flex-col overflow-x-hidden print:overflow-visible bg-background print:bg-white">
+      <div className="flex-1 md:ml-sidebar-width print:ml-0 min-h-screen flex flex-col overflow-x-hidden print:overflow-visible bg-background print:bg-white">
 
         {/* ── TOP HEADER ──────────────────────────────────────────────────── */}
         <header className="bg-surface border-b border-surface-variant shadow-sm w-full h-16 flex justify-between items-center px-6 sticky top-0 z-20 print:hidden">
