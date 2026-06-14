@@ -104,9 +104,9 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.card }}>
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <FontAwesome name="arrow-left" size={20} color="#1e293b" />
+          <FontAwesome name="arrow-left" size={20} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.pageTitle, { color: colors.text }]}>Pengaturan Printer</Text>
       </View>
@@ -132,7 +132,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Daftar Perangkat</Text>
         
         {devices.length === 0 && !isScanning ? (
-          <View style={styles.emptyState}>
+          <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
             <Text style={styles.emptyText}>Tidak ada perangkat Bluetooth ditemukan.</Text>
           </View>
         ) : (
@@ -141,12 +141,12 @@ export default function SettingsScreen() {
             keyExtractor={(item, index) => item.address || String(index)}
             renderItem={({ item }) => (
               <TouchableOpacity 
-                style={[styles.deviceItem, connectedDevice === item.address && styles.deviceItemActive]}
+                style={[styles.deviceItem, { backgroundColor: colors.card }, connectedDevice === item.address && [styles.deviceItemActive, { backgroundColor: colorScheme === 'dark' ? '#312e81' : '#e0e7ff' }]]}
                 onPress={() => connectDevice(item.address)}
               >
                 <View style={styles.deviceInfo}>
-                  <Text style={styles.deviceName}>{item.name || 'Unknown Device'}</Text>
-                  <Text style={styles.deviceMac}>{item.address}</Text>
+                  <Text style={[styles.deviceName, { color: colors.text }]}>{item.name || 'Unknown Device'}</Text>
+                  <Text style={[styles.deviceMac, { color: colors.textSecondary }]}>{item.address}</Text>
                 </View>
                 {connectedDevice === item.address ? (
                   <Text style={styles.statusText}>Terhubung</Text>
@@ -160,7 +160,7 @@ export default function SettingsScreen() {
         )}
       </View>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
           <TouchableOpacity style={styles.testBtn} onPress={testPrint} disabled={!connectedDevice && !!BluetoothManager}>
             <Text style={styles.testBtnText}>Test Print</Text>
           </TouchableOpacity>
