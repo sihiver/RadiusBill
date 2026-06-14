@@ -118,7 +118,6 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
             if (json.success) {
               fetchPackages();
               addSystemLog('SYSTEM', `Menghapus paket ID ${id}`);
-              if(addNotification) addNotification(`Paket "${pkgName}" berhasil dihapus`, 'success');
             } else {
               alert(json.message || 'Gagal menghapus paket.');
             }

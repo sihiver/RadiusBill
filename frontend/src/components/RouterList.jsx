@@ -73,7 +73,6 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
             if (json.success) {
               fetchRouters();
               addSystemLog('SYSTEM', `Memperpanjang paket PPPoE: "${customerName}"`);
-              if(addNotification) addNotification(`Paket router "${customerName}" berhasil diperpanjang`, 'success');
             } else {
               alert(json.message || 'Gagal memperpanjang paket.');
             }
@@ -175,7 +174,6 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
             if (json.success) {
               fetchRouters();
               addSystemLog('SYSTEM', `Menghapus router PPPoE pelanggan: "${name}"`);
-              if(addNotification) addNotification(`Router "${name}" deleted`, 'success');
             } else {
               alert(json.message || 'Gagal menghapus router.');
             }

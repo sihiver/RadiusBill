@@ -114,8 +114,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
           .then(json => {
             if (json.success) {
               fetchMembers();
-              addSystemLog('SYSTEM', `Memperpanjang paket member: "${memberName}"`);
-              if(addNotification) addNotification(`Paket member "${memberName}" berhasil diperpanjang`, 'success');
+              addSystemLog('SYSTEM', `Memperpanjang paket member hotspot: "${memberName}"`);
             } else {
               alert(json.message || 'Gagal memperpanjang paket.');
             }
@@ -145,8 +144,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
           .then(json => {
             if (json.success) {
               fetchMembers();
-              addSystemLog('SYSTEM', `Menghapus member Hotspot: "${memberName}"`);
-              if(addNotification) addNotification(`Member "${memberName}" berhasil dihapus`, 'success');
+              addSystemLog('SYSTEM', `Menghapus Member Hotspot: "${memberName}"`);
             } else {
               alert(json.message || 'Gagal menghapus member.');
             }

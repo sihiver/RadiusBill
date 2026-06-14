@@ -439,7 +439,7 @@ export default function App() {
   // ── Notification helper ───────────────────────────────────────────────────
   const addNotification = (message, variant = 'info') => {
     const now = new Date();
-    const id = Date.now();
+    const id = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     setNotifications(prev => [{
       id,
       message,
@@ -465,7 +465,7 @@ export default function App() {
   const addSystemLog = (type, detailsOrMsg, ipOrReason = '-', serviceOrSession = '-') => {
     const now = new Date();
     const timeStr = now.toTimeString().split(' ')[0];
-    const newLog = { id: Date.now(), time: timeStr, type };
+    const newLog = { id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), time: timeStr, type };
 
     if (type === 'SYSTEM')      { newLog.message = detailsOrMsg; }
     else if (type === 'AUTH')   { newLog.user = detailsOrMsg; newLog.ip = ipOrReason; newLog.service = serviceOrSession; }
