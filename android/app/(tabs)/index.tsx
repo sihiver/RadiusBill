@@ -1,8 +1,6 @@
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Text, View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
-import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 
 export default function DashboardScreen() {

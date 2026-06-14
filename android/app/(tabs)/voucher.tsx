@@ -1,8 +1,6 @@
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Text, View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Alert, Share } from 'react-native';
 import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Alert, Share } from 'react-native';
-import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';

@@ -1,8 +1,6 @@
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Text, View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
 import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
-import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 import { useSearch } from './_layout';
 
