@@ -8,7 +8,7 @@ const { asyncHandler } = require('../middleware/errorHandler');
 // GET /api/dashboard/stats
 router.get('/stats', asyncHandler(async (req, res) => {
   const data = await cacheAside('dashboard:stats', async () => {
-    const [vStats, mStats, rStats, sessionStats, revenueStats] = await Promise.all([
+    const [vStats, mStats, rStats, sessionStats, revenueStats, trendStats] = await Promise.all([
       // Voucher stats
       db.query(`
         SELECT
@@ -39,21 +39,46 @@ router.get('/stats', asyncHandler(async (req, res) => {
                SUM(acctinputoctets + acctoutputoctets) AS total_bytes
         FROM radacct WHERE acctstoptime IS NULL
       `),
-      // Monthly revenue from voucher_logs
+      // Monthly revenue from transactions
       db.query(`
         SELECT
-          COALESCE(SUM(price), 0) AS revenue_this_month
-        FROM voucher_logs
-        WHERE expired_at >= DATE_TRUNC('month', NOW())
+          (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW())) AS revenue_this_month,
+          (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW() - INTERVAL '1 month')) AS revenue_last_month
+      `),
+      // Revenue trend (last 7 days)
+      db.query(`
+        SELECT 
+          TO_CHAR(created_at, 'YYYY-MM-DD') as date,
+          type,
+          SUM(amount) as amount
+        FROM transactions
+        WHERE created_at >= CURRENT_DATE - INTERVAL '6 days'
+        GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD'), type
+        ORDER BY date ASC
       `),
     ]);
+
+    // Calculate revenue growth percentage
+    let revGrowth = 0;
+    const thisMonth = Number(revenueStats.rows[0].revenue_this_month);
+    const lastMonth = Number(revenueStats.rows[0].revenue_last_month);
+    if (lastMonth > 0) {
+      revGrowth = ((thisMonth - lastMonth) / lastMonth) * 100;
+    } else if (thisMonth > 0) {
+      revGrowth = 100; // 100% growth if there was 0 last month but some this month
+    }
 
     return {
       vouchers: vStats.rows[0],
       members:  mStats.rows[0],
       routers:  rStats.rows[0],
       sessions: sessionStats.rows[0],
-      revenue:  revenueStats.rows[0],
+      revenue:  {
+        this_month: thisMonth,
+        last_month: lastMonth,
+        growth_percentage: revGrowth
+      },
+      revenueTrend: trendStats.rows,
     };
   }, TTL.STATS);
 

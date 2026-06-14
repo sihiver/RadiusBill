@@ -76,37 +76,55 @@ export default function DashboardOverview({
   const currentRevenue = calculateTotalRevenue();
 
   // Chart data configuration based on filter
-  const chartData = {
-    all: [
-      { day: 'Sen', amt: 4.8, label: 'Rp 4.8M' },
-      { day: 'Sel', amt: 5.6, label: 'Rp 5.6M' },
-      { day: 'Rab', amt: 6.2, label: 'Rp 6.2M' },
-      { day: 'Kam', amt: 7.9, label: 'Rp 7.9M' },
-      { day: 'Jum', amt: 8.5, label: 'Rp 8.5M' },
-      { day: 'Sab', amt: 10.4, label: 'Rp 10.4M' },
-      { day: 'Min', amt: 9.8, label: 'Rp 9.8M' },
-    ],
-    hotspot: [
-      { day: 'Sen', amt: 1.8, label: 'Rp 1.8M' },
-      { day: 'Sel', amt: 2.1, label: 'Rp 2.1M' },
-      { day: 'Rab', amt: 2.5, label: 'Rp 2.5M' },
-      { day: 'Kam', amt: 3.2, label: 'Rp 3.2M' },
-      { day: 'Jum', amt: 3.6, label: 'Rp 3.6M' },
-      { day: 'Sab', amt: 4.8, label: 'Rp 4.8M' },
-      { day: 'Min', amt: 4.2, label: 'Rp 4.2M' },
-    ],
-    pppoe: [
-      { day: 'Sen', amt: 3.0, label: 'Rp 3.0M' },
-      { day: 'Sel', amt: 3.5, label: 'Rp 3.5M' },
-      { day: 'Rab', amt: 3.7, label: 'Rp 3.7M' },
-      { day: 'Kam', amt: 4.7, label: 'Rp 4.7M' },
-      { day: 'Jum', amt: 4.9, label: 'Rp 4.9M' },
-      { day: 'Sab', amt: 5.6, label: 'Rp 5.6M' },
-      { day: 'Min', amt: 5.6, label: 'Rp 5.6M' },
-    ]
+  const generateChartData = (trendData) => {
+    const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const result = { all: [], hotspot: [], pppoe: [] };
+    
+    // Generate dates for the last 7 days
+    const last7Dates = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      last7Dates.push(d.toISOString().split('T')[0]); // Local time ISO
+    }
+
+    last7Dates.forEach(dateStr => {
+      const d = new Date(dateStr);
+      const dayName = days[d.getDay()];
+
+      let hotspotAmt = 0;
+      let pppoeAmt = 0;
+
+      if (trendData) {
+        trendData.forEach(row => {
+          if (row.date === dateStr) {
+            if (row.type === 'voucher' || row.type === 'member') {
+              hotspotAmt += Number(row.amount);
+            } else if (row.type === 'router') {
+              pppoeAmt += Number(row.amount);
+            }
+          }
+        });
+      }
+
+      const allAmt = hotspotAmt + pppoeAmt;
+      const formatM = (val) => (val / 1000000).toFixed(1);
+      const formatLabel = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+
+      result.all.push({ day: dayName, amt: formatM(allAmt), label: formatLabel(allAmt) });
+      result.hotspot.push({ day: dayName, amt: formatM(hotspotAmt), label: formatLabel(hotspotAmt) });
+      result.pppoe.push({ day: dayName, amt: formatM(pppoeAmt), label: formatLabel(pppoeAmt) });
+    });
+
+    return result;
   };
 
-  const activeChart = chartData[chartFilter];
+  const currentChartData = generateChartData(stats?.revenueTrend);
+  const activeChart = currentChartData[chartFilter];
+
+  // Dynamic Y-axis maximum
+  const maxAmtInChart = Math.max(...activeChart.map(i => Number(i.amt)), 1); // Avoid div by 0
+  const maxAxisValue = Math.ceil(maxAmtInChart / 5) * 5 || 5; // Round up to nearest 5M (e.g. 5, 10, 15...)
 
   return (
     <div className="w-full space-y-6">
@@ -132,10 +150,18 @@ export default function DashboardOverview({
             <div className="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary-container">
               <span className="material-symbols-outlined">payments</span>
             </div>
-            <span className="font-label-sm text-label-sm text-tertiary-container bg-tertiary-container/10 px-2 py-0.5 rounded flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-              14.2%
-            </span>
+            {stats && stats.revenue && (
+              <span className={`font-label-sm text-label-sm px-2 py-0.5 rounded flex items-center gap-1 ${
+                stats.revenue.growth_percentage >= 0 
+                  ? 'text-tertiary-container bg-tertiary-container/10' 
+                  : 'text-error bg-error-container'
+              }`}>
+                <span className="material-symbols-outlined text-[14px]">
+                  {stats.revenue.growth_percentage >= 0 ? 'arrow_upward' : 'arrow_downward'}
+                </span>
+                {Math.abs(stats.revenue.growth_percentage).toFixed(1)}%
+              </span>
+            )}
           </div>
           <div className="relative z-10">
             <h3 className="font-label-md text-label-md text-on-surface-variant mb-1">Estimasi Pendapatan (Bulan Ini)</h3>
@@ -143,10 +169,9 @@ export default function DashboardOverview({
               <div className="h-10 bg-surface-variant animate-pulse rounded w-2/3 mt-2"></div>
             ) : (
               <p className="font-display-lg text-display-lg text-on-surface flex items-baseline gap-1">
-                <span className="font-body-md text-body-md text-on-surface-variant">Rp</span>
                 {stats && stats.revenue
-                  ? ((Number(stats.revenue.revenue_this_month) + 45200000) / 1000000).toFixed(2)
-                  : ((currentRevenue + 45200000) / 1000000).toFixed(2)}M
+                  ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(stats.revenue.this_month)
+                  : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(currentRevenue)}
               </p>
             )}
           </div>
@@ -276,17 +301,17 @@ export default function DashboardOverview({
             <div className="w-full h-full relative flex items-end justify-between px-2 pb-6 pt-10">
               {/* Y-axis labels */}
               <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-label-sm font-label-sm text-outline pr-2 pb-6">
-                <span>12M</span>
-                <span>9M</span>
-                <span>6M</span>
-                <span>3M</span>
+                <span>{maxAxisValue}M</span>
+                <span>{(maxAxisValue * 0.75).toFixed(1)}M</span>
+                <span>{(maxAxisValue * 0.5).toFixed(1)}M</span>
+                <span>{(maxAxisValue * 0.25).toFixed(1)}M</span>
                 <span>0</span>
               </div>
               
               {/* Bars/Area points */}
               <div className="flex-1 flex justify-around items-end h-full pl-8 z-10 gap-2">
                 {activeChart.map((item, idx) => {
-                  const percentage = (item.amt / 12) * 100;
+                  const percentage = Math.min((item.amt / maxAxisValue) * 100, 100);
                   return (
                     <div 
                       key={idx}
