@@ -715,9 +715,8 @@ export default function App() {
                       onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }}
                       aria-label={tab.name}
                       aria-current={activeTab === tab.id ? 'page' : undefined}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative font-label-md text-left ${activeTab === tab.id ? 'bg-primary text-white font-semibold shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'}`}
+                      className={`w-full flex items-center px-4 py-2.5 rounded-xl transition-all duration-200 group relative font-label-md text-left ${activeTab === tab.id ? 'bg-primary text-white font-semibold shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'}`}
                     >
-                      <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
                       {tab.name}
                     </button>
                   </li>
