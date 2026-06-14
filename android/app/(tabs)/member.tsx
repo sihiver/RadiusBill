@@ -160,6 +160,10 @@ export default function MemberScreen() {
           <Text style={styles.value}>{item.username}</Text>
         </View>
         <View style={styles.infoRow}>
+          <Text style={styles.label}>Password:</Text>
+          <Text style={styles.value}>{item.password || '-'}</Text>
+        </View>
+        <View style={styles.infoRow}>
           <Text style={styles.label}>Paket Aktif:</Text>
           <Text style={styles.value}>{item.package || '-'}</Text>
         </View>
