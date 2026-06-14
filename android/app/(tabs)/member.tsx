@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert, Share } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 import { Picker } from '@react-native-picker/picker';
+import * as Print from 'expo-print';
 
 export default function MemberScreen() {
   const [loading, setLoading] = useState(true);
@@ -127,6 +128,38 @@ export default function MemberScreen() {
     ]);
   };
 
+  const handleShare = async (item: any) => {
+    try {
+      const message = `Halo ${item.name || ''},\nBerikut adalah detail login WiFi Anda:\n\nUsername: ${item.username}\nPassword: ${item.password || '******'}\nPaket: ${item.package || '-'}\n\nTerima kasih.`;
+      await Share.share({ message });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handlePrint = async (item: any) => {
+    try {
+      const html = `
+        <html>
+          <body style="text-align: center; font-family: monospace; padding: 20px;">
+            <h2>Kartu Hotspot Member</h2>
+            <hr />
+            <h3>NAMA: ${item.name || ''}</h3>
+            <h3>USERNAME: ${item.username}</h3>
+            <h3>PASSWORD: ${item.password || '******'}</h3>
+            <hr />
+            <p>Paket: ${item.package || '-'}</p>
+            <p>Terima kasih telah menggunakan layanan kami.</p>
+          </body>
+        </html>
+      `;
+      await Print.printAsync({ html });
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Gagal', 'Tidak dapat memproses printer');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     if (status === 'Active') return '#10b981'; // green
     if (status === 'Expired') return '#ef4444'; // red
@@ -174,6 +207,12 @@ export default function MemberScreen() {
       </View>
 
       <View style={styles.cardActions}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => handleShare(item)}>
+          <Text style={styles.actionBtnText}>Share</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => handlePrint(item)}>
+          <Text style={styles.actionBtnText}>Print</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.actionBtn} onPress={() => openEditModal(item)}>
           <Text style={styles.actionBtnText}>Edit</Text>
         </TouchableOpacity>
