@@ -69,7 +69,7 @@ export default {
         "card-padding": "1.25rem",
         "container-max": "1440px",
         "stack-gap": "0.75rem",
-        "sidebar-width": "280px",
+        "sidebar-width": "240px",
         "gutter": "1.5rem"
       },
       fontFamily: {
