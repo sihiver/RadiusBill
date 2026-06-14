@@ -607,8 +607,7 @@ export default function App() {
   ];
 
   const sectionConfig = {
-    kontrol: { label: 'Kontrol Pengguna', icon: 'manage_accounts' },
-    system: { label: 'Sistem & Laporan', icon: 'admin_panel_settings' }
+    kontrol: { label: 'Kontrol Pengguna', icon: 'manage_accounts' }
   };
 
   const renderActiveComponent = () => {
@@ -704,6 +703,25 @@ export default function App() {
               </div>
             </div>
           ))}
+
+          {/* System static links */}
+          <div className="mt-4 pt-2 border-t border-slate-800/50">
+            <ul className="space-y-1">
+              {tabs.filter(t => t.section === 'system').map(tab => (
+                <li key={tab.id}>
+                  <button
+                    onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }}
+                    aria-label={tab.name}
+                    aria-current={activeTab === tab.id ? 'page' : undefined}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative font-label-md text-left ${activeTab === tab.id ? 'bg-primary text-white font-semibold shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'}`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+                    {tab.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Footer: Logout */}
