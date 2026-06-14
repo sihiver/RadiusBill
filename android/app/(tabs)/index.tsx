@@ -1,9 +1,13 @@
+import { useColorScheme } from 'react-native';
+import Colors from '@/constants/Colors';
 import { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 
 export default function DashboardScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
@@ -99,41 +103,41 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.pageTitle}>Dashboard Utama</Text>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>Dashboard Utama</Text>
 
       <View style={styles.grid}>
-        <View style={styles.fullCard}>
-          <Text style={styles.cardTitle}>Estimasi Pendapatan</Text>
+        <View style={[styles.fullCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Estimasi Pendapatan</Text>
           <Text style={styles.revenueValue}>
             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(stats.revenue)}
           </Text>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Total Voucher</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Total Voucher</Text>
           <Text style={styles.cardValue}>{stats.vouchers}</Text>
         </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Total Member</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Total Member</Text>
           <Text style={styles.cardValue}>{stats.members}</Text>
         </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Router Rumah</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Router Rumah</Text>
           <Text style={styles.cardValue}>{stats.routers}</Text>
         </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>User Online</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>User Online</Text>
           <Text style={styles.cardValue}>{stats.onlineUsers}</Text>
         </View>
       </View>
 
-      <View style={styles.chartCard}>
+      <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
         <View style={styles.chartHeader}>
-          <Text style={styles.cardTitle}>Grafik Pendapatan (7 Hari Terakhir)</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Grafik Pendapatan (7 Hari Terakhir)</Text>
         </View>
         <View style={styles.chartContainer}>
           {chartData.map((item, idx) => {
@@ -224,7 +228,7 @@ const styles = StyleSheet.create({
   chartHeader: {
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#e2e8f0',
     paddingBottom: 8,
   },
   chartContainer: {

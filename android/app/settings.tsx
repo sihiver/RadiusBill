@@ -1,3 +1,5 @@
+import { useColorScheme } from 'react-native';
+import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +19,8 @@ try {
 }
 
 export default function SettingsScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [isScanning, setIsScanning] = useState(false);
   const [devices, setDevices] = useState<any[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<string | null>(null);
@@ -100,20 +104,20 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.card }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <FontAwesome name="arrow-left" size={20} color="#1e293b" />
         </TouchableOpacity>
-        <Text style={styles.pageTitle}>Pengaturan Printer</Text>
+        <Text style={[styles.pageTitle, { color: colors.text }]}>Pengaturan Printer</Text>
       </View>
 
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.content}>
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.cardHeader}>
             <FontAwesome name="bluetooth-b" size={20} color="#3b82f6" />
-            <Text style={styles.cardTitle}>Printer Thermal Bluetooth</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Printer Thermal Bluetooth</Text>
           </View>
           <Text style={styles.cardDesc}>Hubungkan aplikasi dengan printer kasir bluetooth untuk mencetak struk fisik.</Text>
           

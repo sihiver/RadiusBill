@@ -1,3 +1,5 @@
+import { useColorScheme } from 'react-native';
+import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert, Share } from 'react-native';
 import { Text, View } from '@/components/Themed';
@@ -16,6 +18,8 @@ try {
 }
 
 export default function MemberScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [members, setMembers] = useState([]);
@@ -228,14 +232,14 @@ export default function MemberScreen() {
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{item.name.substring(0, 1).toUpperCase()}</Text>
           </View>
           <View>
-            <Text style={styles.nameText}>{item.name}</Text>
+            <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
             <Text style={styles.phoneText}>{item.phone || 'No HP Belum Diisi'}</Text>
           </View>
         </View>
@@ -249,20 +253,20 @@ export default function MemberScreen() {
       
       <View style={styles.cardBody}>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Username:</Text>
-          <Text style={styles.value}>{item.username}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Username:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.username}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Password:</Text>
-          <Text style={styles.value}>{item.password || '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Password:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.password || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Paket Aktif:</Text>
-          <Text style={styles.value}>{item.package_name || '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Paket Aktif:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.package_name || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Tgl Kedaluwarsa:</Text>
-          <Text style={styles.value}>{item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Tgl Kedaluwarsa:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '-'}</Text>
         </View>
       </View>
 
@@ -302,8 +306,8 @@ export default function MemberScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.pageTitle}>Manajemen Member</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>Manajemen Member</Text>
       <View style={styles.searchContainer}>
         <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
           <Text style={styles.addBtnText}>+ Tambah Member</Text>
@@ -330,7 +334,7 @@ export default function MemberScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{formData.id ? 'Edit Member' : 'Tambah Member'}</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{formData.id ? 'Edit Member' : 'Tambah Member'}</Text>
             
             <TextInput
               style={styles.input}

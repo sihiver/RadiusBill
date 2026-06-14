@@ -1,3 +1,5 @@
+import { useColorScheme } from 'react-native';
+import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
 import { Text, View } from '@/components/Themed';
@@ -5,6 +7,8 @@ import { apiFetch } from '@/services/api';
 import { useSearch } from './_layout';
 
 export default function RouterScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [routers, setRouters] = useState([]);
@@ -39,14 +43,14 @@ export default function RouterScreen() {
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{item.customer_name ? item.customer_name.substring(0, 1).toUpperCase() : 'R'}</Text>
           </View>
           <View>
-            <Text style={styles.nameText}>{item.customer_name}</Text>
+            <Text style={[styles.nameText, { color: colors.text }]}>{item.customer_name}</Text>
             <Text style={styles.phoneText}>{item.active_ip || item.router_ip || 'IP Kosong'}</Text>
           </View>
         </View>
@@ -60,20 +64,20 @@ export default function RouterScreen() {
       
       <View style={styles.cardBody}>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Paket Langganan:</Text>
-          <Text style={styles.value}>{item.package_name || '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Paket Langganan:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.package_name || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Username PPPoE:</Text>
-          <Text style={styles.value}>{item.pppoe_user || '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Username PPPoE:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.pppoe_user || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>MAC Address:</Text>
-          <Text style={styles.value}>{item.macAddress || '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>MAC Address:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.macAddress || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Tgl Kedaluwarsa:</Text>
-          <Text style={styles.value}>{item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Tgl Kedaluwarsa:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '-'}</Text>
         </View>
       </View>
     </View>
@@ -95,8 +99,8 @@ export default function RouterScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.pageTitle}>Router PPPoE</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>Router PPPoE</Text>
       <FlatList
         data={filteredRouters}
         keyExtractor={(item) => item.id.toString()}

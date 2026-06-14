@@ -1,3 +1,5 @@
+import { useColorScheme } from 'react-native';
+import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Alert, Share } from 'react-native';
 import { Text, View } from '@/components/Themed';
@@ -15,6 +17,8 @@ try {
 import { useSearch } from './_layout';
 
 export default function VoucherScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [vouchers, setVouchers] = useState([]);
@@ -125,9 +129,9 @@ export default function VoucherScreen() {
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.codeText}>{item.code}</Text>
+        <Text style={[styles.codeText, { color: colors.text }]}>{item.code}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
           <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
             {getStatusText(item.status)}
@@ -137,16 +141,16 @@ export default function VoucherScreen() {
       
       <View style={styles.cardBody}>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Paket:</Text>
-          <Text style={styles.value}>{item.package_name || '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Paket:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.package_name || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Pemakaian:</Text>
-          <Text style={styles.value}>{item.usedBytes || '0 MB'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Pemakaian:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.usedBytes || '0 MB'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Sisa Waktu:</Text>
-          <Text style={styles.value}>{item.timeLeft || '-'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Sisa Waktu:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{item.timeLeft || '-'}</Text>
         </View>
       </View>
       <View style={styles.cardActions}>
@@ -175,8 +179,8 @@ export default function VoucherScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.pageTitle}>Manajemen Voucher</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>Manajemen Voucher</Text>
       <FlatList
         data={filteredVouchers}
         keyExtractor={(item) => item.id.toString()}
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#e2e8f0',
     paddingBottom: 12,
     backgroundColor: 'transparent',
   },

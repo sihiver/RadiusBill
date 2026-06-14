@@ -16,6 +16,7 @@ export function useSearch() {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [isProfileMenuVisible, setIsProfileMenuVisible] = useState(false);
@@ -24,7 +25,8 @@ export default function TabLayout() {
     <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
       <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: colors.tint,
+        headerStyle: { backgroundColor: colors.card },
         headerShown: useClientOnlyValue(false, true),
         headerTitle: () => (
           isSearchActive ? (
@@ -33,25 +35,25 @@ export default function TabLayout() {
               placeholder="Ketik untuk mencari..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8, width: 200, fontSize: 16 }}
+              style={{ backgroundColor: colors.background, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8, width: 200, fontSize: 16, color: colors.text }}
             />
           ) : null
         ),
         headerLeft: () => (
           isSearchActive ? null : (
             <View style={{ marginLeft: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#4D44E3' }}>Billing Radius</Text>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.primary }}>Billing Radius</Text>
             </View>
           )
         ),
         headerRight: () => (
           <View style={{ flexDirection: 'row', marginRight: 16, gap: 16, alignItems: 'center' }}>
             <TouchableOpacity onPress={() => { setIsSearchActive(!isSearchActive); if (isSearchActive) setSearchQuery(''); }}>
-              <FontAwesome name={isSearchActive ? "close" : "search"} size={20} color="#64748b" />
+              <FontAwesome name={isSearchActive ? "close" : "search"} size={20} color={colors.textSecondary} />
             </TouchableOpacity>
             {!isSearchActive && (
               <TouchableOpacity onPress={() => setIsProfileMenuVisible(true)}>
-                <FontAwesome name="user-circle" size={20} color="#64748b" />
+                <FontAwesome name="user-circle" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -114,9 +116,9 @@ export default function TabLayout() {
 
       <Modal transparent visible={isProfileMenuVisible} onRequestClose={() => setIsProfileMenuVisible(false)} animationType="fade">
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.1)' }} onPress={() => setIsProfileMenuVisible(false)} activeOpacity={1}>
-          <View style={{ position: 'absolute', top: 50, right: 16, backgroundColor: 'white', borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4, minWidth: 150 }}>
-            <TouchableOpacity style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }} onPress={() => { setIsProfileMenuVisible(false); router.push('/settings'); }}>
-              <Text style={{ fontSize: 16, color: '#334155' }}>Pengaturan</Text>
+          <View style={{ position: 'absolute', top: 50, right: 16, backgroundColor: colors.card, borderRadius: 8, padding: 8, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4, minWidth: 150 }}>
+            <TouchableOpacity style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border }} onPress={() => { setIsProfileMenuVisible(false); router.push('/settings'); }}>
+              <Text style={{ fontSize: 16, color: colors.text }}>Pengaturan</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ padding: 12 }} onPress={() => { setIsProfileMenuVisible(false); Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin logout?', [{ text: 'Batal', style: 'cancel' }, { text: 'Logout', style: 'destructive', onPress: () => Alert.alert('Info', 'Sistem login belum tersedia') }]); }}>
               <Text style={{ fontSize: 16, color: '#ef4444' }}>Logout</Text>
