@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: '#f1f5f9',
   },
   pageTitle: {
     fontSize: 24,
