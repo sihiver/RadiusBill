@@ -593,7 +593,7 @@ export default function App() {
   // ── Nav definitions ───────────────────────────────────────────────────────
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', section: 'core' },
-    { id: 'packages', name: 'Paket & Bandwidth', icon: 'inventory_2', section: 'core' },
+    { id: 'packages', name: 'Paket', icon: 'inventory_2', section: 'core' },
     { id: 'generator', name: 'Generator Voucher', icon: 'confirmation_number', section: 'voucher' },
     { id: 'log', name: 'Voucher', icon: 'history', section: 'voucher' },
     { id: 'members', name: 'Daftar Member', icon: 'group', section: 'member' },
