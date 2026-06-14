@@ -607,7 +607,6 @@ export default function App() {
   ];
 
   const sectionLabels = {
-    core: 'UTAMA',
     kontrol: 'KONTROL PENGGUNA',
     system: 'SISTEM & LAPORAN'
   };
@@ -651,6 +650,26 @@ export default function App() {
 
         {/* Nav sections */}
         <div className="flex-1 overflow-y-auto space-y-2 px-2 select-none">
+          {/* Core static links */}
+          <div className="mb-4">
+            <ul className="space-y-1">
+              {tabs.filter(t => t.section === 'core').map(tab => (
+                <li key={tab.id}>
+                  <button
+                    onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }}
+                    aria-label={tab.name}
+                    aria-current={activeTab === tab.id ? 'page' : undefined}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative font-label-md text-left ${activeTab === tab.id ? 'bg-primary text-white font-semibold shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'}`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+                    {tab.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Accordion grouped sections */}
           {Object.entries(sectionLabels).map(([section, label]) => (
             <div key={section} className="mb-2">
               <button 
