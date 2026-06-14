@@ -185,6 +185,11 @@ export default function App() {
   const [vouchers, setVouchers] = useState([]);
   const [members, setMembers] = useState([]);
   const [routers, setRouters] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [clearLogTime, setClearLogTime] = useState(() => {
+    const saved = localStorage.getItem('clear_log_time');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const [voucherTemplate, setVoucherTemplate] = useState(() => loadState('voucher_template', defaultVoucherTemplate));
   const [isDark, setIsDark]       = useState(() => loadState('theme_dark', false));
 
@@ -374,15 +379,13 @@ export default function App() {
   }, [isDark]);
 
   // ── FreeRADIUS live logs (NOT persisted – fresh each session) ─────────────
-  const [logs, setLogs] = useState([]);
-
   // Fetch radius logs
   const fetchRadiusLogs = async () => {
     try {
       const res = await fetch('/api/radius/logs?limit=50');
       const json = await res.json();
       if (json.success) {
-        const mapped = json.data.map((l, idx) => {
+        let mapped = json.data.map((l, idx) => {
           const timeStr = new Date(l.created_at).toLocaleTimeString('id-ID');
           return {
             id: idx,
@@ -394,9 +397,16 @@ export default function App() {
             action: l.action || (l.reply === 'Access-Accept' ? 'Accept' : l.reply),
             session: l.session_id || '-',
             reason: l.reason || l.reply || '-',
-            message: l.message
+            message: l.message,
+            timestamp: new Date(l.created_at).getTime()
           };
         });
+
+        // Filter out logs that happened before the user cleared the terminal
+        if (clearLogTime > 0) {
+          mapped = mapped.filter(l => l.timestamp > clearLogTime);
+        }
+
         setLogs(mapped);
       }
     } catch (err) {
@@ -495,7 +505,12 @@ export default function App() {
     addNotification(detailsOrMsg, variant);
   };
 
-  const clearLogs = () => setLogs([]);
+  const clearLogs = () => {
+    const now = Date.now();
+    setClearLogTime(now);
+    localStorage.setItem('clear_log_time', now.toString());
+    setLogs([]);
+  };
 
   // ── Clock ticker ──────────────────────────────────────────────────────────
   useEffect(() => {
