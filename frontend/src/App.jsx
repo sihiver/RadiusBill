@@ -137,7 +137,8 @@ const defaultRouters = () => [
 // ═════════════════════════════════════════════════════════════════════════════
 export default function App() {
   // ── Core UI state ─────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => loadState('active_tab', 'dashboard'));
+  useEffect(() => { saveState('active_tab', activeTab); }, [activeTab]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [radiusStatus, setRadiusStatus] = useState('Connected');
