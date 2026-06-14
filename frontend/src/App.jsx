@@ -606,9 +606,9 @@ export default function App() {
     { id: 'settings', name: 'Pengaturan Sistem', icon: 'settings', section: 'system' },
   ];
 
-  const sectionLabels = {
-    kontrol: 'KONTROL PENGGUNA',
-    system: 'SISTEM & LAPORAN'
+  const sectionConfig = {
+    kontrol: { label: 'Kontrol Pengguna', icon: 'manage_accounts' },
+    system: { label: 'Sistem & Laporan', icon: 'admin_panel_settings' }
   };
 
   const renderActiveComponent = () => {
@@ -670,13 +670,16 @@ export default function App() {
           </div>
 
           {/* Accordion grouped sections */}
-          {Object.entries(sectionLabels).map(([section, label]) => (
+          {Object.entries(sectionConfig).map(([section, config]) => (
             <div key={section} className="mb-2">
               <button 
                 onClick={() => setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))}
-                className="w-full flex justify-between items-center px-3 py-2 font-label-md uppercase text-slate-400 font-bold hover:text-white transition-colors rounded-lg hover:bg-slate-800/30"
+                className="w-full flex justify-between items-center px-3 py-2 font-label-md text-slate-400 font-bold hover:text-white transition-colors rounded-lg hover:bg-slate-800/30"
               >
-                {label}
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">{config.icon}</span>
+                  {config.label}
+                </div>
                 <span className={`material-symbols-outlined text-[18px] transition-transform duration-300 ${expandedSections[section] ? 'rotate-180' : ''}`}>
                   expand_more
                 </span>
