@@ -45,7 +45,7 @@ export default function VoucherScreen() {
 
   const handleShare = async (item: any) => {
     try {
-      const message = `Berikut adalah detail Voucher WiFi Anda:\n\nKode Voucher: ${item.code}\nPaket: ${item.package}\n\nTerima kasih.`;
+      const message = `Berikut adalah detail Voucher WiFi Anda:\n\nKode Voucher: ${item.code}\nPaket: ${item.package_name || '-'}\n\nTerima kasih.`;
       await Share.share({ message });
     } catch (error) {
       console.error(error);
@@ -61,7 +61,7 @@ export default function VoucherScreen() {
             <hr />
             <h3>KODE VOUCHER: ${item.code}</h3>
             <hr />
-            <p>Paket: ${item.package}</p>
+            <p>Paket: ${item.package_name || '-'}</p>
             <p>Terima kasih telah menggunakan layanan kami.</p>
           </body>
         </html>
@@ -87,7 +87,7 @@ export default function VoucherScreen() {
       <View style={styles.cardBody}>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Paket:</Text>
-          <Text style={styles.value}>{item.package}</Text>
+          <Text style={styles.value}>{item.package_name || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Pemakaian:</Text>

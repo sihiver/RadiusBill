@@ -130,7 +130,7 @@ export default function MemberScreen() {
 
   const handleShare = async (item: any) => {
     try {
-      const message = `Halo ${item.name || ''},\nBerikut adalah detail login WiFi Anda:\n\nUsername: ${item.username}\nPassword: ${item.password || '******'}\nPaket: ${item.package || '-'}\n\nTerima kasih.`;
+      const message = `Halo ${item.name || ''},\nBerikut adalah detail login WiFi Anda:\n\nUsername: ${item.username}\nPassword: ${item.password || '******'}\nPaket: ${item.package_name || '-'}\n\nTerima kasih.`;
       await Share.share({ message });
     } catch (error) {
       console.error(error);
@@ -148,7 +148,7 @@ export default function MemberScreen() {
             <h3>USERNAME: ${item.username}</h3>
             <h3>PASSWORD: ${item.password || '******'}</h3>
             <hr />
-            <p>Paket: ${item.package || '-'}</p>
+            <p>Paket: ${item.package_name || '-'}</p>
             <p>Terima kasih telah menggunakan layanan kami.</p>
           </body>
         </html>
@@ -198,7 +198,7 @@ export default function MemberScreen() {
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Paket Aktif:</Text>
-          <Text style={styles.value}>{item.package || '-'}</Text>
+          <Text style={styles.value}>{item.package_name || '-'}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Tgl Kedaluwarsa:</Text>
