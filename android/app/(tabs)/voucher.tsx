@@ -137,7 +137,7 @@ export default function VoucherScreen() {
         </View>
       </View>
       
-      <View style={styles.cardBody}>
+      <View style={[styles.cardBody, { backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#f8fafc' }]}>
         <View style={styles.infoRow}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Paket:</Text>
           <Text style={[styles.value, { color: colors.text }]}>{item.package_name || '-'}</Text>
@@ -152,10 +152,10 @@ export default function VoucherScreen() {
         </View>
       </View>
       <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handleShare(item)}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handleShare(item)}>
           <Text style={styles.actionBtnText}>Share</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handlePrint(item)}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handlePrint(item)}>
           <Text style={styles.actionBtnText}>Print</Text>
         </TouchableOpacity>
       </View>

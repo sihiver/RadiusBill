@@ -233,12 +233,12 @@ export default function MemberScreen() {
     <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { backgroundColor: colorScheme === 'dark' ? '#312e81' : '#e0e7ff' }]}>
             <Text style={styles.avatarText}>{item.name.substring(0, 1).toUpperCase()}</Text>
           </View>
           <View>
             <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
-            <Text style={styles.phoneText}>{item.phone || 'No HP Belum Diisi'}</Text>
+            <Text style={[styles.phoneText, { color: colors.textSecondary }]}>{item.phone || 'No HP Belum Diisi'}</Text>
           </View>
         </View>
         
@@ -249,7 +249,7 @@ export default function MemberScreen() {
         </View>
       </View>
       
-      <View style={styles.cardBody}>
+      <View style={[styles.cardBody, { backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#f8fafc' }]}>
         <View style={styles.infoRow}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Username:</Text>
           <Text style={[styles.value, { color: colors.text }]}>{item.username}</Text>
@@ -269,19 +269,19 @@ export default function MemberScreen() {
       </View>
 
       <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handleShare(item)}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handleShare(item)}>
           <Text style={styles.actionBtnText}>Share</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handlePrint(item)}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handlePrint(item)}>
           <Text style={styles.actionBtnText}>Print</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => openEditModal(item)}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => openEditModal(item)}>
           <Text style={styles.actionBtnText}>Edit</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#10b981'}]} onPress={() => handleExtend(item.id)}>
           <Text style={[styles.actionBtnText, {color: '#fff'}]}>Perpanjang</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item.id)}>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handleDelete(item.id)}>
           <Text style={[styles.actionBtnText, {color: '#ef4444'}]}>Hapus</Text>
         </TouchableOpacity>
       </View>
@@ -331,30 +331,30 @@ export default function MemberScreen() {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>{formData.id ? 'Edit Member' : 'Tambah Member'}</Text>
             
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
               placeholder="Nama Lengkap"
               value={formData.name}
               onChangeText={(text) => setFormData({...formData, name: text})}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
               placeholder="Username"
               value={formData.username}
               onChangeText={(text) => setFormData({...formData, username: text})}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
               placeholder={formData.id ? "Password (Kosongkan jika tidak diubah)" : "Password"}
               secureTextEntry
               value={formData.password}
               onChangeText={(text) => setFormData({...formData, password: text})}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
               placeholder="No. HP"
               keyboardType="phone-pad"
               value={formData.phone}
@@ -362,7 +362,7 @@ export default function MemberScreen() {
             />
 
             <Text style={styles.pickerLabel}>Pilih Paket:</Text>
-            <View style={styles.pickerContainer}>
+            <View style={[styles.pickerContainer, { backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff', borderColor: colors.border }]}>
               <Picker
                 selectedValue={formData.package_id}
                 onValueChange={(itemValue) => setFormData({...formData, package_id: itemValue})}

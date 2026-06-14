@@ -44,12 +44,12 @@ export default function RouterScreen() {
     <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { backgroundColor: colorScheme === 'dark' ? '#312e81' : '#e0e7ff' }]}>
             <Text style={styles.avatarText}>{item.customer_name ? item.customer_name.substring(0, 1).toUpperCase() : 'R'}</Text>
           </View>
           <View>
             <Text style={[styles.nameText, { color: colors.text }]}>{item.customer_name}</Text>
-            <Text style={styles.phoneText}>{item.active_ip || item.router_ip || 'IP Kosong'}</Text>
+            <Text style={[styles.phoneText, { color: colors.textSecondary }]}>{item.active_ip || item.router_ip || 'IP Kosong'}</Text>
           </View>
         </View>
         
@@ -60,7 +60,7 @@ export default function RouterScreen() {
         </View>
       </View>
       
-      <View style={styles.cardBody}>
+      <View style={[styles.cardBody, { backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#f8fafc' }]}>
         <View style={styles.infoRow}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Paket Langganan:</Text>
           <Text style={[styles.value, { color: colors.text }]}>{item.package_name || '-'}</Text>
