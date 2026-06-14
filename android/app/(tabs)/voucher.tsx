@@ -137,7 +137,7 @@ export default function VoucherScreen() {
         </View>
       </View>
       
-      <View style={[styles.cardBody, { backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#f8fafc' }]}>
+      <View style={styles.cardBody}>
         <View style={styles.infoRow}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Paket:</Text>
           <Text style={[styles.value, { color: colors.text }]}>{item.package_name || '-'}</Text>
