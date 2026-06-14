@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, Image, TextInput } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 
@@ -7,6 +7,7 @@ export default function MemberScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [members, setMembers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchMembers = async () => {
     try {
@@ -82,10 +83,24 @@ export default function MemberScreen() {
     );
   }
 
+  const filteredMembers = members.filter((m: any) => 
+    m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    m.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.phone?.includes(searchQuery)
+  );
+
   return (
     <View style={styles.container}>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cari nama, username, atau HP..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
       <FlatList
-        data={members}
+        data={filteredMembers}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContainer}
@@ -108,6 +123,22 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    color: '#1e293b',
   },
   listContainer: {
     padding: 16,

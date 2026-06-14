@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 
@@ -7,6 +7,7 @@ export default function VoucherScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [vouchers, setVouchers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchVouchers = async () => {
     try {
@@ -78,10 +79,23 @@ export default function VoucherScreen() {
     );
   }
 
+  const filteredVouchers = vouchers.filter((v: any) => 
+    v.code?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    v.package?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <View style={styles.container}>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cari kode voucher atau paket..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
       <FlatList
-        data={vouchers}
+        data={filteredVouchers}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContainer}
@@ -104,6 +118,22 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    color: '#1e293b',
   },
   listContainer: {
     padding: 16,
