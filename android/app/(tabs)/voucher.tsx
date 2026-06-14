@@ -3,6 +3,15 @@ import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput, Tou
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+
+let BluetoothEscposPrinter: any = null;
+try {
+  const printer = require('react-native-thermal-receipt-printer-image-qr');
+  BluetoothEscposPrinter = printer.BluetoothEscposPrinter;
+} catch (error) {
+  // Ignore in Expo Go
+}
 import { useSearch } from './_layout';
 
 export default function VoucherScreen() {
@@ -55,15 +64,56 @@ export default function VoucherScreen() {
 
   const handlePrint = async (item: any) => {
     try {
+      if (BluetoothEscposPrinter) {
+        try {
+          await BluetoothEscposPrinter.printerInit();
+          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.CENTER);
+          await BluetoothEscposPrinter.printText('BILLING RADIUS\n\r', { fonttype: 1 });
+          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
+          await BluetoothEscposPrinter.printText('Voucher Hotspot\n\r', {});
+          await BluetoothEscposPrinter.printText(`${item.code}\n\r`, { widthtimes: 1, heigthtimes: 1 });
+          await BluetoothEscposPrinter.printText(`Paket: ${item.package_name || '-'}\n\r`, {});
+          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
+          await BluetoothEscposPrinter.printText('Gunakan kode di atas untuk login\n\r', { fonttype: 1 });
+          await BluetoothEscposPrinter.printText('\n\r\n\r', {});
+          Alert.alert('Sukses', 'Voucher berhasil dicetak ke printer Bluetooth');
+          return;
+        } catch (printErr: any) {
+          console.log('Bluetooth print failed, falling back to PDF', printErr);
+          // Fallback to PDF if not connected
+        }
+      }
+
       const html = `
+        <!DOCTYPE html>
         <html>
-          <body style="text-align: center; font-family: monospace; padding: 20px;">
-            <h2>Kartu Voucher Hotspot</h2>
-            <hr />
-            <h3>KODE VOUCHER: ${item.code}</h3>
-            <hr />
-            <p>Paket: ${item.package_name || '-'}</p>
-            <p>Terima kasih telah menggunakan layanan kami.</p>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+            <style>
+              @page { margin: 0; size: 58mm auto; }
+              body {
+                margin: 0;
+                padding: 10px;
+                width: 58mm;
+                font-family: monospace;
+                font-size: 12px;
+                color: #000;
+                text-align: center;
+              }
+              h2 { font-size: 16px; margin: 5px 0; }
+              h3 { font-size: 18px; margin: 10px 0; font-weight: bold; border: 1px solid #000; padding: 5px; }
+              p { margin: 5px 0; }
+              .dashed-line { border-top: 1px dashed #000; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            <h2>BILLING RADIUS</h2>
+            <div class="dashed-line"></div>
+            <p>Voucher Hotspot</p>
+            <h3>${item.code}</h3>
+            <p>Paket: <b>${item.package_name || '-'}</b></p>
+            <div class="dashed-line"></div>
+            <p style="font-size: 10px;">Gunakan kode di atas untuk login ke jaringan WiFi kami.</p>
           </body>
         </html>
       `;

@@ -3,8 +3,17 @@ import { StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpaci
 import { Text, View } from '@/components/Themed';
 import { apiFetch } from '@/services/api';
 import { Picker } from '@react-native-picker/picker';
+import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import { useSearch } from './_layout';
+
+let BluetoothEscposPrinter: any = null;
+try {
+  const printer = require('react-native-thermal-receipt-printer-image-qr');
+  BluetoothEscposPrinter = printer.BluetoothEscposPrinter;
+} catch (error) {
+  // Ignore in Expo Go
+}
 
 export default function MemberScreen() {
   const [loading, setLoading] = useState(true);
@@ -140,17 +149,67 @@ export default function MemberScreen() {
 
   const handlePrint = async (item: any) => {
     try {
+      if (BluetoothEscposPrinter) {
+        try {
+          await BluetoothEscposPrinter.printerInit();
+          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.CENTER);
+          await BluetoothEscposPrinter.printText('BILLING RADIUS\n\r', { fonttype: 1 });
+          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
+          await BluetoothEscposPrinter.printText('Akun Member PPPoE\n\r', {});
+          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
+          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.LEFT);
+          await BluetoothEscposPrinter.printText(`Nama : ${item.name}\n\r`, {});
+          await BluetoothEscposPrinter.printText(`User : ${item.username}\n\r`, {});
+          await BluetoothEscposPrinter.printText(`Pass : ${item.password || '***'}\n\r`, {});
+          await BluetoothEscposPrinter.printText(`Paket: ${item.package_name || '-'}\n\r`, {});
+          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.CENTER);
+          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
+          await BluetoothEscposPrinter.printText('Simpan info akun ini dengan baik\n\r', { fonttype: 1 });
+          await BluetoothEscposPrinter.printText('\n\r\n\r', {});
+          Alert.alert('Sukses', 'Detail member berhasil dicetak ke printer Bluetooth');
+          return;
+        } catch (printErr: any) {
+          console.log('Bluetooth print failed, falling back to PDF', printErr);
+          // Fallback to PDF if not connected
+        }
+      }
+
       const html = `
+        <!DOCTYPE html>
         <html>
-          <body style="text-align: center; font-family: monospace; padding: 20px;">
-            <h2>Kartu Hotspot Member</h2>
-            <hr />
-            <h3>NAMA: ${item.name || ''}</h3>
-            <h3>USERNAME: ${item.username}</h3>
-            <h3>PASSWORD: ${item.password || '******'}</h3>
-            <hr />
-            <p>Paket: ${item.package_name || '-'}</p>
-            <p>Terima kasih telah menggunakan layanan kami.</p>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+            <style>
+              @page { margin: 0; size: 58mm auto; }
+              body {
+                margin: 0;
+                padding: 10px;
+                width: 58mm;
+                font-family: monospace;
+                font-size: 12px;
+                color: #000;
+                text-align: center;
+              }
+              h2 { font-size: 16px; margin: 5px 0; }
+              h3 { font-size: 14px; margin: 5px 0; }
+              p { margin: 5px 0; }
+              .dashed-line { border-top: 1px dashed #000; margin: 10px 0; }
+              .info-row { display: flex; justify-content: space-between; text-align: left; font-size: 12px; margin-bottom: 2px;}
+            </style>
+          </head>
+          <body>
+            <h2>BILLING RADIUS</h2>
+            <div class="dashed-line"></div>
+            <p>Akun Member PPPoE</p>
+            
+            <div class="dashed-line"></div>
+            <div class="info-row"><span>Nama:</span> <b>${item.name}</b></div>
+            <div class="info-row"><span>User:</span> <b>${item.username}</b></div>
+            <div class="info-row"><span>Pass:</span> <b>${item.password || '***'}</b></div>
+            <div class="info-row"><span>Paket:</span> <b>${item.package_name || '-'}</b></div>
+            
+            <div class="dashed-line"></div>
+            <p style="font-size: 10px;">Simpan informasi akun ini dengan baik.</p>
           </body>
         </html>
       `;
