@@ -1,4 +1,4 @@
-import { useColorScheme, Text, View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform } from 'react-native';
+import { PermissionsAndroid, useColorScheme, Text, View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,13 +6,13 @@ import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 // In Expo Go, native modules might not be available
-let BluetoothManager: any = null;
-let BluetoothEscposPrinter: any = null;
+let BLEPrinter: any = null;
+
 
 try {
   const printer = require('react-native-thermal-receipt-printer-image-qr');
-  BluetoothManager = printer.BluetoothManager;
-  BluetoothEscposPrinter = printer.BluetoothEscposPrinter;
+  BLEPrinter = printer.BLEPrinter;
+  
 } catch (error) {
   console.log('Bluetooth printing module not available in this environment');
 }
@@ -24,39 +24,74 @@ export default function SettingsScreen() {
   const [devices, setDevices] = useState<any[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Attempt to load paired devices on mount if module is available
-    if (BluetoothManager) {
-      loadPairedDevices();
+  const requestBluetoothPermission = async () => {
+    if (Platform.OS === 'android') {
+      if (Platform.Version >= 31) {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        ]);
+        return (
+          granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED
+        );
+      } else {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
     }
+    return true;
+  };
+
+  useEffect(() => {
+    const setupPrinter = async () => {
+      if (BLEPrinter) {
+        const hasPerm = await requestBluetoothPermission();
+        if (!hasPerm) {
+          console.log('Bluetooth permissions denied');
+          return;
+        }
+        try {
+          await BLEPrinter.init();
+          loadPairedDevices();
+        } catch (e) {
+          console.log('Init error:', e);
+        }
+      }
+    };
+    setupPrinter();
   }, []);
 
   const loadPairedDevices = async () => {
     try {
-      const devicesStr = await BluetoothManager.enableBluetooth();
-      const paired = JSON.parse(devicesStr || '[]');
-      if (paired && paired.length > 0) {
-        setDevices(paired);
+      const devices = await BLEPrinter.getDeviceList();
+      if (devices && devices.length > 0) {
+        setDevices(devices);
       }
     } catch (e: any) {
       console.log('Enable bluetooth failed:', e);
     }
   };
 
+  
+  
   const scanDevices = async () => {
-    if (!BluetoothManager) {
+    const hasPerm = await requestBluetoothPermission();
+    if (!hasPerm) {
+      Alert.alert("Izin Ditolak", "Izin Bluetooth diperlukan untuk mencari perangkat.");
+      return;
+    }
+    if (!BLEPrinter) {
       Alert.alert('Info', 'Fitur Bluetooth tidak didukung pada Expo Go. Gunakan Development Build (APK).');
       return;
     }
     setIsScanning(true);
     setDevices([]);
     try {
-      const res = await BluetoothManager.scanDevices();
-      const parsed = JSON.parse(res || '[]');
-      let allDevices: any[] = [];
-      if (parsed.paired) allDevices = [...allDevices, ...parsed.paired];
-      if (parsed.found) allDevices = [...allDevices, ...parsed.found];
-      setDevices(allDevices);
+      const devicesList = await BLEPrinter.getDeviceList();
+      setDevices(devicesList || []);
     } catch (err: any) {
       Alert.alert('Gagal Pindai', err.message || 'Terjadi kesalahan');
     } finally {
@@ -65,10 +100,10 @@ export default function SettingsScreen() {
   };
 
   const connectDevice = async (address: string) => {
-    if (!BluetoothManager) return;
+    if (!BLEPrinter) return;
     try {
       setIsScanning(true);
-      await BluetoothManager.connect(address);
+      await BLEPrinter.connectPrinter(address);
       setConnectedDevice(address);
       Alert.alert('Berhasil', 'Printer berhasil terhubung');
     } catch (err: any) {
@@ -79,7 +114,7 @@ export default function SettingsScreen() {
   };
 
   const testPrint = async () => {
-    if (!BluetoothEscposPrinter) {
+    if (!BLEPrinter) {
       Alert.alert('Info', 'Modul printer tidak tersedia');
       return;
     }
@@ -89,14 +124,7 @@ export default function SettingsScreen() {
     }
     
     try {
-      await BluetoothEscposPrinter.printerInit();
-      await BluetoothEscposPrinter.printerLeftSpace(0);
-      await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.CENTER);
-      await BluetoothEscposPrinter.setBlob(0);
-      await BluetoothEscposPrinter.printText('TEST PRINT SUCCESS\n\r', { encoding: 'GBK', codepage: 0, widthtimes: 1, heigthtimes: 1, fonttype: 1 });
-      await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.LEFT);
-      await BluetoothEscposPrinter.printText('Printer Anda siap digunakan untuk mencetak struk voucher.\n\r', { encoding: 'GBK', codepage: 0, widthtimes: 0, heigthtimes: 0, fonttype: 1 });
-      await BluetoothEscposPrinter.printText('\n\r\n\r', {});
+      BLEPrinter.printBill('TEST PRINT SUCCESS\nPrinter Anda siap digunakan untuk mencetak struk voucher.\n\n');
     } catch (err: any) {
       Alert.alert('Gagal Cetak', err.message || 'Terjadi kesalahan saat mencetak');
     }
@@ -138,17 +166,17 @@ export default function SettingsScreen() {
         ) : (
           <FlatList
             data={devices}
-            keyExtractor={(item, index) => item.address || String(index)}
+            keyExtractor={(item, index) => item.inner_mac_address || String(index)}
             renderItem={({ item }) => (
               <TouchableOpacity 
-                style={[styles.deviceItem, { backgroundColor: colors.card }, connectedDevice === item.address && [styles.deviceItemActive, { backgroundColor: colorScheme === 'dark' ? '#312e81' : '#e0e7ff' }]]}
-                onPress={() => connectDevice(item.address)}
+                style={[styles.deviceItem, { backgroundColor: colors.card }, connectedDevice === item.inner_mac_address && [styles.deviceItemActive, { backgroundColor: colorScheme === 'dark' ? '#312e81' : '#e0e7ff' }]]}
+                onPress={() => connectDevice(item.inner_mac_address)}
               >
                 <View style={styles.deviceInfo}>
-                  <Text style={[styles.deviceName, { color: colors.text }]}>{item.name || 'Unknown Device'}</Text>
-                  <Text style={[styles.deviceMac, { color: colors.textSecondary }]}>{item.address}</Text>
+                  <Text style={[styles.deviceName, { color: colors.text }]}>{item.device_name || 'Unknown Device'}</Text>
+                  <Text style={[styles.deviceMac, { color: colors.textSecondary }]}>{item.inner_mac_address}</Text>
                 </View>
-                {connectedDevice === item.address ? (
+                {connectedDevice === item.inner_mac_address ? (
                   <Text style={styles.statusText}>Terhubung</Text>
                 ) : (
                   <FontAwesome name="chevron-right" size={16} color="#cbd5e1" />
@@ -161,7 +189,7 @@ export default function SettingsScreen() {
       </View>
 
         <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-          <TouchableOpacity style={styles.testBtn} onPress={testPrint} disabled={!connectedDevice && !!BluetoothManager}>
+          <TouchableOpacity style={styles.testBtn} onPress={testPrint} disabled={!connectedDevice && !!BLEPrinter}>
             <Text style={styles.testBtnText}>Test Print</Text>
           </TouchableOpacity>
         </View>

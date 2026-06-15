@@ -5,10 +5,10 @@ import { apiFetch } from '@/services/api';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-let BluetoothEscposPrinter: any = null;
+let BLEPrinter: any = null;
 try {
   const printer = require('react-native-thermal-receipt-printer-image-qr');
-  BluetoothEscposPrinter = printer.BluetoothEscposPrinter;
+  BLEPrinter = printer.BLEPrinter;
 } catch (error) {
   // Ignore in Expo Go
 }
@@ -66,18 +66,17 @@ export default function VoucherScreen() {
 
   const handlePrint = async (item: any) => {
     try {
-      if (BluetoothEscposPrinter) {
+      if (BLEPrinter) {
         try {
-          await BluetoothEscposPrinter.printerInit();
-          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.CENTER);
-          await BluetoothEscposPrinter.printText('BILLING RADIUS\n\r', { fonttype: 1 });
-          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
-          await BluetoothEscposPrinter.printText('Voucher Hotspot\n\r', {});
-          await BluetoothEscposPrinter.printText(`${item.code}\n\r`, { widthtimes: 1, heigthtimes: 1 });
-          await BluetoothEscposPrinter.printText(`Paket: ${item.package_name || '-'}\n\r`, {});
-          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
-          await BluetoothEscposPrinter.printText('Gunakan kode di atas untuk login\n\r', { fonttype: 1 });
-          await BluetoothEscposPrinter.printText('\n\r\n\r', {});
+          let printData = 'BILLING RADIUS\n';
+          printData += '--------------------------------\n';
+          printData += 'Voucher Hotspot\n';
+          printData += `${item.code}\n`;
+          printData += `Paket: ${item.package_name || '-'}\n`;
+          printData += '--------------------------------\n';
+          printData += 'Gunakan kode di atas untuk login\n\n\n';
+          
+          await BLEPrinter.printBill(printData);
           Alert.alert('Sukses', 'Voucher berhasil dicetak ke printer Bluetooth');
           return;
         } catch (printErr: any) {

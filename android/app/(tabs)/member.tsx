@@ -7,10 +7,10 @@ import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import { useSearch } from './_layout';
 
-let BluetoothEscposPrinter: any = null;
+let BLEPrinter: any = null;
 try {
   const printer = require('react-native-thermal-receipt-printer-image-qr');
-  BluetoothEscposPrinter = printer.BluetoothEscposPrinter;
+  BLEPrinter = printer.BLEPrinter;
 } catch (error) {
   // Ignore in Expo Go
 }
@@ -151,23 +151,20 @@ export default function MemberScreen() {
 
   const handlePrint = async (item: any) => {
     try {
-      if (BluetoothEscposPrinter) {
+      if (BLEPrinter) {
         try {
-          await BluetoothEscposPrinter.printerInit();
-          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.CENTER);
-          await BluetoothEscposPrinter.printText('BILLING RADIUS\n\r', { fonttype: 1 });
-          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
-          await BluetoothEscposPrinter.printText('Akun Member PPPoE\n\r', {});
-          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
-          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.LEFT);
-          await BluetoothEscposPrinter.printText(`Nama : ${item.name}\n\r`, {});
-          await BluetoothEscposPrinter.printText(`User : ${item.username}\n\r`, {});
-          await BluetoothEscposPrinter.printText(`Pass : ${item.password || '***'}\n\r`, {});
-          await BluetoothEscposPrinter.printText(`Paket: ${item.package_name || '-'}\n\r`, {});
-          await BluetoothEscposPrinter.printerAlign(BluetoothEscposPrinter.ALIGN.CENTER);
-          await BluetoothEscposPrinter.printText('--------------------------------\n\r', {});
-          await BluetoothEscposPrinter.printText('Simpan info akun ini dengan baik\n\r', { fonttype: 1 });
-          await BluetoothEscposPrinter.printText('\n\r\n\r', {});
+          let printData = 'BILLING RADIUS\n';
+          printData += '--------------------------------\n';
+          printData += 'Akun Member PPPoE\n';
+          printData += '--------------------------------\n';
+          printData += `Nama : ${item.name}\n`;
+          printData += `User : ${item.username}\n`;
+          printData += `Pass : ${item.password || '***'}\n`;
+          printData += `Paket: ${item.package_name || '-'}\n`;
+          printData += '--------------------------------\n';
+          printData += 'Simpan info akun ini dengan baik\n\n\n';
+          
+          await BLEPrinter.printBill(printData);
           Alert.alert('Sukses', 'Detail member berhasil dicetak ke printer Bluetooth');
           return;
         } catch (printErr: any) {
