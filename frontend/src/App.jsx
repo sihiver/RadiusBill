@@ -7,6 +7,7 @@ import ActiveVoucherLog from './components/ActiveVoucherLog';
 import MemberList from './components/MemberList';
 import BrowserSessions from './components/BrowserSessions';
 import RouterList from './components/RouterList';
+import Login from './components/Login';
 
 import SystemSettings from './components/SystemSettings';
 import ReportDashboard from './components/ReportDashboard';
@@ -21,6 +22,20 @@ function loadState(key, fallbackFn) {
 }
 function saveState(key, value) {
   try { localStorage.setItem(`rtrwnet_${key}`, JSON.stringify(value)); } catch { /* quota */ }
+}
+
+export async function apiFetch(url, options = {}) {
+  const token = localStorage.getItem('rtrwnet_token');
+  const headers = { ...options.headers };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    localStorage.removeItem('rtrwnet_token');
+    window.location.reload();
+  }
+  return res;
 }
 
 // ─── Default mock data factories (Date.now() is fresh on each cold start) ───
@@ -137,6 +152,31 @@ const defaultRouters = () => [
 
 // ═════════════════════════════════════════════════════════════════════════════
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const fetchUserMe = async () => {
+    const token = localStorage.getItem('rtrwnet_token');
+    if (!token) return false;
+    try {
+      const res = await apiFetch('/api/auth/me');
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.data);
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+    localStorage.removeItem('rtrwnet_token');
+    return false;
+  };
+
+  useEffect(() => {
+    fetchUserMe().finally(() => setAuthChecked(true));
+  }, []);
+
+  // Hooks must execute unconditionally. Auth checks moved to the end of the component.
   // ── Core UI state ─────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState(() => loadState('active_tab', 'dashboard'));
   const [expandedSections, setExpandedSections] = useState(() => loadState('expanded_sections', { core: true, kontrol: false, system: false }));
@@ -213,7 +253,7 @@ export default function App() {
   // Fetch packages from backend
   const fetchPackages = async () => {
     try {
-      const res = await fetch('/api/packages');
+      const res = await apiFetch('/api/packages');
       const json = await res.json();
       if (json.success) {
         const mapped = json.data.map(p => {
@@ -245,8 +285,8 @@ export default function App() {
   const fetchVouchers = async () => {
     try {
       const [resVouchers, resLogs] = await Promise.all([
-        fetch('/api/vouchers?limit=10000'),
-        fetch('/api/voucher-logs?limit=10000')
+        apiFetch('/api/vouchers?limit=10000'),
+        apiFetch('/api/voucher-logs?limit=10000')
       ]);
       const jsonVouchers = await resVouchers.json();
       const jsonLogs = await resLogs.json();
@@ -341,7 +381,7 @@ export default function App() {
   // Fetch members from backend
   const fetchMembers = async () => {
     try {
-      const res = await fetch('/api/members');
+      const res = await apiFetch('/api/members');
       const json = await res.json();
       if (json.success) {
         const mapped = json.data.map(m => ({
@@ -370,7 +410,7 @@ export default function App() {
   // Fetch routers from backend
   const fetchRouters = async () => {
     try {
-      const res = await fetch('/api/routers');
+      const res = await apiFetch('/api/routers');
       const json = await res.json();
       if (json.success) {
         const mapped = json.data.map(r => ({
@@ -405,7 +445,7 @@ export default function App() {
   // Fetch radius logs
   const fetchRadiusLogs = async () => {
     try {
-      const res = await fetch('/api/radius/logs?limit=50');
+      const res = await apiFetch('/api/radius/logs?limit=50');
       const json = await res.json();
       if (json.success) {
         let mapped = json.data.map((l, idx) => {
@@ -440,7 +480,7 @@ export default function App() {
   // Fetch RADIUS status
   const fetchRadiusStatus = async () => {
     try {
-      const res = await fetch('/api/radius/status');
+      const res = await apiFetch('/api/radius/status');
       const json = await res.json();
       if (json.success) {
         setRadiusStatus(json.data.status);
@@ -450,25 +490,28 @@ export default function App() {
     }
   };
 
-  // Initial load
+  // Load data when user is authenticated
   useEffect(() => {
-    fetchPackages();
-    fetchVouchers();
-    fetchMembers();
-    fetchRouters();
-    fetchRadiusStatus();
-    fetchRadiusLogs();
-  }, []);
+    if (user) {
+      fetchPackages();
+      fetchVouchers();
+      fetchMembers();
+      fetchRouters();
+      fetchRadiusStatus();
+      fetchRadiusLogs();
+    }
+  }, [user]);
 
   // Poll RADIUS status, logs, and vouchers periodically
   useEffect(() => {
+    if (!user) return;
     const timer = setInterval(() => {
       fetchRadiusStatus();
       fetchRadiusLogs();
       fetchVouchers();
     }, 15000);
     return () => clearInterval(timer);
-  }, []);
+  }, [user]);
 
   // ── Notification helper ───────────────────────────────────────────────────
   const addNotification = (message, variant = 'info') => {
@@ -509,7 +552,7 @@ export default function App() {
     setLogs(prev => [newLog, ...prev.slice(0, 49)]);
 
     // Proactively post log to database via dashboard API
-    fetch('/api/dashboard/log', {
+    apiFetch('/api/dashboard/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -551,7 +594,7 @@ export default function App() {
     setRadiusStatus('Syncing');
     addSystemLog('SYSTEM', 'Sinkronisasi profil & billing ke FreeRADIUS Server dimulai...');
     try {
-      const res = await fetch('/api/radius/sync', { method: 'POST' });
+      const res = await apiFetch('/api/radius/sync', { method: 'POST' });
       const json = await res.json();
       if (json.success) {
         setRadiusStatus('Connected');
@@ -573,7 +616,7 @@ export default function App() {
   const handleResetData = async () => {
     if (!window.confirm('Bersihkan semua log voucher hangus dari database?')) return;
     try {
-      const res = await fetch('/api/voucher-logs/clear/all', { method: 'DELETE' });
+      const res = await apiFetch('/api/voucher-logs/clear/all', { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         addNotification(json.message, 'success');
@@ -613,7 +656,7 @@ export default function App() {
   };
 
   // ── Nav definitions ───────────────────────────────────────────────────────
-  const tabs = [
+  const allTabs = [
     { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', section: 'core' },
     { id: 'packages', name: 'Paket', icon: 'inventory_2', section: 'core' },
     { id: 'log', name: 'Voucher', icon: 'confirmation_number', section: 'kontrol' },
@@ -623,6 +666,15 @@ export default function App() {
     { id: 'reports', name: 'Laporan', icon: 'bar_chart', section: 'system' },
     { id: 'settings', name: 'Pengaturan', icon: 'settings', section: 'system' },
   ];
+
+  const tabs = user?.role === 'admin' ? allTabs : allTabs.filter(t => ['log'].includes(t.id));
+
+  // Auto-redirect reseller to log tab
+  useEffect(() => {
+    if (user?.role === 'reseller' && activeTab !== 'log') {
+      setActiveTab('log');
+    }
+  }, [user, activeTab]);
 
   const sectionConfig = {
     kontrol: { label: 'Pengguna', icon: 'manage_accounts' }
@@ -655,7 +707,7 @@ export default function App() {
           {activeVoucherTab === 'log' ? (
             <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} {...commonProps} />
           ) : (
-            <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />
+            <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} fetchUserMe={fetchUserMe} {...commonProps} />
           )}
         </div>
       );
@@ -672,6 +724,14 @@ export default function App() {
   const getPageTitle = () => (tabs.find(t => t.id === activeTab)?.name ?? 'Billing Dashboard');
 
   // ═══════════════════════════════════════════════════════════════════════════
+
+  if (!authChecked) {
+    return <div className="min-h-screen bg-surface flex items-center justify-center"><span className="material-symbols-outlined animate-spin text-4xl text-primary">refresh</span></div>;
+  }
+
+  if (!user) {
+    return <Login onLogin={(u) => setUser(u)} />;
+  }
   return (
     <div className="min-h-screen flex w-full bg-background text-on-surface">
 
@@ -767,7 +827,19 @@ export default function App() {
         {/* Footer: Logout */}
         <div className="mt-auto px-4 pt-4 border-t border-slate-800 space-y-3">
           <ul className="space-y-1">
-            <li><button onClick={() => { if (confirm("Logout dari Dashboard?")) alert("Logout berhasil!"); }} className="w-full flex items-center gap-3 px-2 py-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/40 transition-all font-label-md text-label-md text-left"><span className="material-symbols-outlined">logout</span>Logout</button></li>
+            <li>
+              <button 
+                onClick={() => { 
+                  if (window.confirm("Logout dari Dashboard?")) {
+                    localStorage.removeItem('rtrwnet_token');
+                    window.location.reload();
+                  }
+                }} 
+                className="w-full flex items-center gap-3 px-2 py-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/40 transition-all font-label-md text-label-md text-left"
+              >
+                <span className="material-symbols-outlined">logout</span>Logout
+              </button>
+            </li>
           </ul>
         </div>
       </nav>
@@ -944,30 +1016,50 @@ export default function App() {
 
             <div className="hidden sm:block h-6 w-px bg-surface-variant"></div>
 
-            {/* Admin Profile */}
+            {/* User Profile */}
             <div className="relative">
               <button 
                 onClick={() => setAdminOpen(!adminOpen)} 
                 className="flex items-center gap-3 cursor-pointer hover:bg-surface-container-low p-1.5 rounded-lg transition-all"
-                aria-label="Buka menu admin"
+                aria-label="Buka menu user"
                 aria-expanded={adminOpen}
               >
                 <div className="text-right hidden md:block">
-                  <p className="font-label-md text-label-md text-slate-800 font-bold">Administrator</p>
-                  <p className="font-label-sm text-[10px] text-slate-500 uppercase font-semibold">Admin Utama</p>
+                  <p className="font-label-md text-label-md text-slate-800 font-bold capitalize">{user?.username}</p>
+                  <p className="font-label-sm text-[10px] text-slate-500 uppercase font-semibold">
+                    {user?.role === 'admin' ? 'Admin Utama' : `Reseller (Rp ${Number(user?.balance).toLocaleString('id-ID')})`}
+                  </p>
                 </div>
-                <img alt="Avatar" className="w-9 h-9 rounded-full object-cover border border-slate-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCs16YTETo39TNgbJjNRa1OcXQjSJrKWYfODPTE-Nau9XO3SJGQy4OdL00PamcsP_VUOR2WGDdgjJ7YO58w057tCkWMfZRj6JzSn4_baeqIZhR_8uUwRX7-kr4kdViGBPMPoQfc76T7-l3zfZT7mJMpfqsluBCBB5UaTdgCby9nUcPxdaQa96wHeVPmPrv8YMagdOdQke2qnQCrFH5IW3Yv2Sagn-p8XXJdzrh1kul6umEJNo4Zl3yzguiaR-hec17so65SqMSR4C8" />
+                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold shadow-sm">
+                  {user?.username?.charAt(0).toUpperCase()}
+                </div>
               </button>
               {adminOpen && (
                 <>
                   <div onClick={() => setAdminOpen(false)} className="fixed inset-0 z-10" />
                   <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest border border-surface-variant rounded-lg shadow-xl py-2 z-20 animate-slideIn">
-                    <div className="px-4 py-2 border-b border-surface-variant"><p className="text-xs font-semibold text-outline uppercase">Manage</p></div>
-                    <button onClick={() => { setAdminOpen(false); alert("Profil Admin..."); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">account_circle</span>Profil Admin</button>
-                    <button onClick={() => { setAdminOpen(false); handleSyncServer(); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">sync</span>RADIUS Sync</button>
-                    <div className="h-px bg-slate-100 my-1"></div>
-                    <button onClick={() => { setAdminOpen(false); handleResetData(); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">settings_backup_restore</span>Reset Data</button>
-                    <button onClick={() => { setAdminOpen(false); if (confirm("Logout?")) alert("Logout!"); }} className="w-full text-left px-4 py-2 text-sm text-error hover:bg-error-container/10 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">logout</span>Keluar</button>
+                    <div className="px-4 py-2 border-b border-surface-variant">
+                      <p className="text-xs font-semibold text-outline uppercase">Manage {user?.role}</p>
+                    </div>
+                    {user?.role === 'admin' && (
+                      <>
+                        <button onClick={() => { setAdminOpen(false); handleSyncServer(); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">sync</span>RADIUS Sync</button>
+                        <button onClick={() => { setAdminOpen(false); handleResetData(); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">settings_backup_restore</span>Reset Data</button>
+                        <div className="h-px bg-slate-100 my-1"></div>
+                      </>
+                    )}
+                    <button 
+                      onClick={() => { 
+                        setAdminOpen(false); 
+                        if (window.confirm("Logout?")) {
+                          localStorage.removeItem('rtrwnet_token');
+                          window.location.reload();
+                        }
+                      }} 
+                      className="w-full text-left px-4 py-2 text-sm text-error hover:bg-error-container/10 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">logout</span>Keluar
+                    </button>
                   </div>
                 </>
               )}

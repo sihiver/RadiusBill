@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../App';
 
 const ReportDashboard = ({ addNotification }) => {
   const [summary, setSummary] = useState(null);
@@ -18,8 +19,8 @@ const ReportDashboard = ({ addNotification }) => {
     try {
       const qs = selectedMonth ? `?month=${selectedMonth}` : '';
       const [sumRes, revRes] = await Promise.all([
-        fetch(`/api/reports/summary${qs}`).then(r => r.json()),
-        fetch(`/api/reports/revenue${qs}`).then(r => r.json())
+        apiFetch(`/api/reports/summary${qs}`).then(r => r.json()),
+        apiFetch(`/api/reports/revenue${qs}`).then(r => r.json())
       ]);
 
       if (sumRes.success) setSummary(sumRes.data);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../App';
 import { createPortal } from 'react-dom';
 
 export default function PackageManagement({ packages, setPackages, fetchPackages, addSystemLog, requestConfirm, addNotification }) {
@@ -86,7 +87,7 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
     const url = editingId ? `/api/packages/${editingId}` : '/api/packages';
     const method = editingId ? 'PUT' : 'POST';
 
-    fetch(url, {
+    apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -113,7 +114,7 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
       confirmText: 'Ya, Hapus',
       variant: 'danger',
       onConfirm: () => {
-        fetch(`/api/packages/${id}`, { method: 'DELETE' })
+        apiFetch(`/api/packages/${id}`, { method: 'DELETE' })
           .then(res => res.json())
           .then(json => {
             if (json.success) {

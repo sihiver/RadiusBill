@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../App';
 
 export default function BrowserSessions({ members, setMembers, fetchMembers, vouchers, routers, addSystemLog }) {
   const [search, setSearch] = useState('');
@@ -27,7 +28,7 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, vou
   };
 
   const fetchActiveSessions = () => {
-    fetch('/api/radius/sessions')
+    apiFetch('/api/radius/sessions')
       .then(res => res.json())
       .then(json => {
         if (json.success) {
@@ -97,7 +98,7 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, vou
 
   const handleDisconnect = (radacctid, name, username) => {
     if (window.confirm(`Apakah Anda yakin ingin memutuskan sesi browser untuk @${username}?`)) {
-      fetch(`/api/radius/sessions/${radacctid}/disconnect`, { method: 'POST' })
+      apiFetch(`/api/radius/sessions/${radacctid}/disconnect`, { method: 'POST' })
         .then(res => res.json())
         .then(json => {
           if (json.success) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../App';
 
 export default function SystemSettings({ addNotification }) {
   const [activeTab, setActiveTab] = useState('freeradius');
@@ -34,7 +35,7 @@ export default function SystemSettings({ addNotification }) {
 
   // Load from backend on mount
   useEffect(() => {
-    fetch('/api/settings')
+    apiFetch('/api/settings')
       .then(res => res.json())
       .then(json => {
         if (json.success) {
@@ -95,7 +96,7 @@ export default function SystemSettings({ addNotification }) {
       msg_invalid_voucher: customMessages.invalidVoucher
     };
     
-    fetch('/api/settings', {
+    apiFetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -126,7 +127,7 @@ export default function SystemSettings({ addNotification }) {
       payload = { host: mikrotikConfig.host, port: mikrotikConfig.port };
     }
     
-    fetch(apiPath, {
+    apiFetch(apiPath, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -149,7 +150,7 @@ export default function SystemSettings({ addNotification }) {
     if (!appIp) return;
     
     addNotification('Sedang menyuntikkan NAT Isolir ke MikroTik...', 'info');
-    fetch('/api/settings/mikrotik/setup-isolir', {
+    apiFetch('/api/settings/mikrotik/setup-isolir', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ app_ip: appIp })

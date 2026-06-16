@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../App';
 import { createPortal } from 'react-dom';
 
 export default function MemberList({ members, setMembers, fetchMembers, packages, addSystemLog, requestConfirm, addNotification }) {
@@ -78,7 +79,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     const url = editingId ? `/api/members/${editingId}` : '/api/members';
     const method = editingId ? 'PUT' : 'POST';
 
-    fetch(url, {
+    apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -105,7 +106,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
       confirmText: 'Ya, Perpanjang',
       variant: 'primary',
       onConfirm: () => {
-        fetch(`/api/members/${id}/extend`, {
+        apiFetch(`/api/members/${id}/extend`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ days: 30 })
@@ -139,7 +140,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
       confirmText: 'Ya, Hapus',
       variant: 'danger',
       onConfirm: () => {
-        fetch(`/api/members/${id}`, { method: 'DELETE' })
+        apiFetch(`/api/members/${id}`, { method: 'DELETE' })
           .then(res => res.json())
           .then(json => {
             if (json.success) {

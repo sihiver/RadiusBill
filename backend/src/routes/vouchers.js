@@ -183,6 +183,17 @@ router.post('/generate', asyncHandler(async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    if (req.user && req.user.role === 'reseller') {
+      const totalCost = pkg.price * value.quantity;
+      const userRes = await client.query('SELECT balance FROM users WHERE id = $1', [req.user.id]);
+      if (!userRes.rows[0]) throw createError(404, 'User tidak valid');
+      const balance = Number(userRes.rows[0].balance);
+      if (balance < totalCost) {
+        throw createError(400, `Saldo tidak cukup. Total: Rp ${totalCost.toLocaleString('id-ID')}, Saldo Anda: Rp ${balance.toLocaleString('id-ID')}`);
+      }
+      await client.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, req.user.id]);
+    }
+
     const quotaSecs = parseDuration(pkg.duration);
 
     for (let i = 0; i < value.quantity; i++) {

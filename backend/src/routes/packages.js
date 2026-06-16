@@ -6,6 +6,7 @@ const db      = require('../db/pool');
 const { cacheAside, cacheDel, cacheDelPattern, TTL } = require('../services/cacheService');
 const radius  = require('../services/radiusService');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
+const { requireAdmin } = require('../middleware/authMiddleware');
 
 // Validation schema
 const packageSchema = Joi.object({
@@ -48,7 +49,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/packages
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', requireAdmin, asyncHandler(async (req, res) => {
   const { error, value } = packageSchema.validate(req.body);
   if (error) throw error;
 
@@ -67,7 +68,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/packages/:id
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', requireAdmin, asyncHandler(async (req, res) => {
   const { error, value } = packageSchema.validate(req.body);
   if (error) throw error;
 
@@ -91,7 +92,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // DELETE /api/packages/:id
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', requireAdmin, asyncHandler(async (req, res) => {
   const result = await db.query(`
     UPDATE packages SET is_active = FALSE WHERE id = $1 RETURNING *
   `, [req.params.id]);

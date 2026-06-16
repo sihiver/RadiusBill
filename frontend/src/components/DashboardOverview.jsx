@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../App';
 
 export default function DashboardOverview({ 
   packages, 
@@ -16,7 +17,7 @@ export default function DashboardOverview({
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/dashboard/stats');
+      const res = await apiFetch('/api/dashboard/stats');
       const json = await res.json();
       if (json.success) {
         setStats(json.data);

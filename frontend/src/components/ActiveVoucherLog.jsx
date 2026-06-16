@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../App';
 import { createPortal } from 'react-dom';
 
 export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers, addSystemLog, voucherTemplate }) {
@@ -22,7 +23,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   useEffect(() => {
     if (selectedVoucher) {
       setLoadingSessions(true);
-      fetch(`/api/vouchers/sessions/${selectedVoucher.code}`)
+      apiFetch(`/api/vouchers/sessions/${selectedVoucher.code}`)
         .then(res => res.json())
         .then(json => {
           if (json.success) {
@@ -133,7 +134,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
       const promises = [];
       if (voucherIds.length > 0) {
         promises.push(
-          fetch('/api/vouchers/bulk', {
+          apiFetch('/api/vouchers/bulk', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids: voucherIds })
@@ -142,7 +143,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
       }
       if (logIds.length > 0) {
         promises.push(
-          fetch('/api/voucher-logs/bulk/delete', {
+          apiFetch('/api/voucher-logs/bulk/delete', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids: logIds })
@@ -221,7 +222,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
 
   const handleDisconnect = (id, code) => {
     if (window.confirm(`Apakah Anda yakin ingin mematikan sesi untuk voucher ${code}?`)) {
-      fetch(`/api/vouchers/${id}/disconnect`, { method: 'POST' })
+      apiFetch(`/api/vouchers/${id}/disconnect`, { method: 'POST' })
         .then(res => res.json())
         .then(json => {
           if (json.success) {
@@ -238,7 +239,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   const handleEditMac = (id, currentMac) => {
     const newMac = window.prompt("Ubah MAC Address Voucher (kosongkan untuk hapus kuncian):", currentMac || "");
     if (newMac !== null) {
-      fetch(`/api/vouchers/${id}`, {
+      apiFetch(`/api/vouchers/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mac_address: newMac || null })
@@ -261,7 +262,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
       const url = String(id).startsWith('log-')
         ? `/api/voucher-logs/${String(id).replace('log-', '')}`
         : `/api/vouchers/${id}`;
-      fetch(url, { method: 'DELETE' })
+      apiFetch(url, { method: 'DELETE' })
         .then(res => res.json())
         .then(json => {
           if (json.success) {
@@ -278,10 +279,10 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
   const handleClearExpired = () => {
     if (window.confirm("Hapus PERMANEN semua histori voucher yang sudah Expired dari sistem? (Tidak bisa dikembalikan)")) {
       // 1. Paksa pindahkan yang baru expired ke log
-      fetch('/api/vouchers/expire-now', { method: 'POST' })
+      apiFetch('/api/vouchers/expire-now', { method: 'POST' })
         .then(() => {
           // 2. Hapus permanen semua log
-          return fetch('/api/voucher-logs/clear/all', { method: 'DELETE' });
+          return apiFetch('/api/voucher-logs/clear/all', { method: 'DELETE' });
         })
         .then(res => res.json())
         .then(json => {

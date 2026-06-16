@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../App';
 import { createPortal } from 'react-dom';
 
 export default function RouterList({ routers, setRouters, fetchRouters, packages, addSystemLog, requestConfirm, addNotification }) {
@@ -30,7 +31,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
       cancelText: 'Batal',
       variant: isNowIsolated ? 'danger' : 'success',
       onConfirm: () => {
-        fetch(`/api/routers/${router.id}/${action}`, {
+        apiFetch(`/api/routers/${router.id}/${action}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ reason: 'Tunggakan tagihan' })
@@ -63,7 +64,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
       confirmText: 'Ya, Perpanjang',
       variant: 'primary',
       onConfirm: () => {
-        fetch(`/api/routers/${id}/extend`, {
+        apiFetch(`/api/routers/${id}/extend`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ days: 30 })
@@ -141,7 +142,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
     const url = editingId ? `/api/routers/${editingId}` : '/api/routers';
     const method = editingId ? 'PUT' : 'POST';
 
-    fetch(url, {
+    apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -168,7 +169,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
       confirmText: 'Ya, Hapus',
       variant: 'danger',
       onConfirm: () => {
-        fetch(`/api/routers/${id}`, { method: 'DELETE' })
+        apiFetch(`/api/routers/${id}`, { method: 'DELETE' })
           .then(res => res.json())
           .then(json => {
             if (json.success) {

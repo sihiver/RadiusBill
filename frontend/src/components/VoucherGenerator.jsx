@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../App';
 import VoucherTemplateEditor from './VoucherTemplateEditor';
 
-export default function VoucherGenerator({ packages, vouchers, setVouchers, fetchVouchers, voucherTemplate, setVoucherTemplate, defaultTemplate, addSystemLog }) {
+export default function VoucherGenerator({ packages, vouchers, setVouchers, fetchVouchers, voucherTemplate, setVoucherTemplate, defaultTemplate, addSystemLog, fetchUserMe }) {
   // Generator settings
   const hotspotPackages = packages.filter(p => p.type === 'Hotspot');
   const [selectedPkgId, setSelectedPkgId] = useState(hotspotPackages[0]?.id || '');
@@ -32,36 +33,43 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
       mac_binding: macBinding
     };
 
-    fetch('/api/vouchers/generate', {
+    const token = localStorage.getItem('rtrwnet_token');
+    apiFetch('/api/vouchers/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify(payload)
     })
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) {
-          const mapped = json.data.map(v => ({
-            id: v.id,
-            code: v.code,
-            password: v.password,
-            package: v.package_name,
-            price: v.price,
-            status: v.status,
-            ipAddress: v.ip_address || '-',
-            macAddress: v.mac_address || '',
-            activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
-            usedBytes: '0 MB',
-            timeLeft: v.expires_at ? '' : (pkg.validity || '-'),
-            expiresAt: v.expires_at ? new Date(v.expires_at).getTime() : undefined,
-            duration: pkg.duration || '-',
-            validity: pkg.validity || '-',
-          }));
-          setNewlyGenerated(mapped);
-          fetchVouchers();
-          addSystemLog('SYSTEM', `Membuat ${quantity} Voucher baru untuk Paket "${pkg.name}"`);
-        } else {
-          alert(json.message || 'Gagal men-generate voucher.');
+      .then(async res => {
+        const json = await res.json();
+        if (res.status === 400 || res.status === 401 || !json.success) {
+          throw new Error(json.message || 'Gagal men-generate voucher.');
         }
+        return json;
+      })
+      .then(json => {
+        const mapped = json.data.map(v => ({
+          id: v.id,
+          code: v.code,
+          password: v.password,
+          package: v.package_name,
+          price: v.price,
+          status: v.status,
+          ipAddress: v.ip_address || '-',
+          macAddress: v.mac_address || '',
+          activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
+          usedBytes: '0 MB',
+          timeLeft: v.expires_at ? '' : (pkg.validity || '-'),
+          expiresAt: v.expires_at ? new Date(v.expires_at).getTime() : undefined,
+          duration: pkg.duration || '-',
+          validity: pkg.validity || '-',
+        }));
+        setNewlyGenerated(mapped);
+        fetchVouchers();
+        if (fetchUserMe) fetchUserMe();
+        addSystemLog('SYSTEM', `Membuat ${quantity} Voucher baru untuk Paket "${pkg.name}"`);
       })
       .catch(err => {
         alert('Error: ' + err.message);

@@ -14,6 +14,7 @@ const { startExpireJob }   = require('./jobs/expireVouchers');
 const { startStaleSessionJob } = require('./jobs/cleanupStaleSessions');
 
 // Routes
+const authRouter        = require('./routes/auth');
 const packagesRouter    = require('./routes/packages');
 const vouchersRouter    = require('./routes/vouchers');
 const voucherLogsRouter = require('./routes/voucherLogs');
@@ -23,6 +24,7 @@ const radiusRouter      = require('./routes/radius');
 const dashboardRouter   = require('./routes/dashboard');
 const settingsRouter    = require('./routes/settings');
 const reportsRouter     = require('./routes/reports');
+const { requireAuth, requireAdmin } = require('./middleware/authMiddleware');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -67,15 +69,16 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.use('/api/packages',     packagesRouter);
-app.use('/api/vouchers',     vouchersRouter);
-app.use('/api/voucher-logs', voucherLogsRouter);
-app.use('/api/members',      membersRouter);
-app.use('/api/routers',      routersRouter);
-app.use('/api/radius',       radiusRouter);
-app.use('/api/dashboard',    dashboardRouter);
-app.use('/api/settings',     settingsRouter);
-app.use('/api/reports',      reportsRouter);
+app.use('/api/auth',         authRouter);
+app.use('/api/vouchers',     requireAuth, vouchersRouter);
+app.use('/api/voucher-logs', requireAuth, voucherLogsRouter);
+app.use('/api/packages',     requireAuth, packagesRouter);
+app.use('/api/members',      requireAuth, requireAdmin, membersRouter);
+app.use('/api/routers',      requireAuth, requireAdmin, routersRouter);
+app.use('/api/radius',       requireAuth, requireAdmin, radiusRouter);
+app.use('/api/settings',     requireAuth, requireAdmin, settingsRouter);
+app.use('/api/reports',      requireAuth, requireAdmin, reportsRouter);
+app.use('/api/dashboard',    requireAuth, dashboardRouter);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
