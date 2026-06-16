@@ -78,8 +78,8 @@ const defaultVoucherTemplate = `
       
       <!-- Footer Left: Info -->
       <div class="flex items-center gap-1.5 translate-y-2">
-        <span class="material-symbols-outlined text-[var(--color-main)] text-[18px] font-bold">info</span>
-        <div class="text-[7px] font-bold text-slate-600 leading-tight italic whitespace-nowrap tracking-tight">
+        <span class="material-symbols-outlined text-white text-[16px] font-bold drop-shadow-sm">info</span>
+        <div class="text-[8.5px] font-bold text-white leading-tight italic whitespace-nowrap tracking-tight drop-shadow-sm">
           *Masa Aktif / Durasi mana yang lebih dulu habis akan expired.
         </div>
       </div>
