@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { apiFetch } from '../App';
-import VoucherTemplateEditor from './VoucherTemplateEditor';
 
 export default function VoucherGenerator({ packages, vouchers, setVouchers, fetchVouchers, voucherTemplate, setVoucherTemplate, defaultTemplate, addSystemLog, fetchUserMe }) {
   // Generator settings
@@ -14,7 +13,6 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
 
   // Session state to show recently generated vouchers
   const [newlyGenerated, setNewlyGenerated] = useState([]);
-  const [editorOpen, setEditorOpen] = useState(false);
 
   const handleGenerate = (e) => {
     e.preventDefault();
@@ -152,13 +150,6 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
           <h2 className="font-headline-sm text-headline-sm text-on-surface">Generator Voucher</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">Cetak voucher eceran Hotspot secara massal dengan konfigurasi fleksibel.</p>
         </div>
-        <button 
-          onClick={() => setEditorOpen(true)}
-          className="bg-white border border-surface-variant text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-label-md text-sm font-semibold flex items-center gap-2 shadow-sm transition-colors active:scale-95 print:hidden"
-        >
-          <span className="material-symbols-outlined text-[18px]">brush</span>
-          Edit Template
-        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 print:hidden">
@@ -400,17 +391,6 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
           })}
         </div>
       </div>
-
-      <VoucherTemplateEditor 
-        isOpen={editorOpen} 
-        onClose={() => setEditorOpen(false)} 
-        initialTemplate={voucherTemplate} 
-        defaultTemplate={defaultTemplate}
-        onSave={(newTemplate) => {
-          setVoucherTemplate(newTemplate);
-          addSystemLog('SYSTEM', 'Template cetak voucher berhasil diperbarui.');
-        }} 
-      />
     </div>
   );
 }

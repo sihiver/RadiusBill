@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../App';
+import VoucherTemplateEditor from './VoucherTemplateEditor';
 
-export default function SystemSettings({ addNotification }) {
+export default function SystemSettings({ addNotification, voucherTemplate, setVoucherTemplate, defaultTemplate }) {
   const [activeTab, setActiveTab] = useState('freeradius');
+  const [editorOpen, setEditorOpen] = useState(false);
 
   // Form states
   const [radiusConfig, setRadiusConfig] = useState({
@@ -431,7 +433,14 @@ export default function SystemSettings({ addNotification }) {
                   </div>
                 </div>
 
-                <div className="pt-4 flex items-center justify-end">
+                <div className="pt-4 flex items-center justify-between border-t border-surface-variant mt-2">
+                  <button 
+                    onClick={() => setEditorOpen(true)}
+                    className="bg-surface-container-high border border-surface-variant text-slate-700 hover:bg-surface-container-highest px-4 py-2 rounded-lg font-label-md flex items-center gap-2 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">brush</span>
+                    Edit Template Cetak Voucher
+                  </button>
                   <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
                     Simpan Preferensi
                   </button>
@@ -493,6 +502,17 @@ export default function SystemSettings({ addNotification }) {
           </div>
         </div>
       </div>
+
+      <VoucherTemplateEditor 
+        isOpen={editorOpen} 
+        onClose={() => setEditorOpen(false)} 
+        initialTemplate={voucherTemplate} 
+        defaultTemplate={defaultTemplate}
+        onSave={(newTemplate) => {
+          setVoucherTemplate(newTemplate);
+          addNotification('Template cetak voucher berhasil diperbarui.', 'success');
+        }} 
+      />
     </div>
   );
 }

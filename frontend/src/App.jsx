@@ -721,7 +721,7 @@ export default function App() {
       case 'resellers':  return <ResellerManagement {...commonProps} />;
 
       case 'reports':    return <ReportDashboard {...commonProps} />;
-      case 'settings':   return <SystemSettings {...commonProps} />;
+      case 'settings':   return <SystemSettings voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />;
       default:           return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} fetchRadiusLogs={fetchRadiusLogs} {...commonProps} />;
     }
   };
