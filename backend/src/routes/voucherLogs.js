@@ -31,6 +31,10 @@ router.get('/', asyncHandler(async (req, res) => {
     conditions.push(`vl.expired_at <= $${params.length + 1}`);
     params.push(to);
   }
+  if (req.user && req.user.role === 'reseller') {
+    conditions.push(`vl.created_by = $${params.length + 1}`);
+    params.push(req.user.username);
+  }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -73,6 +77,7 @@ router.get('/summary/stats', asyncHandler(async (req, res) => {
       DATE_TRUNC('month', expired_at) AS month,
       COUNT(*)                         AS count_per_month
     FROM voucher_logs
+    ${req.user && req.user.role === 'reseller' ? `WHERE created_by = '${req.user.username}'` : ''}
     GROUP BY DATE_TRUNC('month', expired_at)
     ORDER BY month DESC
     LIMIT 12

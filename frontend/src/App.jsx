@@ -11,6 +11,7 @@ import Login from './components/Login';
 
 import SystemSettings from './components/SystemSettings';
 import ReportDashboard from './components/ReportDashboard';
+import ResellerManagement from './components/ResellerManagement';
 
 // ─── localStorage helpers ───────────────────────────────────────────────────
 function loadState(key, fallbackFn) {
@@ -662,6 +663,7 @@ export default function App() {
     { id: 'log', name: 'Voucher', icon: 'confirmation_number', section: 'kontrol' },
     { id: 'members', name: 'Member', icon: 'group', section: 'kontrol' },
     { id: 'routers', name: 'PPPoE', icon: 'router', section: 'kontrol' },
+    { id: 'resellers', name: 'Kelola Reseller', icon: 'storefront', section: 'kontrol' },
     { id: 'sessions', name: 'Status Sesi', icon: 'sensors', section: 'system' },
     { id: 'reports', name: 'Laporan', icon: 'bar_chart', section: 'system' },
     { id: 'settings', name: 'Pengaturan', icon: 'settings', section: 'system' },
@@ -714,6 +716,7 @@ export default function App() {
       case 'members':    return <MemberList members={members} setMembers={setMembers} fetchMembers={fetchMembers} packages={packages} {...commonProps} />;
       case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} fetchMembers={fetchMembers} vouchers={vouchers} routers={routers} {...commonProps} />;
       case 'routers':    return <RouterList routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} packages={packages} {...commonProps} />;
+      case 'resellers':  return <ResellerManagement {...commonProps} />;
 
       case 'reports':    return <ReportDashboard {...commonProps} />;
       case 'settings':   return <SystemSettings {...commonProps} />;

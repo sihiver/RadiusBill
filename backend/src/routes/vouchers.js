@@ -35,6 +35,10 @@ router.get('/', asyncHandler(async (req, res) => {
     conditions.push(`(v.code ILIKE $${params.length + 1} OR v.package_name ILIKE $${params.length + 1})`);
     params.push(`%${search}%`);
   }
+  if (req.user && req.user.role === 'reseller') {
+    conditions.push(`v.created_by = $${params.length + 1}`);
+    params.push(req.user.username);
+  }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -71,8 +75,9 @@ router.get('/stats', asyncHandler(async (req, res) => {
       SELECT
         COUNT(*) FILTER (WHERE status = 'Active')  AS active_count,
         COUNT(*) FILTER (WHERE status = 'Unused')  AS unused_count,
-        (SELECT COUNT(*) FROM voucher_logs)         AS expired_count
+        (SELECT COUNT(*) FROM voucher_logs ${req.user.role === 'reseller' ? `WHERE created_by = '${req.user.username}'` : ''}) AS expired_count
       FROM vouchers
+      ${req.user.role === 'reseller' ? `WHERE created_by = '${req.user.username}'` : ''}
     `);
     return res.rows[0];
   }, TTL.STATS);
@@ -202,10 +207,10 @@ router.post('/generate', asyncHandler(async (req, res) => {
       const expiresAt = null;
 
       const vRes = await client.query(`
-        INSERT INTO vouchers (code, password, package_id, package_name, price, status, mac_binding, expires_at, quota_seconds)
-        VALUES ($1, $2, $3, $4, $5, 'Unused', $6, $7, $8)
+        INSERT INTO vouchers (code, password, package_id, package_name, price, status, mac_binding, expires_at, quota_seconds, created_by)
+        VALUES ($1, $2, $3, $4, $5, 'Unused', $6, $7, $8, $9)
         RETURNING *
-      `, [code, password, pkg.id, pkg.name, pkg.price, value.mac_binding, expiresAt, quotaSecs]);
+      `, [code, password, pkg.id, pkg.name, pkg.price, value.mac_binding, expiresAt, quotaSecs, req.user ? req.user.username : 'admin']);
 
       generated.push(vRes.rows[0]);
     }
@@ -331,11 +336,11 @@ router.post('/:id/disconnect', asyncHandler(async (req, res) => {
       INSERT INTO voucher_logs (
         original_id, code, password, package_id, package_name,
         price, mac_address, ip_address, activated_at, expired_at,
-        used_bytes, session_id, expire_reason, created_at, moved_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),$10,$11,'admin_kick',$12,NOW())
+        used_bytes, session_id, expire_reason, created_at, moved_at, created_by
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),$10,$11,'admin_kick',$12,NOW(),$13)
     `, [v.id, v.code, v.password, v.package_id, v.package_name,
         v.price, v.mac_address, v.ip_address, v.activated_at,
-        v.used_bytes, v.session_id, v.created_at]);
+        v.used_bytes, v.session_id, v.created_at, v.created_by]);
 
     await client.query('DELETE FROM vouchers WHERE id = $1', [v.id]);
     await client.query('COMMIT');

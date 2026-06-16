@@ -24,6 +24,7 @@ const radiusRouter      = require('./routes/radius');
 const dashboardRouter   = require('./routes/dashboard');
 const settingsRouter    = require('./routes/settings');
 const reportsRouter     = require('./routes/reports');
+const resellersRouter   = require('./routes/resellers');
 const { requireAuth, requireAdmin } = require('./middleware/authMiddleware');
 
 const app  = express();
@@ -79,6 +80,7 @@ app.use('/api/radius',       requireAuth, requireAdmin, radiusRouter);
 app.use('/api/settings',     requireAuth, requireAdmin, settingsRouter);
 app.use('/api/reports',      requireAuth, requireAdmin, reportsRouter);
 app.use('/api/dashboard',    requireAuth, dashboardRouter);
+app.use('/api/resellers',    requireAuth, requireAdmin, resellersRouter);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
