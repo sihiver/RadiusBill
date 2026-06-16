@@ -107,7 +107,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
     setCustomerName(router.customerName);
     setPppoeUser(router.pppoeUser);
     setPppoePass(router.pppoePass);
-    setRouterIp(router.routerIp);
+    setRouterIp(router.routerIp === '-' ? '' : router.routerIp);
     setSelectedPkg(router.package);
     setStatus(router.status);
     setShowModal(true);
@@ -131,7 +131,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
       customer_name: customerName.trim(),
       pppoe_user: pppoeUser.trim(),
       pppoe_pass: pppoePass.trim(),
-      router_ip: routerIp.trim() || null,
+      router_ip: (routerIp.trim() === '-' || !routerIp.trim()) ? null : routerIp.trim(),
       package_id: pkg ? pkg.id : null,
       package_name: pkg ? pkg.name : null,
       status: status,
