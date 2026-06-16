@@ -346,6 +346,7 @@ export default function App() {
             timeLeft: timeLeftStr,
             expiresAt: uiExpiresAt,
             validUntil: v.expires_at ? new Date(v.expires_at).toLocaleString('id-ID') : '-',
+            createdAt: v.created_at,
             duration: v.duration || '-',
             validity: v.validity || '-',
           };
@@ -368,6 +369,7 @@ export default function App() {
           usedBytes: formatBytes(v.used_bytes),
           timeLeft: 'Sesi Selesai',
           expiresAt: undefined,
+          createdAt: v.created_at,
           duration: '-',
           validity: '-',
         }));

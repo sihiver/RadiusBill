@@ -728,12 +728,20 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
                     </td>
                     {/* Code */}
                     <td className="p-4">
-                      <button 
-                        onClick={() => setSelectedVoucher(v)}
-                        className="font-mono font-bold text-primary hover:text-primary-container hover:underline text-[14px] transition-colors"
-                      >
-                        {v.code}
-                      </button>
+                      <div className="flex flex-col items-start">
+                        <button 
+                          onClick={() => setSelectedVoucher(v)}
+                          className="font-mono text-primary hover:text-primary-container hover:underline text-[14px] transition-colors"
+                        >
+                          {v.code}
+                        </button>
+                        <span className="text-[11px] text-on-surface-variant mt-0.5">
+                          {v.createdAt ? (() => {
+                            const d = new Date(v.createdAt);
+                            return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+                          })() : '-'}
+                        </span>
+                      </div>
                     </td>
                     
                     {/* Package & Price */}
