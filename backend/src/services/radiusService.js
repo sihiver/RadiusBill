@@ -35,10 +35,12 @@ async function syncUserToRadius(username, password, groupName, replyAttrs = {}) 
 
     // 2. Assign group
     if (groupName) {
+      // Clear previous group assignments to prevent duplicates
+      await client.query(`DELETE FROM radusergroup WHERE username = $1`, [username]);
+      
       await client.query(`
         INSERT INTO radusergroup (username, groupname, priority)
         VALUES ($1, $2, 1)
-        ON CONFLICT DO NOTHING
       `, [username, groupName]);
     }
 
@@ -209,10 +211,12 @@ async function getRecentPostauth(limit = 50) {
  * @param {object} pkg  Package object { type, speed_upload, speed_download, name }
  */
 function buildGroupName(pkg) {
-  // e.g. "hotspot-5mbps" or "pppoe-10mbps"
   const type = pkg.type.toLowerCase();
-  const dl   = (pkg.speed_download || '').replace(/\s+/g, '').toLowerCase();
-  return `${type}-${dl}`.replace(/[^a-z0-9-]/g, '');
+  if (pkg.id) {
+    return `${type}-pkg-${pkg.id}`;
+  }
+  const name = (pkg.name || '').replace(/\s+/g, '-').toLowerCase();
+  return `${type}-${name}`.replace(/[^a-z0-9-]/g, '');
 }
 
 /**

@@ -216,11 +216,24 @@ export default function App() {
       const res = await fetch('/api/packages');
       const json = await res.json();
       if (json.success) {
-        const mapped = json.data.map(p => ({
-          ...p,
-          speedUpload: p.speed_upload,
-          speedDownload: p.speed_download
-        }));
+        const mapped = json.data.map(p => {
+          let speedType = 'fix';
+          let speedUpTo = '10 Mbps';
+          if (p.description && p.description.includes('speedType=')) {
+            const parts = p.description.split(';');
+            parts.forEach(part => {
+              if (part.startsWith('speedType=')) speedType = part.split('=')[1];
+              if (part.startsWith('speedUpTo=')) speedUpTo = part.split('=')[1];
+            });
+          }
+          return {
+            ...p,
+            speedUpload: p.speed_upload,
+            speedDownload: p.speed_download,
+            speedType,
+            speedUpTo
+          };
+        });
         setPackages(mapped);
       }
     } catch (err) {
