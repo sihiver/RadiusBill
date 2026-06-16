@@ -380,30 +380,30 @@ export default function DashboardOverview({
             </div>
           </div>
           
-          <div className="p-3 flex-1 overflow-y-auto bg-on-secondary-fixed text-surface-container font-mono text-[11px] leading-relaxed rounded-b-xl flex flex-col gap-1.5 scrollbar-thin scrollbar-thumb-slate-700">
+          <div className="p-3 flex-1 overflow-y-auto bg-surface-container-lowest text-on-surface font-mono text-[12px] leading-relaxed rounded-b-xl flex flex-col gap-1.5 scrollbar-thin scrollbar-thumb-surface-variant">
             {logs.length === 0 ? (
-              <div className="text-outline-variant italic text-center mt-10">Mendengarkan permintaan autentikasi FreeRADIUS...</div>
+              <div className="text-outline italic text-center mt-10">Mendengarkan permintaan autentikasi FreeRADIUS...</div>
             ) : (
               logs.map((log) => (
-                <div key={log.id} className="log-entry">
-                  <span className="text-outline-variant mr-1.5">[{log.time}]</span>
+                <div key={log.id} className="log-entry px-2 py-1 hover:bg-surface-container-low rounded transition-colors">
+                  <span className="text-outline mr-2">[{log.time}]</span>
                   {log.type === 'AUTH' && (
                     <>
-                      <span className="text-tertiary-fixed-dim font-bold">[AUTH]</span> Accept:{' '}
-                      <span className="text-primary-fixed-dim">{log.user}</span> ({log.ip}) -{' '}
-                      <span className="text-secondary-fixed-dim">{log.service}</span>
+                      <span className="text-primary font-bold mr-1">[AUTH]</span> Accept:{' '}
+                      <span className="text-tertiary font-semibold">{log.user}</span> <span className="text-on-surface-variant">({log.ip})</span> -{' '}
+                      <span className="text-secondary font-medium">{log.service}</span>
                     </>
                   )}
                   {log.type === 'REJECT' && (
                     <>
-                      <span className="text-error font-bold">[REJECT]</span> {log.reason}:{' '}
-                      <span className="text-primary-fixed-dim">{log.user}</span> ({log.ip})
+                      <span className="text-error font-bold mr-1">[REJECT]</span> <span className="text-on-surface-variant">{log.reason}:</span>{' '}
+                      <span className="text-tertiary font-semibold">{log.user}</span> <span className="text-on-surface-variant">({log.ip})</span>
                     </>
                   )}
                   {log.type === 'ACCT' && (
                     <>
-                      <span className="text-secondary-fixed-dim font-bold">[ACCT]</span> {log.action}:{' '}
-                      <span className="text-primary-fixed-dim">{log.user}</span> - Session ID: {log.session}
+                      <span className="text-secondary font-bold mr-1">[ACCT]</span> <span className="text-on-surface-variant">{log.action}:</span>{' '}
+                      <span className="text-tertiary font-semibold">{log.user}</span> <span className="text-on-surface-variant">- Session ID: {log.session}</span>
                     </>
                   )}
                   {log.type === 'SYSTEM' && (
