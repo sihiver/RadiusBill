@@ -12,11 +12,11 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
   // Generator state
   const hotspotPackages = packages?.filter(p => p.type === 'Hotspot') || [];
   const [selectedPkgId, setSelectedPkgId] = useState(hotspotPackages[0]?.id || '');
-  const [quantity, setQuantity] = useState(10);
-  const [codeLength, setCodeLength] = useState(6);
-  const [prefix, setPrefix] = useState('RW-');
+  const [quantity, setQuantity] = useState(100);
+  const [codeLength, setCodeLength] = useState(4);
+  const [prefix, setPrefix] = useState('DV');
   const [format, setFormat] = useState('same');
-  const [macBinding, setMacBinding] = useState(false);
+  const [macBinding, setMacBinding] = useState(true);
 
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [newlyGenerated, setNewlyGenerated] = useState([]);
@@ -954,34 +954,6 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
                     placeholder="e.g. HOT-"
                     className="w-full px-4 py-2.5 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-xl text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
-                </div>
-
-                <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1.5">Format Autentikasi</label>
-                  <div className="space-y-3 mt-2 bg-surface-container-low p-4 rounded-xl border border-surface-dim">
-                    <label className="flex items-center gap-3 cursor-pointer text-body-md">
-                      <input 
-                        type="radio" 
-                        name="format" 
-                        value="same" 
-                        checked={format === 'same'}
-                        onChange={() => setFormat('same')}
-                        className="w-4 h-4 text-primary focus:ring-primary/20"
-                      />
-                      Username = Password (Lebih Praktis)
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer text-body-md">
-                      <input 
-                        type="radio" 
-                        name="format" 
-                        value="up" 
-                        checked={format === 'up'}
-                        onChange={() => setFormat('up')}
-                        className="w-4 h-4 text-primary focus:ring-primary/20"
-                      />
-                      Username & Password Berbeda
-                    </label>
-                  </div>
                 </div>
 
                 <div>
