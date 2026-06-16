@@ -412,8 +412,12 @@ export default function DashboardOverview({
                   )}
                   {log.type === 'ACCT' && (
                     <>
-                      <div className="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-[14px] text-on-secondary-container">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                        log.action === 'Start' ? 'bg-green-500/20 text-green-600' :
+                        log.action === 'Stop' ? 'bg-error-container text-on-error-container' :
+                        'bg-secondary-container text-on-secondary-container'
+                      }`}>
+                        <span className="material-symbols-outlined text-[14px] currentColor">
                           {log.action === 'Start' ? 'login' : log.action === 'Stop' ? 'logout' : 'sync'}
                         </span>
                       </div>

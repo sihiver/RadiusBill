@@ -104,13 +104,14 @@ router.get('/logs', asyncHandler(async (req, res) => {
 
   const data = await cacheAside(`radius:logs:${limit}`, async () => {
     // Combine postauth (Auth/Reject) and recent accounting events
-    const [postauth, acct] = await Promise.all([
+    const [postauth, acctStart, acctStop] = await Promise.all([
       db.query(`
         SELECT
           'AUTH'   AS type,
           username,
           CASE WHEN reply = 'Access-Accept' THEN 'AUTH' ELSE 'REJECT' END AS log_type,
           reply,
+          NULL AS action,
           callingstationid AS mac_address,
           NULL AS ip_address,
           NULL AS session_id,
@@ -124,7 +125,8 @@ router.get('/logs', asyncHandler(async (req, res) => {
           'ACCT'              AS type,
           username,
           'ACCT'              AS log_type,
-          acctterminatecause  AS reply,
+          NULL                AS reply,
+          'Start'             AS action,
           callingstationid    AS mac_address,
           framedipaddress::text AS ip_address,
           acctsessionid       AS session_id,
@@ -133,9 +135,25 @@ router.get('/logs', asyncHandler(async (req, res) => {
         ORDER BY acctstarttime DESC
         LIMIT $1
       `, [Math.min(parseInt(limit), 20)]),
+      db.query(`
+        SELECT
+          'ACCT'              AS type,
+          username,
+          'ACCT'              AS log_type,
+          acctterminatecause  AS reply,
+          'Stop'              AS action,
+          callingstationid    AS mac_address,
+          framedipaddress::text AS ip_address,
+          acctsessionid       AS session_id,
+          acctstoptime        AS created_at
+        FROM radacct
+        WHERE acctstoptime IS NOT NULL
+        ORDER BY acctstoptime DESC
+        LIMIT $1
+      `, [Math.min(parseInt(limit), 20)])
     ]);
 
-    const combined = [...postauth.rows, ...acct.rows]
+    const combined = [...postauth.rows, ...acctStart.rows, ...acctStop.rows]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, parseInt(limit));
 
