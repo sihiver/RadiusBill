@@ -51,8 +51,10 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
             macAddress: v.mac_address || '',
             activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
             usedBytes: '0 MB',
-            timeLeft: v.expires_at ? '' : (pkg.duration || pkg.validity || '-'),
+            timeLeft: v.expires_at ? '' : (pkg.validity || '-'),
             expiresAt: v.expires_at ? new Date(v.expires_at).getTime() : undefined,
+            duration: pkg.duration || '-',
+            validity: pkg.validity || '-',
           }));
           setNewlyGenerated(mapped);
           fetchVouchers();
@@ -371,7 +373,8 @@ export default function VoucherGenerator({ packages, vouchers, setVouchers, fetc
             html = html.replace(/\{\{password\}\}/g, item.password);
             html = html.replace(/\{\{paket\}\}/g, item.package);
             html = html.replace(/\{\{harga\}\}/g, 'Rp ' + item.price.toLocaleString('id-ID'));
-            html = html.replace(/\{\{masa_aktif\}\}/g, item.timeLeft);
+            const masaAktif = item.validity || item.timeLeft || '-';
+            html = html.replace(/\{\{masa_aktif\}\}/g, masaAktif);
             html = html.replace(/\{\{durasi\}\}/g, item.duration || '-');
             
             // Apply dynamic colors

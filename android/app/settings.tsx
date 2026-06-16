@@ -59,7 +59,12 @@ export default function SettingsScreen() {
           loadPairedDevices();
           const savedPrinter = await AsyncStorage.getItem('saved_printer');
           if (savedPrinter) {
-            setConnectedDevice(savedPrinter);
+            try {
+              await BLEPrinter.connectPrinter(savedPrinter);
+              setConnectedDevice(savedPrinter);
+            } catch (err) {
+              console.log('Failed to auto-connect to printer:', err);
+            }
           }
         } catch (e) {
           console.log('Init error:', e);

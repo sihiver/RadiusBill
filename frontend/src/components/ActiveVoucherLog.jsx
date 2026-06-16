@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers, addSystemLog }) {
+export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers, addSystemLog, voucherTemplate }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Unused', 'Expired'
   const [selectedVoucher, setSelectedVoucher] = useState(null);
@@ -163,6 +163,60 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
         })
         .catch(err => alert('Error: ' + err.message));
     }
+  };
+
+  const handlePrintSelected = () => {
+    if (selectedIds.size === 0) return;
+    const printArea = document.getElementById('printable-voucher-items-log');
+    if (!printArea) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Silakan izinkan Popup pada browser Anda untuk mencetak tiket di halaman baru.");
+      return;
+    }
+
+    let styles = '';
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => {
+      styles += node.outerHTML;
+    });
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="id">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Cetak Tiket Voucher</title>
+          ${styles}
+          <style>
+            body { background: white; padding: 20px; }
+            @media print {
+              @page { margin: 5mm; }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2 class="text-center font-black text-[24px] mb-6 tracking-wider uppercase border-b-2 border-black pb-2 mx-auto max-w-sm font-sans">
+            Voucher Internet
+          </h2>
+          <div class="flex flex-wrap gap-4 justify-center items-start content-start">
+            ${printArea.innerHTML}
+          </div>
+          <script>
+            setTimeout(() => {
+              window.print();
+            }, 800);
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleDisconnect = (id, code) => {
@@ -528,13 +582,22 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
           <span className="text-on-surface font-medium text-[14px]">
             {selectedIds.size} voucher terpilih
           </span>
-          <button
-            onClick={handleBulkDelete}
-            className="bg-error text-on-error hover:bg-error/90 font-label-md text-label-md px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[18px]">delete</span>
-            Hapus Terpilih
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePrintSelected}
+              className="bg-tertiary text-on-tertiary hover:bg-tertiary/90 font-label-md text-label-md px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">print</span>
+              Cetak Terpilih
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="bg-error text-on-error hover:bg-error/90 font-label-md text-label-md px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">delete</span>
+              Hapus Terpilih
+            </button>
+          </div>
         </div>
       )}
 
@@ -742,6 +805,56 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
             </div>
           </div>
         )}
+      </div>
+
+      {/* Printable Area - Render ONLY when printing selected vouchers */}
+      <div className="hidden print:block w-full text-black font-sans" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+        <h2 className="text-center font-black text-[24px] mb-6 tracking-wider uppercase border-b-2 border-black pb-2 mx-auto max-w-sm">
+          Voucher Internet
+        </h2>
+        <div id="printable-voucher-items-log" className="flex flex-wrap gap-4 justify-center">
+          {vouchers.filter(v => selectedIds.has(v.id)).map((item, idx) => {
+            // Determine colors dynamically based on package or price
+            const palettes = [
+              { main: '#14478C', sub: '#1E62C2', light: '#E6F0FA' }, // Blue
+              { main: '#C62828', sub: '#E53935', light: '#FFEBEE' }, // Red
+              { main: '#2E7D32', sub: '#43A047', light: '#E8F5E9' }, // Green
+              { main: '#F57F17', sub: '#FBC02D', light: '#FFFDE7' }, // Yellow/Orange
+              { main: '#4527A0', sub: '#5E35B1', light: '#EDE7F6' }, // Purple
+              { main: '#00695C', sub: '#00897B', light: '#E0F2F1' }, // Teal
+              { main: '#AD1457', sub: '#D81B60', light: '#FCE4EC' }, // Pink
+            ];
+            // Hash the package name or use price to pick a consistent color
+            let hash = 0;
+            for (let i = 0; i < item.package.length; i++) {
+              hash = item.package.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colorIndex = Math.abs(hash) % palettes.length;
+            const palette = palettes[colorIndex];
+
+            let html = voucherTemplate || '';
+            html = html.replace(/\{\{kode\}\}/g, item.code);
+            html = html.replace(/\{\{password\}\}/g, item.password || item.code);
+            html = html.replace(/\{\{paket\}\}/g, item.package);
+            html = html.replace(/\{\{harga\}\}/g, 'Rp ' + item.price.toLocaleString('id-ID'));
+            const masaAktif = (item.status === 'Active' && item.validUntil && item.validUntil !== '-') ? item.validUntil : (item.validity || item.timeLeft || '-');
+            html = html.replace(/\{\{masa_aktif\}\}/g, masaAktif);
+            html = html.replace(/\{\{durasi\}\}/g, item.duration || '-');
+            
+            // Apply dynamic colors
+            html = html.replace(/\{\{warna_utama\}\}/g, palette.main);
+            html = html.replace(/\{\{warna_sekunder\}\}/g, palette.sub);
+            html = html.replace(/\{\{warna_muda\}\}/g, palette.light);
+            
+            return (
+              <div 
+                key={idx} 
+                dangerouslySetInnerHTML={{ __html: html }} 
+                style={{ pageBreakInside: 'avoid' }}
+              />
+            );
+          })}
+        </div>
       </div>
 
     </div>

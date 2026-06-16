@@ -191,7 +191,19 @@ export default function MemberScreen() {
           Alert.alert('Sukses', 'Detail member berhasil dicetak ke printer Bluetooth');
           return;
         } catch (printErr: any) {
-          console.log('Bluetooth print failed, falling back to PDF', printErr);
+          console.log('Bluetooth print failed, trying to reconnect...', printErr);
+          try {
+            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+            const savedPrinter = await AsyncStorage.getItem('saved_printer');
+            if (savedPrinter) {
+              await BLEPrinter.connectPrinter(savedPrinter);
+              await BLEPrinter.printBill(printData);
+              Alert.alert('Sukses', 'Detail member berhasil dicetak (Reconnected)');
+              return;
+            }
+          } catch (retryErr) {
+            console.log('Retry failed', retryErr);
+          }
           // Fallback to PDF if not connected
         }
       }

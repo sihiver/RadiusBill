@@ -69,7 +69,7 @@ const defaultVoucherTemplate = `
         <!-- Durasi & Aktif -->
         <div class="mt-4">
           <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">DURASI / AKTIF</div>
-          <div class="text-[18px] font-black text-[#0A1A3B] leading-none mt-1.5">{{durasi}} / {{masa_aktif}}</div>
+          <div class="text-[12px] font-black text-[#0A1A3B] leading-none mt-1.5">Durasi: {{durasi}} | Masa Aktif: {{masa_aktif}}</div>
         </div>
         
         <!-- Divider Line -->
@@ -290,6 +290,8 @@ export default function App() {
             timeLeft: timeLeftStr,
             expiresAt: uiExpiresAt,
             validUntil: v.expires_at ? new Date(v.expires_at).toLocaleString('id-ID') : '-',
+            duration: v.duration || '-',
+            validity: v.validity || '-',
           };
         });
         combined = [...combined, ...mappedVouchers];
@@ -310,6 +312,8 @@ export default function App() {
           usedBytes: formatBytes(v.used_bytes),
           timeLeft: 'Sesi Selesai',
           expiresAt: undefined,
+          duration: '-',
+          validity: '-',
         }));
         combined = [...combined, ...mappedLogs];
       }
@@ -635,7 +639,7 @@ export default function App() {
             </button>
           </div>
           {activeVoucherTab === 'log' ? (
-            <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} {...commonProps} />
+            <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} {...commonProps} />
           ) : (
             <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} {...commonProps} />
           )}

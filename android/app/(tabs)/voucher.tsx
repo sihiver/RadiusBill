@@ -106,10 +106,22 @@ export default function VoucherScreen() {
           printData += '================================\n\n\n';
           
           await BLEPrinter.printBill(printData);
-          Alert.alert('Sukses', 'Voucher berhasil dicetak ke printer Bluetooth');
+          Alert.alert('Sukses', 'Struk voucher berhasil dicetak ke printer Bluetooth');
           return;
         } catch (printErr: any) {
-          console.log('Bluetooth print failed, falling back to PDF', printErr);
+          console.log('Bluetooth print failed, trying to reconnect...', printErr);
+          try {
+            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+            const savedPrinter = await AsyncStorage.getItem('saved_printer');
+            if (savedPrinter) {
+              await BLEPrinter.connectPrinter(savedPrinter);
+              await BLEPrinter.printBill(printData);
+              Alert.alert('Sukses', 'Struk voucher berhasil dicetak (Reconnected)');
+              return;
+            }
+          } catch (retryErr) {
+            console.log('Retry failed', retryErr);
+          }
           // Fallback to PDF if not connected
         }
       }
