@@ -657,12 +657,12 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
               type="date" 
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-4 pr-10 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+              className="w-full pl-4 pr-17py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
             />
             {dateFilter && (
               <button 
                 onClick={() => setDateFilter('')}
-                className="absolute right-9 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-error bg-surface-container-low pl-1"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-error bg-surface-container-low h-full flex items-center justify-center px-1"
                 title="Hapus Filter Tanggal"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
