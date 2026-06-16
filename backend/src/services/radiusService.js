@@ -259,10 +259,18 @@ async function ensureGroupPolicy(pkg) {
     `, [groupName, rateLimit]);
   }
   
-  await query(`
-    INSERT INTO radgroupreply (groupname, attribute, op, value)
-    VALUES ($1, 'Mikrotik-Group', '=', $2)
-  `, [groupName, pkg.name]);
+  let speedType = 'fix';
+  if (pkg.description && pkg.description.includes('speedType=')) {
+    const match = pkg.description.match(/speedType=([^;]+)/);
+    if (match) speedType = match[1];
+  }
+
+  if (speedType === 'statik' || speedType === 'dinamis') {
+    await query(`
+      INSERT INTO radgroupreply (groupname, attribute, op, value)
+      VALUES ($1, 'Mikrotik-Group', '=', $2)
+    `, [groupName, pkg.name]);
+  }
 
   return groupName;
 }

@@ -142,9 +142,15 @@ router.post('/', asyncHandler(async (req, res) => {
 
   // Sync to FreeRADIUS
   if (pkg) {
-    const replyAttrs = { 
-      'Mikrotik-Group': pkg.name
-    };
+    const replyAttrs = {};
+    let speedType = 'fix';
+    if (pkg.description && pkg.description.includes('speedType=')) {
+      const match = pkg.description.match(/speedType=([^;]+)/);
+      if (match) speedType = match[1];
+    }
+    if (speedType === 'statik' || speedType === 'dinamis') {
+      replyAttrs['Mikrotik-Group'] = pkg.name;
+    }
     const rateLimit = radius.buildRateLimit(pkg);
     if (rateLimit) {
       replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
@@ -235,9 +241,15 @@ router.put('/:id', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
-      const replyAttrs = { 
-        'Mikrotik-Group': pkg.name
-      };
+      const replyAttrs = {};
+      let speedType = 'fix';
+      if (pkg.description && pkg.description.includes('speedType=')) {
+        const match = pkg.description.match(/speedType=([^;]+)/);
+        if (match) speedType = match[1];
+      }
+      if (speedType === 'statik' || speedType === 'dinamis') {
+        replyAttrs['Mikrotik-Group'] = pkg.name;
+      }
       const rateLimit = radius.buildRateLimit(pkg);
       if (rateLimit) {
         replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
@@ -304,9 +316,15 @@ router.post('/:id/unisolir', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [rtr.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
-      const replyAttrs = { 
-        'Mikrotik-Group': pkg.name
-      };
+      const replyAttrs = {};
+      let speedType = 'fix';
+      if (pkg.description && pkg.description.includes('speedType=')) {
+        const match = pkg.description.match(/speedType=([^;]+)/);
+        if (match) speedType = match[1];
+      }
+      if (speedType === 'statik' || speedType === 'dinamis') {
+        replyAttrs['Mikrotik-Group'] = pkg.name;
+      }
       const rateLimit = radius.buildRateLimit(pkg);
       if (rateLimit) {
         replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
@@ -374,9 +392,15 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [updatedRtr.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
-      const replyAttrs = { 
-        'Mikrotik-Group': pkg.name
-      };
+      const replyAttrs = {};
+      let speedType = 'fix';
+      if (pkg.description && pkg.description.includes('speedType=')) {
+        const match = pkg.description.match(/speedType=([^;]+)/);
+        if (match) speedType = match[1];
+      }
+      if (speedType === 'statik' || speedType === 'dinamis') {
+        replyAttrs['Mikrotik-Group'] = pkg.name;
+      }
       const rateLimit = radius.buildRateLimit(pkg);
       if (rateLimit) {
         replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
