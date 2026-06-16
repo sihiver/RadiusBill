@@ -2,7 +2,6 @@ import { createPortal } from 'react-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import DashboardOverview from './components/DashboardOverview';
 import PackageManagement from './components/PackageManagement';
-import VoucherGenerator from './components/VoucherGenerator';
 import ActiveVoucherLog from './components/ActiveVoucherLog';
 import MemberList from './components/MemberList';
 import BrowserSessions from './components/BrowserSessions';
@@ -662,7 +661,7 @@ export default function App() {
   const allTabs = [
     { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', section: 'core' },
     { id: 'packages', name: 'Paket', icon: 'inventory_2', section: 'core' },
-    { id: 'log', name: 'Voucher', icon: 'confirmation_number', section: 'kontrol' },
+    { id: 'log', name: 'Daftar Voucher', icon: 'list_alt', section: 'kontrol' },
     { id: 'members', name: 'Member', icon: 'group', section: 'kontrol' },
     { id: 'routers', name: 'PPPoE', icon: 'router', section: 'kontrol' },
     { id: 'resellers', name: 'Kelola Reseller', icon: 'storefront', section: 'kontrol' },
@@ -690,31 +689,7 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':  return <DashboardOverview packages={packages} vouchers={vouchers} members={members} routers={routers} logs={logs} clearLogs={clearLogs} isSyncing={isSyncing} fetchRadiusLogs={fetchRadiusLogs} {...commonProps} />;
       case 'packages':   return <PackageManagement packages={packages} setPackages={setPackages} fetchPackages={fetchPackages} {...commonProps} />;
-      case 'log':        return (
-        <div className="space-y-4 animate-fadeIn">
-          <div className="flex gap-2 border-b border-surface-variant pb-3 mb-4">
-            <button 
-              onClick={() => setActiveVoucherTab('log')} 
-              className={`px-5 py-2 font-label-md rounded-lg transition-all flex items-center gap-2 ${activeVoucherTab === 'log' ? 'bg-primary text-white shadow-sm' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'}`}
-            >
-              <span className="material-symbols-outlined text-[18px]">list_alt</span>
-              Daftar Voucher
-            </button>
-            <button 
-              onClick={() => setActiveVoucherTab('generator')} 
-              className={`px-5 py-2 font-label-md rounded-lg transition-all flex items-center gap-2 ${activeVoucherTab === 'generator' ? 'bg-primary text-white shadow-sm' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'}`}
-            >
-              <span className="material-symbols-outlined text-[18px]">add_circle</span>
-              Buat Voucher Baru
-            </button>
-          </div>
-          {activeVoucherTab === 'log' ? (
-            <ActiveVoucherLog vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} {...commonProps} />
-          ) : (
-            <VoucherGenerator packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} setVoucherTemplate={setVoucherTemplate} defaultTemplate={defaultVoucherTemplate} fetchUserMe={fetchUserMe} {...commonProps} />
-          )}
-        </div>
-      );
+      case 'log':        return <ActiveVoucherLog packages={packages} vouchers={vouchers} setVouchers={setVouchers} fetchVouchers={fetchVouchers} voucherTemplate={voucherTemplate} fetchUserMe={fetchUserMe} defaultTemplate={defaultVoucherTemplate} {...commonProps} />;
       case 'members':    return <MemberList members={members} setMembers={setMembers} fetchMembers={fetchMembers} packages={packages} {...commonProps} />;
       case 'sessions':   return <BrowserSessions members={members} setMembers={setMembers} fetchMembers={fetchMembers} vouchers={vouchers} routers={routers} {...commonProps} />;
       case 'routers':    return <RouterList routers={routers} setRouters={setRouters} fetchRouters={fetchRouters} packages={packages} {...commonProps} />;

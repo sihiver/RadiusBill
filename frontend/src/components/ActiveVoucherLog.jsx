@@ -2,12 +2,142 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../App';
 import { createPortal } from 'react-dom';
 
-export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers, addSystemLog, voucherTemplate }) {
+export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetchVouchers, addSystemLog, voucherTemplate, fetchUserMe, defaultTemplate }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Unused', 'Expired'
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+
+  // Generator state
+  const hotspotPackages = packages?.filter(p => p.type === 'Hotspot') || [];
+  const [selectedPkgId, setSelectedPkgId] = useState(hotspotPackages[0]?.id || '');
+  const [quantity, setQuantity] = useState(10);
+  const [codeLength, setCodeLength] = useState(6);
+  const [prefix, setPrefix] = useState('RW-');
+  const [format, setFormat] = useState('same');
+  const [macBinding, setMacBinding] = useState(false);
+
+  const [generatorOpen, setGeneratorOpen] = useState(false);
+  const [newlyGenerated, setNewlyGenerated] = useState([]);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+
+  const handleGenerate = (e) => {
+    e.preventDefault();
+    const pkg = packages.find(p => p.id === Number(selectedPkgId)) || hotspotPackages[0];
+    if (!pkg) {
+      alert("Silakan buat Paket Hotspot terlebih dahulu di Menu Manajemen Paket.");
+      return;
+    }
+
+    const payload = {
+      package_id: Number(selectedPkgId || pkg.id),
+      quantity: Number(quantity),
+      prefix,
+      code_length: Number(codeLength),
+      format,
+      mac_binding: macBinding
+    };
+
+    const token = localStorage.getItem('rtrwnet_token');
+    apiFetch('/api/vouchers/generate', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(async res => {
+        const json = await res.json();
+        if (res.status === 400 || res.status === 401 || !json.success) {
+          throw new Error(json.message || 'Gagal men-generate voucher.');
+        }
+        return json;
+      })
+      .then(json => {
+        const mapped = json.data.map(v => ({
+          id: v.id,
+          code: v.code,
+          password: v.password,
+          package: v.package_name,
+          price: v.price,
+          status: v.status,
+          ipAddress: v.ip_address || '-',
+          macAddress: v.mac_address || '',
+          activatedTime: v.activated_at ? new Date(v.activated_at).toLocaleString('id-ID') : '-',
+          usedBytes: '0 MB',
+          timeLeft: v.expires_at ? '' : (pkg.validity || '-'),
+          expiresAt: v.expires_at ? new Date(v.expires_at).getTime() : undefined,
+          duration: pkg.duration || '-',
+          validity: pkg.validity || '-',
+        }));
+        setNewlyGenerated(mapped);
+        fetchVouchers();
+        if (fetchUserMe) fetchUserMe();
+        addSystemLog('SYSTEM', `Membuat ${quantity} Voucher baru untuk Paket "${pkg.name}"`);
+        
+        // Open print modal, close generator modal
+        setGeneratorOpen(false);
+        setPrintModalOpen(true);
+      })
+      .catch(err => {
+        alert('Error: ' + err.message);
+      });
+  };
+
+  const handlePrintNewVouchers = () => {
+    const printArea = document.getElementById('printable-voucher-items-new');
+    if (!printArea) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Silakan izinkan Popup pada browser Anda untuk mencetak tiket di halaman baru.");
+      return;
+    }
+
+    let styles = '';
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => {
+      styles += node.outerHTML;
+    });
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="id">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Cetak Tiket Voucher</title>
+          ${styles}
+          <style>
+            body { background: white; padding: 20px; }
+            @media print {
+              @page { margin: 5mm; }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2 class="text-center font-black text-[24px] mb-6 tracking-wider uppercase border-b-2 border-black pb-2 mx-auto max-w-sm font-sans">
+            Voucher Internet
+          </h2>
+          <div class="flex flex-wrap gap-4 justify-center items-start content-start">
+            ${printArea.innerHTML}
+          </div>
+          <script>
+            setTimeout(() => {
+              window.print();
+            }, 800);
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   // Helper to format bytes
   const formatBytes = (bytes) => {
@@ -483,6 +613,13 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">Daftar lengkap voucher, monitoring status aktivasi, dan pemutusan sesi hotspot.</p>
         </div>
         <div className="flex gap-2 self-start sm:self-center">
+          <button 
+            onClick={() => setGeneratorOpen(true)}
+            className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[20px]">add_circle</span>
+            Buat Voucher Baru
+          </button>
         </div>
       </div>
 
@@ -751,6 +888,219 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
           </div>
         )}
       </div>
+
+      {/* Generator Modal */}
+      {generatorOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container w-full max-w-xl rounded-3xl shadow-xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-low">
+              <h3 className="text-xl font-semibold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-[24px] text-primary">add_circle</span>
+                Buat Voucher Baru
+              </h3>
+              <button onClick={() => setGeneratorOpen(false)} className="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-variant/50 transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              <form id="generator-form" onSubmit={handleGenerate} className="space-y-5">
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1.5">Pilih Paket Hotspot</label>
+                  <select 
+                    value={selectedPkgId} 
+                    onChange={(e) => setSelectedPkgId(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-xl text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  >
+                    {hotspotPackages.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} - Rp {p.price.toLocaleString('id-ID')}</option>
+                    ))}
+                    {hotspotPackages.length === 0 && (
+                      <option value="">Belum ada paket hotspot</option>
+                    )}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1.5">Jumlah Voucher</label>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="500" 
+                      value={quantity}
+                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-xl text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1.5">Panjang Kode</label>
+                    <input 
+                      type="number" 
+                      min="4" 
+                      max="12" 
+                      value={codeLength}
+                      onChange={(e) => setCodeLength(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-xl text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1.5">Prefix Kode (Awalan)</label>
+                  <input 
+                    type="text" 
+                    value={prefix}
+                    onChange={(e) => setPrefix(e.target.value)}
+                    placeholder="e.g. HOT-"
+                    className="w-full px-4 py-2.5 border border-surface-dim bg-surface-container-lowest text-on-surface rounded-xl text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1.5">Format Autentikasi</label>
+                  <div className="space-y-3 mt-2 bg-surface-container-low p-4 rounded-xl border border-surface-dim">
+                    <label className="flex items-center gap-3 cursor-pointer text-body-md">
+                      <input 
+                        type="radio" 
+                        name="format" 
+                        value="same" 
+                        checked={format === 'same'}
+                        onChange={() => setFormat('same')}
+                        className="w-4 h-4 text-primary focus:ring-primary/20"
+                      />
+                      Username = Password (Lebih Praktis)
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer text-body-md">
+                      <input 
+                        type="radio" 
+                        name="format" 
+                        value="up" 
+                        checked={format === 'up'}
+                        onChange={() => setFormat('up')}
+                        className="w-4 h-4 text-primary focus:ring-primary/20"
+                      />
+                      Username & Password Berbeda
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-1.5">Pengaturan Keamanan</label>
+                  <label className="flex items-center gap-4 cursor-pointer mt-1 bg-surface-container-low border border-surface-dim rounded-xl p-4 transition-colors hover:bg-surface-container">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={macBinding}
+                        onChange={(e) => setMacBinding(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-6 bg-surface-container-highest rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-4 peer-checked:after:border-primary"></div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-on-surface text-[14px]">Enable MAC Binding</span>
+                      <span className="text-[12px] text-on-surface-variant mt-0.5">Kunci voucher otomatis ke perangkat pertama yang login</span>
+                    </div>
+                  </label>
+                </div>
+              </form>
+            </div>
+            <div className="p-6 border-t border-outline-variant/30 bg-surface-container-low flex justify-end gap-3">
+              <button 
+                onClick={() => setGeneratorOpen(false)}
+                className="px-5 py-2.5 rounded-xl font-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                type="submit"
+                form="generator-form"
+                className="bg-primary hover:bg-primary-container text-on-primary font-label-md px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">generating_tokens</span>
+                Generate {quantity} Voucher
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* Print Modal */}
+      {printModalOpen && createPortal(
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container w-full max-w-sm rounded-3xl shadow-xl overflow-hidden animate-scale-up text-center relative">
+            <button 
+              onClick={() => { setPrintModalOpen(false); setNewlyGenerated([]); }}
+              className="absolute top-4 right-4 text-on-surface-variant hover:bg-surface-variant/50 p-1 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <div className="p-8 pb-4">
+              <div className="w-20 h-20 bg-success-container text-on-success-container rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
+                <span className="material-symbols-outlined text-[40px]">check_circle</span>
+              </div>
+              <h3 className="text-2xl font-bold text-on-surface mb-2">Berhasil!</h3>
+              <p className="text-body-md text-on-surface-variant">
+                Sebanyak <span className="font-bold text-on-surface">{newlyGenerated.length} voucher</span> telah sukses digenerate dan tersimpan di database.
+              </p>
+            </div>
+            <div className="p-8 pt-4">
+              <button 
+                onClick={handlePrintNewVouchers}
+                className="w-full bg-primary hover:bg-primary-container text-on-primary font-label-lg px-6 py-3.5 rounded-xl flex items-center justify-center gap-3 shadow-sm transition-colors"
+              >
+                <span className="material-symbols-outlined text-[24px]">print</span>
+                Cetak Voucher Sekarang
+              </button>
+              <button
+                onClick={() => { setPrintModalOpen(false); setNewlyGenerated([]); }}
+                className="w-full mt-3 text-primary font-label-md px-4 py-2 hover:bg-primary/10 rounded-lg transition-colors"
+              >
+                Tutup Saja
+              </button>
+            </div>
+          </div>
+
+          {/* Hidden printable area for the NEW vouchers only */}
+          <div className="hidden print:block w-full text-black font-sans" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+            <div id="printable-voucher-items-new" className="flex flex-wrap gap-4 justify-center">
+              {newlyGenerated.map((item, idx) => {
+                const palettes = [
+                  { main: '#14478C', sub: '#1E62C2', light: '#E6F0FA' },
+                  { main: '#C62828', sub: '#E53935', light: '#FFEBEE' },
+                  { main: '#2E7D32', sub: '#43A047', light: '#E8F5E9' },
+                  { main: '#F57F17', sub: '#FBC02D', light: '#FFFDE7' },
+                  { main: '#4527A0', sub: '#5E35B1', light: '#EDE7F6' },
+                  { main: '#00695C', sub: '#00897B', light: '#E0F2F1' },
+                  { main: '#AD1457', sub: '#D81B60', light: '#FCE4EC' },
+                ];
+                let hash = 0;
+                for (let i = 0; i < item.package.length; i++) {
+                  hash = item.package.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const colorIndex = Math.abs(hash) % palettes.length;
+                const palette = palettes[colorIndex];
+
+                let html = voucherTemplate || defaultTemplate || '';
+                html = html.replace(/\{\{kode\}\}/g, item.code);
+                html = html.replace(/\{\{password\}\}/g, item.password);
+                html = html.replace(/\{\{paket\}\}/g, item.package);
+                html = html.replace(/\{\{harga\}\}/g, 'Rp ' + item.price.toLocaleString('id-ID'));
+                const masaAktif = item.validity || item.timeLeft || '-';
+                html = html.replace(/\{\{masa_aktif\}\}/g, masaAktif);
+                html = html.replace(/\{\{durasi\}\}/g, item.duration || '-');
+                
+                html = html.replace(/\{\{warna_utama\}\}/g, palette.main);
+                html = html.replace(/\{\{warna_sekunder\}\}/g, palette.sub);
+                html = html.replace(/\{\{warna_muda\}\}/g, palette.light);
+                
+                return (
+                  <div key={idx} dangerouslySetInnerHTML={{ __html: html }} style={{ pageBreakInside: 'avoid' }} />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      , document.body)}
 
       {/* Printable Area - Render ONLY when printing selected vouchers */}
       <div className="hidden print:block w-full text-black font-sans" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
