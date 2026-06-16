@@ -74,6 +74,7 @@ export default function PackageManagement({ packages, setPackages, fetchPackages
       speed_upload: speedType === 'fix' ? speedUpload : (speedType === 'dinamis' ? speedUpTo : 'Mikrotik Profile'),
       speed_download: speedType === 'fix' ? speedDownload : (speedType === 'dinamis' ? speedUpTo : 'Mikrotik Profile'),
       duration,
+      validity,
       cost_price: Number(costPrice),
       price: Number(price),
       description: `speedType=${speedType};speedUpTo=${speedUpTo}`,

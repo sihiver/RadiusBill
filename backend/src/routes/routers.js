@@ -141,7 +141,10 @@ router.post('/', asyncHandler(async (req, res) => {
 
   // Sync to FreeRADIUS
   if (pkg) {
-    const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+    const replyAttrs = { 
+      'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg),
+      'Mikrotik-Group': pkg.name
+    };
     if (rtr.router_ip) {
       replyAttrs['Framed-IP-Address'] = rtr.router_ip;
     }
@@ -213,7 +216,10 @@ router.put('/:id', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
-      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+      const replyAttrs = { 
+        'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg),
+        'Mikrotik-Group': pkg.name
+      };
       if (rtr.router_ip) {
         replyAttrs['Framed-IP-Address'] = rtr.router_ip;
       }
@@ -271,7 +277,10 @@ router.post('/:id/unisolir', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [rtr.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
-      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+      const replyAttrs = { 
+        'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg),
+        'Mikrotik-Group': pkg.name
+      };
       if (rtr.router_ip) {
         replyAttrs['Framed-IP-Address'] = rtr.router_ip;
       }
@@ -335,7 +344,10 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [updatedRtr.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
-      const replyAttrs = { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) };
+      const replyAttrs = { 
+        'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg),
+        'Mikrotik-Group': pkg.name
+      };
       if (updatedRtr.router_ip) {
         replyAttrs['Framed-IP-Address'] = updatedRtr.router_ip;
       }

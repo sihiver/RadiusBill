@@ -241,6 +241,11 @@ async function ensureGroupPolicy(pkg) {
     INSERT INTO radgroupreply (groupname, attribute, op, value)
     VALUES ($1, 'Mikrotik-Rate-Limit', '=', $2)
   `, [groupName, rateLimit]);
+  
+  await query(`
+    INSERT INTO radgroupreply (groupname, attribute, op, value)
+    VALUES ($1, 'Mikrotik-Group', '=', $2)
+  `, [groupName, pkg.name]);
 
   return groupName;
 }
