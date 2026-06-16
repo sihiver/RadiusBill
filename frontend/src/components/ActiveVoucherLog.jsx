@@ -276,26 +276,7 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
     }
   };
 
-  const handleClearExpired = () => {
-    if (window.confirm("Hapus PERMANEN semua histori voucher yang sudah Expired dari sistem? (Tidak bisa dikembalikan)")) {
-      // 1. Paksa pindahkan yang baru expired ke log
-      apiFetch('/api/vouchers/expire-now', { method: 'POST' })
-        .then(() => {
-          // 2. Hapus permanen semua log
-          return apiFetch('/api/voucher-logs/clear/all', { method: 'DELETE' });
-        })
-        .then(res => res.json())
-        .then(json => {
-          if (json.success) {
-            fetchVouchers();
-            addSystemLog('SYSTEM', 'Semua voucher expired dihapus permanen dari sistem.');
-          } else {
-            alert(json.message || 'Gagal membersihkan.');
-          }
-        })
-        .catch(err => alert('Error: ' + err.message));
-    }
-  };
+
 
   if (selectedVoucher) {
     const currentUptime = sessions.reduce((acc, s) => {
@@ -502,43 +483,6 @@ export default function ActiveVoucherLog({ vouchers, setVouchers, fetchVouchers,
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">Daftar lengkap voucher, monitoring status aktivasi, dan pemutusan sesi hotspot.</p>
         </div>
         <div className="flex gap-2 self-start sm:self-center">
-          <button
-            onClick={() => {
-              const headers = ['Kode', 'Password', 'Paket', 'Harga', 'Status', 'MAC Address', 'IP', 'Waktu Aktivasi', 'Pemakaian'];
-              const rows = filteredVouchers.map(v => [
-                v.code,
-                v.password || '',
-                v.package,
-                v.price,
-                v.status,
-                v.macAddress || '',
-                v.ipAddress,
-                v.activatedTime,
-                v.usedBytes
-              ].map(field => `"${String(field ?? '').replace(/"/g, '""')}"`).join(','));
-              const csv = [headers.join(','), ...rows].join('\n');
-              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'voucher_log.csv';
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="border border-primary text-primary hover:bg-primary/10 font-label-md text-label-md px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[20px]">download</span>
-            Export CSV
-          </button>
-          {vouchers.some(v => v.status === 'Expired') && (
-            <button 
-              onClick={handleClearExpired}
-              className="border border-error text-error hover:bg-error-container/10 font-label-md text-label-md px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[20px]">delete_sweep</span>
-              Bersihkan Voucher Expired
-            </button>
-          )}
         </div>
       </div>
 
