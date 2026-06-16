@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetchVouchers, addSystemLog, voucherTemplate, fetchUserMe, defaultTemplate }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Unused', 'Expired'
+  const [dateFilter, setDateFilter] = useState('');
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
@@ -202,12 +203,26 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
     return `${h}:${m}:${s}`;
   };
 
-  // Filter vouchers based on search and status select
+  // Filter vouchers based on search, date, and status select
   const filteredVouchers = vouchers.filter(v => {
     const matchesSearch = v.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           v.package.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || v.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    let matchesDate = true;
+    if (dateFilter) {
+      if (!v.createdAt) {
+        matchesDate = false;
+      } else {
+        const vDate = new Date(v.createdAt);
+        const yyyy = vDate.getFullYear();
+        const mm = String(vDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(vDate.getDate()).padStart(2, '0');
+        matchesDate = `${yyyy}-${mm}-${dd}` === dateFilter;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   const totalPages = Math.ceil(filteredVouchers.length / itemsPerPage);
@@ -624,21 +639,40 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-4 shadow-[0_1px_3px_rgba(77,68,227,0.03)] flex flex-col md:flex-row gap-4 justify-between items-center">
-        {/* Search */}
-        <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
-          <input 
-            type="text" 
-            placeholder="Cari kode voucher atau paket..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+      <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-4 shadow-[0_1px_3px_rgba(77,68,227,0.03)] flex flex-col xl:flex-row gap-4 justify-between items-center">
+        {/* Search & Date Filter */}
+        <div className="flex flex-col md:flex-row w-full gap-3 flex-1">
+          <div className="relative w-full md:w-80">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+            <input 
+              type="text" 
+              placeholder="Cari kode voucher atau paket..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+          <div className="relative w-full md:w-48">
+            <input 
+              type="date" 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full pl-4 pr-10 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+            />
+            {dateFilter && (
+              <button 
+                onClick={() => setDateFilter('')}
+                className="absolute right-9 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-error bg-surface-container-low pl-1"
+                title="Hapus Filter Tanggal"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0 hide-scrollbar">
           {['All', 'Active', 'Unused', 'Expired'].map((filter) => {
             const count = filter === 'All' ? vouchers.length : vouchers.filter(v => v.status === filter).length;
             return (
