@@ -143,9 +143,12 @@ router.post('/', asyncHandler(async (req, res) => {
   // Sync to FreeRADIUS
   if (pkg) {
     const replyAttrs = { 
-      'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg),
       'Mikrotik-Group': pkg.name
     };
+    const rateLimit = radius.buildRateLimit(pkg);
+    if (rateLimit) {
+      replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
+    }
     if (rtr.router_ip) {
       replyAttrs['Framed-IP-Address'] = rtr.router_ip;
     }
