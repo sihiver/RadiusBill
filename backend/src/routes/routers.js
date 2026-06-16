@@ -228,6 +228,11 @@ router.put('/:id', asyncHandler(async (req, res) => {
         radius.buildGroupName(pkg),
         replyAttrs
       );
+      
+      // Auto-disconnect if package changed so Mikrotik applies new profile/limit
+      if (old.package_id !== value.package_id) {
+        await mikrotik.disconnectPPPoEUser(rtr.pppoe_user);
+      }
     }
   }
 
