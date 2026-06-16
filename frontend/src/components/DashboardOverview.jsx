@@ -100,7 +100,7 @@ export default function DashboardOverview({
           if (row.date === dateStr) {
             if (row.type === 'voucher' || row.type === 'member') {
               hotspotAmt += Number(row.amount);
-            } else if (row.type === 'router') {
+            } else if (row.type === 'router' || row.type === 'pppoe') {
               pppoeAmt += Number(row.amount);
             }
           }
