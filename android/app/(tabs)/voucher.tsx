@@ -20,12 +20,17 @@ export default function VoucherScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [vouchers, setVouchers] = useState([]);
+  const [packages, setPackages] = useState<any[]>([]);
   const { searchQuery } = useSearch();
 
   const fetchVouchers = async () => {
     try {
-      const response = await apiFetch('/vouchers');
-      setVouchers(response.data || []);
+      const [vouchersRes, packagesRes] = await Promise.all([
+        apiFetch('/vouchers'),
+        apiFetch('/packages?type=Hotspot')
+      ]);
+      setVouchers(vouchersRes.data || []);
+      setPackages(packagesRes.data || []);
     } catch (error) {
       console.error('Failed to fetch vouchers', error);
     } finally {
@@ -68,13 +73,37 @@ export default function VoucherScreen() {
     try {
       if (BLEPrinter) {
         try {
-          let printData = 'BILLING RADIUS\n';
-          printData += '--------------------------------\n';
-          printData += 'Voucher Hotspot\n';
-          printData += `${item.code}\n`;
-          printData += `Paket: ${item.package_name || '-'}\n`;
-          printData += '--------------------------------\n';
-          printData += 'Gunakan kode di atas untuk login\n\n\n';
+          const today = new Date();
+          const dateStr = today.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          const timeStr = today.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const invId = `INV-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+
+          
+
+          
+
+          const pkg = packages.find((p: any) => p.name === item.package_name || p.id === item.package_id);
+          const price = pkg ? pkg.price : (item.price || 0);
+
+          let printData = '================================\n';
+          printData += '     MQL.net BILLING SYSTEM     \n';
+          printData += '          HOTSPOT & ISP         \n';
+          printData += '       Telp: 085311753779       \n';
+          printData += '================================\n\n';
+          printData += `Tanggal : ${dateStr} ${timeStr}\n`;
+          printData += `ID Trans: ${invId}\n`;
+          printData += 'Kasir   : Admin\n\n';
+          printData += '-------- DETAIL AKUN --------\n';
+          printData += `Voucher    : ${item.code}\n`;
+          printData += `Paket      : ${item.package_name || 'Voucher Hotspot'}\n`;
+          printData += `Harga      : Rp ${price.toLocaleString('id-ID')}\n`;
+          printData += `Durasi     : ${item.duration || (pkg ? pkg.duration : 'Sesuai Paket')}\n`;
+          printData += `Masa Aktif : ${item.validity || (pkg ? pkg.validity : 'Sesuai Paket')}\n`;
+          printData += `Kuota      : ${item.quota || 'Tidak Terbatas'}\n`;
+          printData += '-------- TERIMA KASIH --------\n';
+          printData += '  Layanan Cepat & Terjangkau  \n';
+          printData += 'Simpan struk ini sebagai bukti\n';
+          printData += '================================\n\n\n';
           
           await BLEPrinter.printBill(printData);
           Alert.alert('Sukses', 'Voucher berhasil dicetak ke printer Bluetooth');

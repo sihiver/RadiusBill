@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsAndroid, useColorScheme, Text, View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
@@ -46,7 +47,7 @@ export default function SettingsScreen() {
   };
 
   useEffect(() => {
-    const setupPrinter = async () => {
+        const setupPrinter = async () => {
       if (BLEPrinter) {
         const hasPerm = await requestBluetoothPermission();
         if (!hasPerm) {
@@ -56,6 +57,10 @@ export default function SettingsScreen() {
         try {
           await BLEPrinter.init();
           loadPairedDevices();
+          const savedPrinter = await AsyncStorage.getItem('saved_printer');
+          if (savedPrinter) {
+            setConnectedDevice(savedPrinter);
+          }
         } catch (e) {
           console.log('Init error:', e);
         }
@@ -99,12 +104,13 @@ export default function SettingsScreen() {
     }
   };
 
-  const connectDevice = async (address: string) => {
+    const connectDevice = async (address: string) => {
     if (!BLEPrinter) return;
     try {
       setIsScanning(true);
       await BLEPrinter.connectPrinter(address);
       setConnectedDevice(address);
+      await AsyncStorage.setItem('saved_printer', address);
       Alert.alert('Berhasil', 'Printer berhasil terhubung');
     } catch (err: any) {
       Alert.alert('Gagal Terhubung', err.message || 'Pastikan printer menyala');

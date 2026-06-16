@@ -4,6 +4,36 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PermissionsAndroid, Platform } from 'react-native';
+
+let BLEPrinter: any = null;
+try {
+  const printer = require('react-native-thermal-receipt-printer-image-qr');
+  BLEPrinter = printer.BLEPrinter;
+} catch (error) {}
+
+const requestBluetoothPermission = async () => {
+  if (Platform.OS === 'android') {
+    if (Platform.Version >= 31) {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      ]);
+      return (
+        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED
+      );
+    } else {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+  }
+  return true;
+};
+
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -35,6 +65,25 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    const autoConnectPrinter = async () => {
+      try {
+        const savedPrinter = await AsyncStorage.getItem('saved_printer');
+        if (savedPrinter && BLEPrinter) {
+          const hasPerm = await requestBluetoothPermission();
+          if (hasPerm) {
+            await BLEPrinter.init();
+            await BLEPrinter.connectPrinter(savedPrinter);
+            console.log('Printer auto-connected to', savedPrinter);
+          }
+        }
+      } catch (err) {
+        console.log('Auto connect printer failed:', err);
+      }
+    };
+    autoConnectPrinter();
+  }, []);
 
   if (!loaded) {
     return null;

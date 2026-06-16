@@ -153,16 +153,39 @@ export default function MemberScreen() {
     try {
       if (BLEPrinter) {
         try {
-          let printData = 'BILLING RADIUS\n';
-          printData += '--------------------------------\n';
-          printData += 'Akun Member PPPoE\n';
-          printData += '--------------------------------\n';
-          printData += `Nama : ${item.name}\n`;
-          printData += `User : ${item.username}\n`;
-          printData += `Pass : ${item.password || '***'}\n`;
-          printData += `Paket: ${item.package_name || '-'}\n`;
-          printData += '--------------------------------\n';
-          printData += 'Simpan info akun ini dengan baik\n\n\n';
+          const today = new Date();
+          const dateStr = today.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          const timeStr = today.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const invId = `INV-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+
+          
+
+          
+
+          const pkg = packages.find((p: any) => p.name === item.package_name || p.id === item.package_id);
+          const price = pkg ? pkg.price : (item.price || 0);
+
+          let printData = '================================\n';
+          printData += '     MQL.net BILLING SYSTEM     \n';
+          printData += '          HOTSPOT & ISP         \n';
+          printData += '       Telp: 085311753779       \n';
+          printData += '================================\n\n';
+          printData += `Tanggal : ${dateStr} ${timeStr}\n`;
+          printData += `ID Trans: ${invId}\n`;
+          printData += 'Kasir   : Admin\n\n';
+          printData += '-------- DETAIL AKUN --------\n';
+          printData += `Username   : ${item.username}\n`;
+          printData += `Password   : ${item.password || '***'}\n`;
+          printData += `Paket      : ${item.package_name || 'Member PPPoE'}\n`;
+          printData += `Harga      : Rp ${price.toLocaleString('id-ID')}\n`;
+          printData += `Durasi     : ${item.duration || (pkg ? pkg.duration : 'Sesuai Paket')}\n`;
+          printData += `Masa Aktif : ${item.validity || (pkg ? pkg.validity : 'Sesuai Paket')}\n`;
+          printData += `Kuota      : ${item.quota || 'Tidak Terbatas'}\n\n`;
+
+          printData += '-------- TERIMA KASIH --------\n';
+          printData += '  Layanan Cepat & Terjangkau  \n';
+          printData += 'Simpan struk ini sebagai bukti\n';
+          printData += '================================\n';
           
           await BLEPrinter.printBill(printData);
           Alert.alert('Sukses', 'Detail member berhasil dicetak ke printer Bluetooth');
