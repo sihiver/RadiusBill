@@ -385,29 +385,55 @@ export default function DashboardOverview({
               <div className="text-outline italic text-center mt-10">Mendengarkan permintaan autentikasi FreeRADIUS...</div>
             ) : (
               logs.map((log) => (
-                <div key={log.id} className="log-entry px-2 py-1 hover:bg-surface-container-low rounded transition-colors">
-                  <span className="text-outline mr-2">[{log.time}]</span>
+                <div key={log.id} className="group flex items-center gap-3 px-3 py-2 hover:bg-surface-container rounded-lg transition-colors border border-transparent hover:border-surface-variant/50">
+                  <span className="text-[11px] font-mono text-on-surface-variant font-medium w-14 shrink-0">{log.time}</span>
+                  
                   {log.type === 'AUTH' && (
                     <>
-                      <span className="text-primary font-bold mr-1">[AUTH]</span> Accept:{' '}
-                      <span className="text-tertiary font-semibold">{log.user}</span> <span className="text-on-surface-variant">({log.ip})</span> -{' '}
-                      <span className="text-secondary font-medium">{log.service}</span>
+                      <div className="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[14px] text-on-primary-container">check_circle</span>
+                      </div>
+                      <div className="flex-1 truncate">
+                        <span className="font-semibold text-on-surface">{log.user}</span>
+                        <span className="text-on-surface-variant ml-1.5 text-[11px]">berhasil terhubung <span className="opacity-70">({log.ip})</span></span>
+                      </div>
                     </>
                   )}
                   {log.type === 'REJECT' && (
                     <>
-                      <span className="text-error font-bold mr-1">[REJECT]</span> <span className="text-on-surface-variant">{log.reason}:</span>{' '}
-                      <span className="text-tertiary font-semibold">{log.user}</span> <span className="text-on-surface-variant">({log.ip})</span>
+                      <div className="w-6 h-6 rounded-full bg-error-container flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[14px] text-on-error-container">cancel</span>
+                      </div>
+                      <div className="flex-1 truncate">
+                        <span className="font-semibold text-on-surface">{log.user}</span>
+                        <span className="text-error ml-1.5 text-[11px]">Gagal: {log.reason}</span>
+                      </div>
                     </>
                   )}
                   {log.type === 'ACCT' && (
                     <>
-                      <span className="text-secondary font-bold mr-1">[ACCT]</span> <span className="text-on-surface-variant">{log.action}:</span>{' '}
-                      <span className="text-tertiary font-semibold">{log.user}</span> <span className="text-on-surface-variant">- Session ID: {log.session}</span>
+                      <div className="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[14px] text-on-secondary-container">
+                          {log.action === 'Start' ? 'login' : log.action === 'Stop' ? 'logout' : 'sync'}
+                        </span>
+                      </div>
+                      <div className="flex-1 truncate">
+                        <span className="font-semibold text-on-surface">{log.user}</span>
+                        <span className="text-on-surface-variant ml-1.5 text-[11px]">
+                          sesi {log.action === 'Start' ? 'dimulai' : log.action === 'Stop' ? 'berakhir' : 'diperbarui'}
+                        </span>
+                      </div>
                     </>
                   )}
                   {log.type === 'SYSTEM' && (
-                    <span className="text-outline-variant italic">{log.message}</span>
+                    <>
+                      <div className="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">info</span>
+                      </div>
+                      <div className="flex-1 truncate text-outline italic text-[11px]">
+                        {log.message}
+                      </div>
+                    </>
                   )}
                 </div>
               ))
