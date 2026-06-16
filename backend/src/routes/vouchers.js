@@ -213,7 +213,10 @@ router.post('/generate', asyncHandler(async (req, res) => {
   const quotaSecs  = parseDuration(pkg.duration);
   
   for (const v of generated) {
-    const replyAttrs = { 'Mikrotik-Rate-Limit': rateLimit };
+    const replyAttrs = {};
+    if (rateLimit) {
+      replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
+    }
     if (quotaSecs > 0) {
       replyAttrs['Session-Timeout'] = quotaSecs;
     }

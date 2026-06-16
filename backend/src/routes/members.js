@@ -134,7 +134,7 @@ router.post('/', asyncHandler(async (req, res) => {
       await radius.syncUserToRadius(
         member.username, member.password,
         radius.buildGroupName(pkg),
-        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
+        radius.buildRateLimit(pkg) ? { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) } : {}
       );
 
       // Log transaction for member registration
@@ -179,7 +179,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
       await radius.syncUserToRadius(
         value.username, value.password,
         radius.buildGroupName(pkgRes.rows[0]),
-        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkgRes.rows[0]) }
+        radius.buildRateLimit(pkgRes.rows[0]) ? { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkgRes.rows[0]) } : {}
       );
     }
   }
@@ -216,7 +216,7 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
         result.rows[0].username, 
         result.rows[0].password,
         radius.buildGroupName(pkg),
-        { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) }
+        radius.buildRateLimit(pkg) ? { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) } : {}
       );
 
       // Log transaction for member extension

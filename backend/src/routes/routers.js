@@ -217,9 +217,12 @@ router.put('/:id', asyncHandler(async (req, res) => {
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
       const replyAttrs = { 
-        'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg),
         'Mikrotik-Group': pkg.name
       };
+      const rateLimit = radius.buildRateLimit(pkg);
+      if (rateLimit) {
+        replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
+      }
       if (rtr.router_ip) {
         replyAttrs['Framed-IP-Address'] = rtr.router_ip;
       }

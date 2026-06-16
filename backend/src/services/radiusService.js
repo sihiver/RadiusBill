@@ -218,11 +218,23 @@ function buildGroupName(pkg) {
 /**
  * Build Mikrotik-Rate-Limit value from package speeds.
  * Format: "UL/DL" e.g. "2M/5M"
+ * Returns null if it's a Mikrotik Profile (statik).
  */
 function buildRateLimit(pkg) {
-  const ul = (pkg.speed_upload   || '1 Mbps').replace(/\s+Mbps/i, 'M').replace(/\s+Kbps/i, 'K').replace(/\s/g, '');
-  const dl = (pkg.speed_download || '5 Mbps').replace(/\s+Mbps/i, 'M').replace(/\s+Kbps/i, 'K').replace(/\s/g, '');
-  return `${ul}/${dl}`;
+  if (pkg.speed_upload === 'Mikrotik Profile' || pkg.speed_download === 'Mikrotik Profile') {
+    return null;
+  }
+  
+  const parseSpeed = (str) => {
+    if (!str) return '1M';
+    const match = str.match(/(\d+)\s*(M|K)/i);
+    if (match) return match[1] + match[2].toUpperCase();
+    const digits = str.match(/(\d+)/);
+    if (digits) return digits[1] + 'M';
+    return '1M';
+  };
+
+  return `${parseSpeed(pkg.speed_upload)}/${parseSpeed(pkg.speed_download)}`;
 }
 
 /**
@@ -233,14 +245,15 @@ async function ensureGroupPolicy(pkg) {
   const groupName  = buildGroupName(pkg);
   const rateLimit  = buildRateLimit(pkg);
 
-
-
   // Remove old group reply attrs and re-insert
   await query(`DELETE FROM radgroupreply WHERE groupname = $1`, [groupName]);
-  await query(`
-    INSERT INTO radgroupreply (groupname, attribute, op, value)
-    VALUES ($1, 'Mikrotik-Rate-Limit', '=', $2)
-  `, [groupName, rateLimit]);
+  
+  if (rateLimit) {
+    await query(`
+      INSERT INTO radgroupreply (groupname, attribute, op, value)
+      VALUES ($1, 'Mikrotik-Rate-Limit', '=', $2)
+    `, [groupName, rateLimit]);
+  }
   
   await query(`
     INSERT INTO radgroupreply (groupname, attribute, op, value)
