@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate, defaultTemplate, onSave }) {
   const [templateHtml, setTemplateHtml] = useState(initialTemplate || '');
@@ -42,8 +43,8 @@ export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate
     return html;
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-surface-container-lowest rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-slideIn">
         
         {/* Header */}
@@ -149,6 +150,7 @@ export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import DashboardOverview from './components/DashboardOverview';
 import PackageManagement from './components/PackageManagement';
@@ -67,9 +68,9 @@ const defaultVoucherTemplate = `
         </div>
         
         <!-- Durasi & Aktif -->
-        <div class="mt-4">
-          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">DURASI / AKTIF</div>
-          <div class="text-[12px] font-black text-[#0A1A3B] leading-none mt-1.5">Durasi: {{durasi}} | Masa Aktif: {{masa_aktif}}</div>
+        <div class="mt-4 flex flex-col gap-1.5">
+          <div class="text-[12px] font-black text-[#0A1A3B] leading-none"><span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">DURASI:</span>{{durasi}}</div>
+          <div class="text-[12px] font-black text-[#0A1A3B] leading-none"><span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">AKTIF:</span>{{masa_aktif}}</div>
         </div>
         
         <!-- Divider Line -->
@@ -94,7 +95,7 @@ const defaultVoucherTemplate = `
           KODE VOUCHER
         </div>
         <div class="border-2 border-[var(--color-main)] rounded-lg p-2 flex items-center justify-center h-14 bg-white relative z-0" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-          <span class="font-bold text-[24px] text-[#0A1A3B] tracking-[0.15em]" style="font-family: 'Fira Code', monospace;">{{kode}}</span>
+          <span class="text-[24px] text-[#0A1A3B] tracking-[0.15em]" style="font-family: 'Google Sans Code', 'Google Sans Mono', monospace; font-weight: normal;">{{kode}}</span>
         </div>
       </div>
 
@@ -989,7 +990,7 @@ export default function App() {
         </div>
 
         {/* Global Confirm Modal */}
-        {confirmDialog.isOpen && (
+        {confirmDialog.isOpen && createPortal(
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
             <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-slideIn flex flex-col border border-surface-variant">
               <div className="p-6">
@@ -1021,7 +1022,8 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>
