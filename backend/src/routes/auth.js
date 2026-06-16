@@ -58,4 +58,19 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 }));
 
+// PUT /api/auth/me (Change password)
+router.put('/me', requireAuth, asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  if (!password || password.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password minimal 6 karakter' });
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashed = await bcrypt.hash(password, salt);
+
+  await db.query('UPDATE users SET password = $1 WHERE id = $2', [hashed, req.user.id]);
+
+  res.json({ success: true, message: 'Password berhasil diubah' });
+}));
+
 module.exports = router;

@@ -187,6 +187,8 @@ export default function App() {
   useEffect(() => { saveState('expanded_sections', expandedSections); }, [expandedSections]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({ password: '' });
   const [radiusStatus, setRadiusStatus] = useState('Connected');
   const [currentTime, setCurrentTime] = useState('');
 
@@ -1044,6 +1046,7 @@ export default function App() {
                     <div className="px-4 py-2 border-b border-surface-variant">
                       <p className="text-xs font-semibold text-outline uppercase">Manage {user?.role}</p>
                     </div>
+                    <button onClick={() => { setAdminOpen(false); setProfileModalOpen(true); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">person</span>Profil</button>
                     {user?.role === 'admin' && (
                       <>
                         <button onClick={() => { setAdminOpen(false); handleSyncServer(); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">sync</span>RADIUS Sync</button>
@@ -1134,6 +1137,72 @@ export default function App() {
           document.body
         )}
       </div>
+      {/* Profile Modal */}
+      {profileModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-container w-full max-w-md rounded-3xl shadow-xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-outline-variant/30 flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-on-surface">Profil Pengguna</h3>
+              <button onClick={() => setProfileModalOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4 mb-4 border-b border-outline-variant/20 pb-4">
+                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-on-primary text-2xl font-bold shadow-sm">
+                  {user?.username?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-on-surface capitalize">{user?.username}</h4>
+                  <p className="text-sm text-on-surface-variant uppercase tracking-wider">{user?.role}</p>
+                  {user?.role === 'reseller' && (
+                    <p className="text-sm font-medium text-primary mt-1">Saldo: Rp {Number(user?.balance || 0).toLocaleString('id-ID')}</p>
+                  )}
+                </div>
+              </div>
+              
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  const res = await apiFetch('/api/auth/me', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: profileFormData.password })
+                  });
+                  const json = await res.json();
+                  if (json.success) {
+                    addNotification('Password berhasil diubah', 'success');
+                    setProfileModalOpen(false);
+                    setProfileFormData({ password: '' });
+                  } else {
+                    alert(json.message || 'Gagal mengubah password');
+                  }
+                } catch (err) {
+                  alert('Terjadi kesalahan');
+                }
+              }}>
+                <h5 className="text-sm font-semibold text-on-surface mb-3">Ubah Password</h5>
+                <div>
+                  <label className="block text-sm font-medium text-on-surface-variant mb-1 ml-1">Password Baru</label>
+                  <input 
+                    type="password" required minLength="6"
+                    value={profileFormData.password}
+                    onChange={e => setProfileFormData({...profileFormData, password: e.target.value})}
+                    className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary outline-none"
+                    placeholder="Minimal 6 karakter"
+                  />
+                </div>
+                <div className="pt-4 flex justify-end">
+                  <button type="submit" className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-sm">
+                    Simpan Password
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
