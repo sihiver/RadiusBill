@@ -189,7 +189,8 @@ router.post('/generate', asyncHandler(async (req, res) => {
     await client.query('BEGIN');
 
     if (req.user && req.user.role === 'reseller') {
-      const totalCost = pkg.price * value.quantity;
+      const unitCost = pkg.cost_price > 0 ? pkg.cost_price : pkg.price;
+      const totalCost = unitCost * value.quantity;
       const userRes = await client.query('SELECT balance FROM users WHERE id = $1', [req.user.id]);
       if (!userRes.rows[0]) throw createError(404, 'User tidak valid');
       const balance = Number(userRes.rows[0].balance);
