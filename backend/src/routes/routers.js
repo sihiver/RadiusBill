@@ -107,8 +107,7 @@ router.post('/', asyncHandler(async (req, res) => {
   }
 
   // Calculate Expiry Date and Prorate
-  let newExpiryDate = new Date();
-  newExpiryDate.setDate(newExpiryDate.getDate() + 30); // Default for masa_aktif
+  let newExpiryDate = null;
   let transactionAmount = 0;
   let transactionDesc = '';
   let pkg = null;
@@ -124,6 +123,8 @@ router.post('/', asyncHandler(async (req, res) => {
         transactionAmount = prorateInfo.proratePrice;
         transactionDesc = `Pendaftaran router PPPoE ${value.customer_name} paket ${pkg.name} (Prorata ${prorateInfo.prorateDays} hari)`;
       } else {
+        const { calculateExpiry } = require('../utils/billingUtils');
+        newExpiryDate = calculateExpiry(pkg.validity);
         transactionAmount = pkg.price; // Use price instead of cost_price for revenue
         transactionDesc = `Pendaftaran router PPPoE ${value.customer_name} paket ${pkg.name}`;
       }
@@ -194,14 +195,29 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
   }
 
+  let newExpiryDate = old.expiry_date;
+  if (value.package_id && value.package_id !== old.package_id) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
+    if (pkgRes.rows[0]) {
+      const pkg = pkgRes.rows[0];
+      if (pkg.billing_type === 'fixed_date' && pkg.fixed_date) {
+        const { calculateProrate } = require('../utils/billingUtils');
+        newExpiryDate = calculateProrate(pkg.fixed_date, pkg.price).nextExpiryDate;
+      } else {
+        const { calculateExpiry } = require('../utils/billingUtils');
+        newExpiryDate = calculateExpiry(pkg.validity);
+      }
+    }
+  }
+
   const result = await db.query(`
     UPDATE routers
     SET customer_name=$1, pppoe_user=$2, pppoe_pass=$3, router_ip=$4,
-        package_id=$5, package_name=$6, status=$7, isolir=$8
-    WHERE id=$9
+        package_id=$5, package_name=$6, status=$7, isolir=$8, expiry_date=$9
+    WHERE id=$10
     RETURNING *
   `, [value.customer_name, value.pppoe_user, value.pppoe_pass, value.router_ip,
-      value.package_id, value.package_name, value.status, value.isolir,
+      value.package_id, value.package_name, value.status, value.isolir, newExpiryDate,
       req.params.id]);
 
   const rtr = result.rows[0];

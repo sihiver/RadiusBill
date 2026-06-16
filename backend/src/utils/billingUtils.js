@@ -43,6 +43,50 @@ function calculateProrate(fixedDate, monthlyPrice) {
   };
 }
 
+function calculateExpiry(validityStr) {
+  const now = new Date();
+  if (!validityStr) {
+    now.setDate(now.getDate() + 30);
+    return now;
+  }
+  
+  // Try parsing mikrotik format: 1d, 12h, 30m
+  let totalSeconds = 0;
+  const regex = /(\d+)\s*([wdhms])/gi;
+  let match;
+  let matchedMikrotik = false;
+  
+  while ((match = regex.exec(validityStr)) !== null) {
+    matchedMikrotik = true;
+    const val = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    if (unit === 'w') totalSeconds += val * 7 * 86400;
+    else if (unit === 'd') totalSeconds += val * 86400;
+    else if (unit === 'h') totalSeconds += val * 3600;
+    else if (unit === 'm') totalSeconds += val * 60;
+    else if (unit === 's') totalSeconds += val;
+  }
+  
+  if (matchedMikrotik && totalSeconds > 0) {
+    return new Date(now.getTime() + totalSeconds * 1000);
+  }
+
+  // Fallback to Indonesian words
+  const oldMatch = validityStr.match(/(\d+)\s*(Hari|Jam|Menit|Minggu|Bulan)/i);
+  if (!oldMatch) {
+    now.setDate(now.getDate() + 30);
+    return now;
+  }
+  const [, num, unit] = oldMatch;
+  const n = parseInt(num);
+  if (/menit/i.test(unit))  return new Date(now.getTime() + n * 60 * 1000);
+  if (/jam/i.test(unit))    return new Date(now.getTime() + n * 3600 * 1000);
+  if (/minggu/i.test(unit)) return new Date(now.getTime() + n * 7 * 86400 * 1000);
+  if (/bulan/i.test(unit))  return new Date(now.getTime() + n * 30 * 86400 * 1000);
+  return new Date(now.getTime() + n * 86400 * 1000); // Hari
+}
+
 module.exports = {
-  calculateProrate
+  calculateProrate,
+  calculateExpiry
 };
