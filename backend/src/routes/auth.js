@@ -46,6 +46,62 @@ router.post('/login', asyncHandler(async (req, res) => {
   });
 }));
 
+// POST /api/auth/client/login
+router.post('/client/login', asyncHandler(async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Username and password required' });
+  }
+
+  // 1. Check if user is a member
+  let clientUser = null;
+  let userType = '';
+
+  const memberRes = await db.query('SELECT * FROM members WHERE username = $1 AND password = $2', [username, password]);
+  if (memberRes.rows.length > 0) {
+    clientUser = memberRes.rows[0];
+    userType = 'member';
+  } else {
+    // 2. Check if user is a PPPoE router
+    const routerRes = await db.query('SELECT * FROM routers WHERE pppoe_user = $1 AND pppoe_pass = $2', [username, password]);
+    if (routerRes.rows.length > 0) {
+      clientUser = routerRes.rows[0];
+      userType = 'pppoe';
+    }
+  }
+
+  if (!clientUser) {
+    return res.status(401).json({ success: false, message: 'Username atau Password salah' });
+  }
+
+  // Generate JWT token with role 'client'
+  const token = jwt.sign(
+    { 
+      id: clientUser.id, 
+      username: userType === 'member' ? clientUser.username : clientUser.pppoe_user, 
+      role: 'client',
+      userType: userType
+    },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  res.json({
+    success: true,
+    data: {
+      token,
+      user: {
+        id: clientUser.id,
+        username: userType === 'member' ? clientUser.username : clientUser.pppoe_user,
+        name: userType === 'member' ? clientUser.name : clientUser.customer_name,
+        role: 'client',
+        userType: userType
+      }
+    }
+  });
+}));
+
 // GET /api/auth/me
 router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   const result = await db.query('SELECT id, username, role, balance, created_at FROM users WHERE id = $1', [req.user.id]);

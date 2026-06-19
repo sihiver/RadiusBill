@@ -21,17 +21,19 @@ async function syncUserToRadius(username, password, groupName, replyAttrs = {}) 
     await client.query('BEGIN');
 
     // 1. Upsert radcheck — Cleartext-Password
-    await client.query(`
-      INSERT INTO radcheck (username, attribute, op, value)
-      VALUES ($1, 'Cleartext-Password', ':=', $2)
-      ON CONFLICT DO NOTHING
-    `, [username, password]);
+    if (password !== null && password !== undefined) {
+      await client.query(`
+        INSERT INTO radcheck (username, attribute, op, value)
+        VALUES ($1, 'Cleartext-Password', ':=', $2)
+        ON CONFLICT DO NOTHING
+      `, [username, password]);
 
-    // Update password if already exists
-    await client.query(`
-      UPDATE radcheck SET value = $2
-      WHERE username = $1 AND attribute = 'Cleartext-Password'
-    `, [username, password]);
+      // Update password if already exists
+      await client.query(`
+        UPDATE radcheck SET value = $2
+        WHERE username = $1 AND attribute = 'Cleartext-Password'
+      `, [username, password]);
+    }
 
     // 2. Assign group
     if (groupName) {

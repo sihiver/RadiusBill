@@ -25,6 +25,8 @@ const dashboardRouter   = require('./routes/dashboard');
 const settingsRouter    = require('./routes/settings');
 const reportsRouter     = require('./routes/reports');
 const resellersRouter   = require('./routes/resellers');
+const clientRouter      = require('./routes/client');
+const webhooksRouter    = require('./routes/webhooks');
 const { requireAuth, requireAdmin } = require('./middleware/authMiddleware');
 
 const app  = express();
@@ -81,6 +83,8 @@ app.use('/api/settings',     requireAuth, requireAdmin, settingsRouter);
 app.use('/api/reports',      requireAuth, requireAdmin, reportsRouter);
 app.use('/api/dashboard',    requireAuth, dashboardRouter);
 app.use('/api/resellers',    requireAuth, requireAdmin, resellersRouter);
+app.use('/api/client',       clientRouter);
+app.use('/api/webhooks',     webhooksRouter);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {

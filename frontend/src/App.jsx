@@ -11,6 +11,8 @@ import Login from './components/Login';
 import SystemSettings from './components/SystemSettings';
 import ReportDashboard from './components/ReportDashboard';
 import ResellerManagement from './components/ResellerManagement';
+import ClientLogin from './components/ClientLogin';
+import ClientDashboard from './components/ClientDashboard';
 
 // ─── localStorage helpers ───────────────────────────────────────────────────
 function loadState(key, fallbackFn) {
@@ -712,7 +714,26 @@ export default function App() {
   }
 
   if (!user) {
+    // If the path contains '/client', we could render ClientLogin directly, but for simplicity
+    // we'll just check if URL pathname is /client. In a real SPA router we'd use react-router.
+    // Since we don't have react-router, let's just use window.location.pathname.
+    if (window.location.pathname === '/client' || window.location.pathname === '/client/') {
+      return <ClientLogin onLoginSuccess={(u) => {
+        setUser(u);
+        window.history.pushState({}, '', '/client');
+      }} />;
+    }
     return <Login onLogin={(u) => setUser(u)} />;
+  }
+
+  // If user is a client, render the ClientDashboard
+  if (user.role === 'client') {
+    return <ClientDashboard onLogout={() => {
+      localStorage.removeItem('rtrwnet_client_token');
+      localStorage.removeItem('rtrwnet_token'); // clear all just in case
+      setUser(null);
+      window.location.href = '/client';
+    }} />;
   }
   return (
     <div className="min-h-screen flex w-full bg-background text-on-surface">
