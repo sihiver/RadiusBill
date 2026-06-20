@@ -14,9 +14,15 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
   const [routerIp, setRouterIp] = useState('');
   const [selectedPkg, setSelectedPkg] = useState('');
   const [status, setStatus] = useState('Online'); // Online, Offline, Isolated
+  const [expiryDate, setExpiryDate] = useState('');
 
   // Search filter
   const [search, setSearch] = useState('');
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
 
   const handleToggleIsolir = (router) => {
     const isNowIsolated = router.status !== 'Isolated';
@@ -99,6 +105,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
     
     setSelectedPkg(pppoePackages[0]?.name || '');
     setStatus('Online');
+    setExpiryDate('');
     setShowModal(true);
   };
 
@@ -111,6 +118,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
     setRouterIp(router.routerIp === '-' ? '' : router.routerIp);
     setSelectedPkg(router.package);
     setStatus(router.status);
+    setExpiryDate(router.expiry_date ? router.expiry_date.split('T')[0] : '');
     setShowModal(true);
   };
 
@@ -136,7 +144,8 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
       package_id: pkg ? pkg.id : null,
       package_name: pkg ? pkg.name : null,
       status: status,
-      isolir: status === 'Isolated'
+      isolir: status === 'Isolated',
+      expiry_date: expiryDate || null
     };
 
     const url = editingId ? `/api/routers/${editingId}` : '/api/routers';
@@ -184,11 +193,43 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
     });
   };
 
+  
+  const handleBulkDelete = () => {
+    requestConfirm({
+      title: 'Hapus Banyak Router',
+      message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} router terpilih? Semua data terkait akan dihapus permanen.`,
+      confirmText: 'Ya, Hapus Semua',
+      variant: 'danger',
+      onConfirm: () => {
+        apiFetch('/api/routers/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedIds })
+        })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) {
+              fetchRouters();
+              addSystemLog('SYSTEM', `Menghapus ${selectedIds.length} Router PPPoE secara massal`);
+              setSelectedIds([]);
+            } else {
+              alert(json.message || 'Gagal menghapus router.');
+            }
+          })
+          .catch(err => alert('Error: ' + err.message));
+      }
+    });
+  };
+
   const filteredRouters = routers.filter(r => 
     r.customerName.toLowerCase().includes(search.toLowerCase()) || 
     r.pppoeUser.toLowerCase().includes(search.toLowerCase()) || 
     r.routerIp.includes(search)
   );
+
+  
+  const totalPages = Math.ceil(filteredRouters.length / rowsPerPage);
+  const paginatedRouters = filteredRouters.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   return (
     <div className="w-full space-y-6">
@@ -209,18 +250,30 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
 
       {/* Filter and Search Bar */}
       <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-4 shadow-[0_1px_3px_rgba(77,68,227,0.03)] flex flex-col sm:flex-row gap-4 justify-between items-center">
-        <div className="relative w-full sm:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
-          <input 
-            type="text" 
-            placeholder="Cari nama pelanggan atau PPPoE user..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto flex-1">
+          <div className="relative w-full sm:w-80">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+            <input 
+              type="text" 
+              placeholder="Cari nama pelanggan atau PPPoE user..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-error hover:bg-error/90 text-white font-label-md px-4 py-2 rounded-full transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">delete</span>
+              Hapus ({selectedIds.length})
+            </button>
+          )}
         </div>
 
-        <div className="text-label-sm text-on-surface-variant">
+        <div className="text-label-sm text-on-surface-variant whitespace-nowrap">
           Total Router Rumah: <span className="font-bold text-on-surface">{routers.length} Instalasi</span>
         </div>
       </div>
@@ -231,6 +284,20 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-surface-variant text-label-sm font-label-sm text-on-surface-variant">
+                <th className="p-4 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer"
+                    checked={filteredRouters.length > 0 && selectedIds.length === filteredRouters.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(filteredRouters.map(m => m.id));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                  />
+                </th>
                 <th className="p-4">Pelanggan Rumah</th>
                 <th className="p-4">PPPoE Credentials</th>
                 <th className="p-4">Router IP Address</th>
@@ -242,16 +309,30 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
-              {filteredRouters.length === 0 ? (
+              {paginatedRouters.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-on-surface-variant italic">
+                  <td colSpan="9" className="p-8 text-center text-on-surface-variant italic">
                     Tidak ada router PPPoE ditemukan.
                   </td>
                 </tr>
               ) : (
-                filteredRouters.map((r) => {
+                paginatedRouters.map((r) => {
                   return (
                   <tr key={r.id} className={`hover:bg-surface-container-lowest/50 transition-colors ${r.status === 'Isolated' ? 'bg-red-50/30' : ''}`}>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer"
+                        checked={selectedIds.includes(r.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(prev => [...prev, r.id]);
+                          } else {
+                            setSelectedIds(prev => prev.filter(id => id !== r.id));
+                          }
+                        }}
+                      />
+                    </td>
                     {/* Customer Name */}
                     <td className="p-4 font-bold text-on-surface text-[14px]">
                       {r.customerName}
@@ -361,6 +442,33 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <div className="p-4 border-t border-surface-variant flex items-center justify-between bg-surface-container-low/50">
+          <div className="flex items-center gap-4">
+            <span className="text-label-sm text-on-surface-variant">
+              Menampilkan {Math.min(filteredRouters.length, (currentPage - 1) * rowsPerPage + 1 || 0)} - {Math.min(filteredRouters.length, currentPage * rowsPerPage)} dari {filteredRouters.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+              className="p-1.5 rounded bg-surface-container hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+            </button>
+            <span className="font-label-md text-on-surface w-10 text-center">{currentPage} / {totalPages || 1}</span>
+            <button 
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="p-1.5 rounded bg-surface-container hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Add/Edit Modal */}
@@ -452,12 +560,14 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
               </div>
 
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Paket PPPoE *</label>
-                <select 
-                  value={selectedPkg} 
-                  onChange={(e) => setSelectedPkg(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                >
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Paket PPPoE *</label>
+                    <select 
+                      value={selectedPkg} 
+                      onChange={(e) => setSelectedPkg(e.target.value)}
+                      className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    >
                   {pppoePackages.map(p => (
                     <option key={p.id} value={p.name}>{p.name}</option>
                   ))}
@@ -465,6 +575,19 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
                     <option value="">Belum ada paket PPPoE</option>
                   )}
                 </select>
+                </div>
+                {editingId && (
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Masa Aktif</label>
+                    <input 
+                      type="date" 
+                      value={expiryDate} 
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                      className="w-full px-3.5 py-2 border border-surface-dim bg-transparent text-on-surface [color-scheme:light] dark:[color-scheme:dark] rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                )}
+                </div>
 
                 {(() => {
                   const selectedPackageObj = packages.find(p => p.name === selectedPkg);

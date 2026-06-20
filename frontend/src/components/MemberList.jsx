@@ -15,9 +15,15 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
   const [macBinding, setMacBinding] = useState(false);
   const [macAddress, setMacAddress] = useState('');
   const [selectedPkg, setSelectedPkg] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
 
   // Search state
   const [search, setSearch] = useState('');
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
 
   const hotspotPackages = packages.filter(p => p.type === 'Hotspot');
 
@@ -31,6 +37,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     setMacAddress('');
     setPhone('');
     setSelectedPkg(hotspotPackages[0]?.name || '');
+    setExpiryDate('');
     setShowModal(true);
   };
 
@@ -44,6 +51,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     setMacAddress(member.macAddress || '');
     setPhone(member.phone);
     setSelectedPkg(member.package);
+    setExpiryDate(member.expiry_date ? member.expiry_date.split('T')[0] : '');
     setShowModal(true);
   };
 
@@ -72,7 +80,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
       mac_binding: macBinding,
       mac_address: macBinding ? macAddress : null,
       balance: 0,
-      expiry_date: null, // calculated in backend
+      expiry_date: expiryDate || null, // calculated in backend initially, but can be overridden on edit
       is_active: true
     };
 
@@ -155,11 +163,43 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     });
   };
 
+  
+  const handleBulkDelete = () => {
+    requestConfirm({
+      title: 'Hapus Banyak Member',
+      message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} member terpilih? Semua data dan sesi terkait akan ikut terhapus permanen.`,
+      confirmText: 'Ya, Hapus Semua',
+      variant: 'danger',
+      onConfirm: () => {
+        apiFetch('/api/members/bulk', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedIds })
+        })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) {
+              fetchMembers();
+              addSystemLog('SYSTEM', `Menghapus ${selectedIds.length} Member Hotspot secara massal`);
+              setSelectedIds([]);
+            } else {
+              alert(json.message || 'Gagal menghapus member.');
+            }
+          })
+          .catch(err => alert('Error: ' + err.message));
+      }
+    });
+  };
+
   const filteredMembers = members.filter(m => 
     m.name.toLowerCase().includes(search.toLowerCase()) || 
     m.username.toLowerCase().includes(search.toLowerCase()) ||
     m.phone.includes(search)
   );
+
+  
+  const totalPages = Math.ceil(filteredMembers.length / rowsPerPage);
+  const paginatedMembers = filteredMembers.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   return (
     <div className="w-full space-y-6">
@@ -180,19 +220,31 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
 
       {/* Filter and Search Bar */}
       <div className="bg-surface-container-lowest border border-surface-variant/70 rounded-xl p-4 shadow-[0_1px_3px_rgba(77,68,227,0.03)] flex flex-col sm:flex-row gap-4 justify-between items-center">
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
-          <input 
-            type="text" 
-            placeholder="Cari nama, username, atau telp..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto flex-1">
+          {/* Search */}
+          <div className="relative w-full sm:w-80">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+            <input 
+              type="text" 
+              placeholder="Cari nama, username, atau telp..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-error hover:bg-error/90 text-white font-label-md px-4 py-2 rounded-full transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">delete</span>
+              Hapus ({selectedIds.length})
+            </button>
+          )}
         </div>
 
-        <div className="text-label-sm text-on-surface-variant">
+        <div className="text-label-sm text-on-surface-variant whitespace-nowrap">
           Total Terdaftar: <span className="font-bold text-on-surface">{members.length} Member</span>
         </div>
       </div>
@@ -203,6 +255,20 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-surface-variant text-label-sm font-label-sm text-on-surface-variant">
+                <th className="p-4 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer"
+                    checked={filteredMembers.length > 0 && selectedIds.length === filteredMembers.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(filteredMembers.map(m => m.id));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                  />
+                </th>
                 <th className="p-4">Nama & Kontak</th>
                 <th className="p-4">Username & Password</th>
                 <th className="p-4">Paket Aktif</th>
@@ -212,9 +278,9 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
-              {filteredMembers.length === 0 ? (
+              {paginatedMembers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-12 text-center text-on-surface-variant">
+                  <td colSpan="7" className="p-12 text-center text-on-surface-variant">
                     <div className="flex flex-col items-center justify-center">
                       <span className="material-symbols-outlined text-[48px] text-surface-dim mb-3">group_off</span>
                       <p className="font-headline-sm text-[16px] font-semibold text-on-surface">Tidak ada member</p>
@@ -223,9 +289,23 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
                   </td>
                 </tr>
               ) : (
-                filteredMembers.map((m) => (
+                paginatedMembers.map((m) => (
                   <tr key={m.id} className="hover:bg-surface-container-lowest/50 transition-colors">
                     {/* Name & Contact */}
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-outline text-primary focus:ring-primary/20 cursor-pointer"
+                        checked={selectedIds.includes(m.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(prev => [...prev, m.id]);
+                          } else {
+                            setSelectedIds(prev => prev.filter(id => id !== m.id));
+                          }
+                        }}
+                      />
+                    </td>
                     <td className="p-4">
                       <div className="font-bold text-on-surface text-[14px]">{m.name}</div>
                       <div className="text-[11px] text-on-surface-variant">{m.phone}</div>
@@ -321,6 +401,33 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <div className="p-4 border-t border-surface-variant flex items-center justify-between bg-surface-container-low/50">
+          <div className="flex items-center gap-4">
+            <span className="text-label-sm text-on-surface-variant">
+              Menampilkan {Math.min(filteredMembers.length, (currentPage - 1) * rowsPerPage + 1 || 0)} - {Math.min(filteredMembers.length, currentPage * rowsPerPage)} dari {filteredMembers.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+              className="p-1.5 rounded bg-surface-container hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+            </button>
+            <span className="font-label-md text-on-surface w-10 text-center">{currentPage} / {totalPages || 1}</span>
+            <button 
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="p-1.5 rounded bg-surface-container hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Add/Edit Modal */}
@@ -422,20 +529,35 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
               </div>
 
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Pilih Paket Hotspot</label>
-                  <select 
-                    value={selectedPkg} 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Pilih Paket Hotspot</label>
+                      <select 
+                        value={selectedPkg} 
                     onChange={(e) => setSelectedPkg(e.target.value)}
                     className="w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   >
                     {hotspotPackages.map(p => (
                       <option key={p.id} value={p.name}>{p.name}</option>
                     ))}
-                    {hotspotPackages.length === 0 && (
-                      <option value="">Belum ada paket</option>
-                    )}
-                  </select>
+                  {hotspotPackages.length === 0 && (
+                    <option value="">Belum ada paket</option>
+                  )}
+                </select>
                 </div>
+                {editingId && (
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-1">Masa Aktif</label>
+                    <input 
+                      type="date" 
+                      value={expiryDate} 
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                      className="w-full px-3.5 py-2 border border-surface-dim bg-transparent text-on-surface [color-scheme:light] dark:[color-scheme:dark] rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    />
+                  </div>
+                )}
+                </div>
+              </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
                 <button 

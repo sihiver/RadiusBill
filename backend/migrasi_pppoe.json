@@ -1,0 +1,176 @@
+{
+  "groups": {
+    "1": {
+      "name": "basic",
+      "price": "100000.00"
+    },
+    "14": {
+      "name": "2K",
+      "price": "2000.00"
+    },
+    "29": {
+      "name": "3K",
+      "price": "3000.00"
+    },
+    "31": {
+      "name": "50K",
+      "price": "50000.00"
+    },
+    "32": {
+      "name": "5K",
+      "price": "5000.00"
+    },
+    "34": {
+      "name": "Standart",
+      "price": "150000.00"
+    },
+    "35": {
+      "name": "premium",
+      "price": "150000.00"
+    },
+    "36": {
+      "name": "3K-Tes",
+      "price": "0.00"
+    },
+    "37": {
+      "name": "Gold",
+      "price": "150000.00"
+    },
+    "38": {
+      "name": "20k",
+      "price": "20000.00"
+    }
+  },
+  "pppoe": [
+    {
+      "member_id": "12",
+      "username": "dede",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-19 14:28:58",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "13",
+      "username": "solih",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-20 00:00:00",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "15",
+      "username": "nizam",
+      "name": null,
+      "group_id": "35",
+      "valid_until": "2026-07-28 00:00:00",
+      "package_name": "premium",
+      "package_price": "150000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "17",
+      "username": "rini3",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-01 18:33:05",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "18",
+      "username": "mumun",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-03 18:33:33",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "19",
+      "username": "jaja",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-04 11:51:00",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "20",
+      "username": "Aning",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-04 19:34:46",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "21",
+      "username": "endeng",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-06-27 15:40:59",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "22",
+      "username": "Oyot",
+      "name": null,
+      "group_id": "34",
+      "valid_until": "2026-07-09 18:48:10",
+      "package_name": "Standart",
+      "package_price": "150000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "25",
+      "username": "IntanPrk",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-05 14:23:35",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "26",
+      "username": "Fitri",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-07 12:50:28",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "27",
+      "username": "Oding",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-06-29 00:00:00",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "28",
+      "username": "iik",
+      "name": null,
+      "group_id": "1",
+      "valid_until": "2026-07-19 00:00:00",
+      "package_name": "basic",
+      "package_price": "100000.00",
+      "password": "123456"
+    }
+  ]
+}

@@ -52,7 +52,7 @@ function calculateExpiry(validityStr) {
   
   // Try parsing mikrotik format: 1d, 12h, 30m
   let totalSeconds = 0;
-  const regex = /(\d+)\s*([wdhms])/gi;
+  const regex = /(\d+)\s*([wdhms])(?!\w)/gi;
   let match;
   let matchedMikrotik = false;
   

@@ -140,7 +140,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
     if (!validity || validity.toLowerCase() === 'unlimited') return 0;
     
     let totalSeconds = 0;
-    const regex = /(\d+)\s*([wdhms])/gi;
+    const regex = /(\d+)\s*([wdhms])(?!\w)/gi;
     let match;
     let matchedMikrotik = false;
     
@@ -173,7 +173,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
     if (!duration || duration.toLowerCase() === 'unlimited') return 0;
     
     let totalSeconds = 0;
-    const regex = /(\d+)\s*([wdhms])/gi;
+    const regex = /(\d+)\s*([wdhms])(?!\w)/gi;
     let match;
     let matchedMikrotik = false;
     

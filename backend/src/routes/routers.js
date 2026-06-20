@@ -18,6 +18,7 @@ const routerSchema = Joi.object({
   status:        Joi.string().valid('Online', 'Offline', 'Isolated').default('Online'),
   isolir:        Joi.boolean().default(false),
   isolir_reason: Joi.string().max(200).allow('', null),
+  expiry_date:   Joi.date().iso().allow('', null),
 });
 
 // Parse duration string into seconds (e.g., "12h" -> 43200)
@@ -25,7 +26,7 @@ function parseDuration(duration) {
   if (!duration || duration.toLowerCase() === 'unlimited') return 0;
   
   let totalSeconds = 0;
-  const regex = /(\d+)\s*([wdhms])/gi;
+  const regex = /(\d+)\s*([wdhms])(?!\w)/gi;
   let match;
   let matchedMikrotik = false;
   
@@ -263,7 +264,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
   }
 
   let newExpiryDate = old.expiry_date;
-  if (value.package_id && value.package_id !== old.package_id) {
+  if (value.expiry_date !== undefined) {
+    newExpiryDate = value.expiry_date ? new Date(value.expiry_date) : null;
+  } else if (value.package_id && value.package_id !== old.package_id) {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
@@ -538,6 +541,25 @@ router.post('/:id/pay', asyncHandler(async (req, res) => {
   `, [rtr.pppoe_user, amount, `Pembayaran tagihan router PPPoE ${rtr.customer_name} paket ${rtr.pkg_name}`]);
 
   res.json({ success: true, message: `Pembayaran tagihan router "${rtr.customer_name}" berhasil dicatat` });
+}));
+
+// DELETE /api/routers/bulk
+router.delete('/bulk', asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) throw createError(400, 'Tidak ada router yang dipilih');
+
+  // get pppoe_users to remove from radius
+  const mRes = await db.query('SELECT pppoe_user FROM routers WHERE id = ANY($1::int[])', [ids]);
+  
+  await db.query('DELETE FROM routers WHERE id = ANY($1::int[])', [ids]);
+  
+  // Remove from radius
+  for (const row of mRes.rows) {
+    await radius.removeUserFromRadius(row.pppoe_user);
+  }
+  
+  await cacheDelPattern('routers:*');
+  res.json({ success: true, message: `${mRes.rows.length} router berhasil dihapus` });
 }));
 
 // DELETE /api/routers/:id

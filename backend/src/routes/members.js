@@ -27,7 +27,7 @@ function parseDuration(duration) {
   if (!duration || duration.toLowerCase() === 'unlimited') return 0;
   
   let totalSeconds = 0;
-  const regex = /(\d+)\s*([wdhms])/gi;
+  const regex = /(\d+)\s*([wdhms])(?!\w)/gi;
   let match;
   let matchedMikrotik = false;
   
@@ -332,7 +332,28 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
   res.json({ success: true, data: result.rows[0], message: `Paket diperpanjang ${days} hari` });
 }));
 
+
+// DELETE /api/members/bulk
+router.delete('/bulk', asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) throw createError(400, 'Tidak ada member yang dipilih');
+
+  // get usernames to remove from radius
+  const mRes = await db.query('SELECT username FROM members WHERE id = ANY($1::int[])', [ids]);
+  
+  await db.query('DELETE FROM members WHERE id = ANY($1::int[])', [ids]);
+  
+  // Remove from radius
+  for (const row of mRes.rows) {
+    await radius.removeUserFromRadius(row.username);
+  }
+  
+  await cacheDelPattern('members:*');
+  res.json({ success: true, message: `${mRes.rows.length} member berhasil dihapus` });
+}));
+
 // DELETE /api/members/:id
+
 router.delete('/:id', asyncHandler(async (req, res) => {
   const mRes = await db.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
   if (!mRes.rows[0]) throw createError(404, 'Member tidak ditemukan');

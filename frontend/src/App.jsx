@@ -387,7 +387,7 @@ export default function App() {
   // Fetch members from backend
   const fetchMembers = async () => {
     try {
-      const res = await apiFetch('/api/members');
+      const res = await apiFetch('/api/members?limit=10000');
       const json = await res.json();
       if (json.success) {
         const mapped = json.data.map(m => ({
@@ -416,7 +416,7 @@ export default function App() {
   // Fetch routers from backend
   const fetchRouters = async () => {
     try {
-      const res = await apiFetch('/api/routers');
+      const res = await apiFetch('/api/routers?limit=10000');
       const json = await res.json();
       if (json.success) {
         const mapped = json.data.map(r => ({
