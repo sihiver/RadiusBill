@@ -258,15 +258,18 @@ async function runExpireRouters() {
  * Default schedule: every 5 minutes (x/5 x x x x)
  */
 function startExpireJob() {
-  const schedule = process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
-  console.log(`[ExpireJob] Starting cron: "${schedule}"`);
+  console.log(`[ExpireJob] Cron job is currently DISABLED for testing sqlcounter.`);
+  return;
+  
+  // const schedule = process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
+  // console.log(`[ExpireJob] Starting cron: "${schedule}"`);
 
-  cron.schedule(schedule, async () => {
-    console.log('[ExpireJob] Running voucher, member, and router expiry check...');
-    await runExpireVouchers();
-    await runExpireMembers();
-    await runExpireRouters();
-  });
+  // cron.schedule(schedule, async () => {
+  //   console.log('[ExpireJob] Running voucher, member, and router expiry check...');
+  //   await runExpireVouchers();
+  //   await runExpireMembers();
+  //   await runExpireRouters();
+  // });
 }
 
 module.exports = { startExpireJob, runExpireVouchers, runExpireMembers, runExpireRouters };

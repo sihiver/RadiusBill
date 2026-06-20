@@ -99,14 +99,14 @@ sqlcounter monthlycounter {
 #  attribute.
 sqlcounter expire_on_login {
 	sql_module_instance = sql
-	dialect = ${modules.sql.dialect}
+	dialect = postgresql
 
 	counter_name = Expire-After-Initial-Login
 	check_name = Expire-After
+	reply_name = Session-Timeout
 	key = User-Name
 	reset = never
-
-	$INCLUDE ${modconfdir}/sql/counter/${dialect}/${.:instance}.conf
+	query = "SELECT COALESCE(EXTRACT(EPOCH FROM (NOW() - MIN(acctstarttime)))::integer, 0) FROM radacct WHERE username='%{${key}}'"
 }
 
 sqlcounter max_all_session {

@@ -158,10 +158,11 @@ router.post('/generate', asyncHandler(async (req, res) => {
     if (matchedMikrotik) return totalSeconds;
     
     // Fallback to old format
-    const oldMatch = validity.match(/(\d+)\s*(Hari|Jam|Minggu|Bulan)/i);
+    const oldMatch = validity.match(/(\d+)\s*(Hari|Jam|Menit|Minggu|Bulan)/i);
     if (!oldMatch) return 0;
     const [, num, oldUnit] = oldMatch;
     const n = parseInt(num);
+    if (/menit/i.test(oldUnit))  return n * 60;
     if (/jam/i.test(oldUnit))    return n * 3600;
     if (/minggu/i.test(oldUnit)) return n * 7 * 86400;
     if (/bulan/i.test(oldUnit))  return n * 30 * 86400;
@@ -191,13 +192,15 @@ router.post('/generate', asyncHandler(async (req, res) => {
     if (matchedMikrotik) return totalSeconds;
     
     // Fallback to old format
-    const oldMatch = duration.match(/(\d+)\s*(Hari|Jam|Menit)/i);
+    const oldMatch = duration.match(/(\d+)\s*(Hari|Jam|Menit|Minggu|Bulan)/i);
     if (!oldMatch) return 0;
     const [, num, unit] = oldMatch;
     const n = parseInt(num);
     if (/menit/i.test(unit)) return n * 60;
     if (/jam/i.test(unit))   return n * 3600;
     if (/hari/i.test(unit))  return n * 86400;
+    if (/minggu/i.test(unit)) return n * 7 * 86400;
+    if (/bulan/i.test(unit))  return n * 30 * 86400;
     
     return 0;
   }

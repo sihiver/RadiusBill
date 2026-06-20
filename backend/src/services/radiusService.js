@@ -22,16 +22,10 @@ async function syncUserToRadius(username, password, groupName, replyAttrs = {}, 
 
     // 1. Upsert radcheck — Cleartext-Password
     if (password !== null && password !== undefined) {
+      await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute = 'Cleartext-Password'`, [username]);
       await client.query(`
         INSERT INTO radcheck (username, attribute, op, value)
         VALUES ($1, 'Cleartext-Password', ':=', $2)
-        ON CONFLICT DO NOTHING
-      `, [username, password]);
-
-      // Update password if already exists
-      await client.query(`
-        UPDATE radcheck SET value = $2
-        WHERE username = $1 AND attribute = 'Cleartext-Password'
       `, [username, password]);
     }
 
@@ -49,25 +43,28 @@ async function syncUserToRadius(username, password, groupName, replyAttrs = {}, 
     // 3. Set reply attributes (speed limits, etc.)
     if (Object.keys(replyAttrs).length > 0) {
       // 3. Insert or Update reply attributes (radreply)
-    await client.query('DELETE FROM radreply WHERE username = $1', [username]);
-    for (const [attr, val] of Object.entries(replyAttrs)) {
-      if (val !== null && val !== undefined) {
-        await client.query(`
-          INSERT INTO radreply (username, attribute, op, value)
-          VALUES ($1, $2, '=', $3)
-        `, [username, attr, val]);
+      await client.query('DELETE FROM radreply WHERE username = $1', [username]);
+      for (const [attr, val] of Object.entries(replyAttrs)) {
+        if (val !== null && val !== undefined) {
+          await client.query(`
+            INSERT INTO radreply (username, attribute, op, value)
+            VALUES ($1, $2, '=', $3)
+          `, [username, attr, val]);
+        }
       }
     }
 
-    // 4. Insert extra check attributes (radcheck) like Expire-After, Max-Data-Volume
-    for (const [attr, val] of Object.entries(checkAttrs)) {
-      if (val !== null && val !== undefined) {
-        await client.query(`
-          INSERT INTO radcheck (username, attribute, op, value)
-          VALUES ($1, $2, ':=', $3)
-        `, [username, attr, val]);
+    // 4. Insert extra check attributes (radcheck) like Expire-After, Max-All-Session
+    await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute != 'Cleartext-Password'`, [username]);
+    if (Object.keys(checkAttrs).length > 0) {
+      for (const [attr, val] of Object.entries(checkAttrs)) {
+        if (val !== null && val !== undefined) {
+          await client.query(`
+            INSERT INTO radcheck (username, attribute, op, value)
+            VALUES ($1, $2, ':=', $3)
+          `, [username, attr, val]);
+        }
       }
-    }
     }
 
     await client.query('COMMIT');
