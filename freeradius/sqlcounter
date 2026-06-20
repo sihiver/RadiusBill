@@ -111,22 +111,22 @@ sqlcounter expire_on_login {
 
 sqlcounter max_all_session {
     sql_module_instance = sql
-    dialect = mysql
+    dialect = postgresql
     counter_name = Max-All-Session-Time
     check_name = Max-All-Session
     reply_name = Session-Timeout
     key = User-Name
     reset = never
-    query = "SELECT IFNULL(SUM(AcctSessionTime), 0) FROM radacct WHERE UserName='%{${key}}'"
+    query = "SELECT COALESCE(SUM(AcctSessionTime), 0) FROM radacct WHERE UserName='%{${key}}'"
 }
 
 sqlcounter datacounter {
     sql_module_instance = sql
-    dialect = mysql
+    dialect = postgresql
     counter_name = Total-Data-Volume
     check_name = Max-Data-Volume
     reply_name = Mikrotik-Total-Limit
     key = User-Name
     reset = never
-    query = "SELECT IFNULL(SUM(AcctInputOctets + AcctOutputOctets), 0) FROM radacct WHERE UserName='%{${key}}'"
+    query = "SELECT COALESCE(SUM(AcctInputOctets + AcctOutputOctets), 0) FROM radacct WHERE UserName='%{${key}}'"
 }
