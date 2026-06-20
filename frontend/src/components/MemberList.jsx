@@ -16,6 +16,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
   const [macAddress, setMacAddress] = useState('');
   const [selectedPkg, setSelectedPkg] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [bypassHotspot, setBypassHotspot] = useState(false);
 
   // Search state
   const [search, setSearch] = useState('');
@@ -38,6 +39,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     setPhone('');
     setSelectedPkg(hotspotPackages[0]?.name || '');
     setExpiryDate('');
+    setBypassHotspot(false);
     setShowModal(true);
   };
 
@@ -52,6 +54,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     setPhone(member.phone);
     setSelectedPkg(member.package);
     setExpiryDate(member.expiry_date ? member.expiry_date.split('T')[0] : '');
+    setBypassHotspot(!!member.bypassHotspot);
     setShowModal(true);
   };
 
@@ -79,6 +82,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
       package_name: pkg ? pkg.name : null,
       mac_binding: macBinding,
       mac_address: macBinding ? macAddress : null,
+      bypass_hotspot: bypassHotspot,
       balance: 0,
       expiry_date: expiryDate || null, // calculated in backend initially, but can be overridden on edit
       is_active: true
@@ -311,16 +315,24 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
                       <div className="text-[11px] text-on-surface-variant">{m.phone}</div>
                     </td>
                     
-                    {/* Credentials & MAC */}
                     <td className="p-4">
                       <div className="text-[12px] text-primary font-mono font-bold select-all">{m.username}</div>
                       <div className="text-[11px] text-on-surface-variant font-mono">{m.password || '***'}</div>
-                      {m.macAddress && (
-                        <div className="text-[10px] text-outline font-mono mt-0.5" title="MAC Address">
-                          <span className="material-symbols-outlined text-[10px] align-middle mr-1">settings_ethernet</span>
-                          {m.macAddress}
-                        </div>
-                      )}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {m.macAddress && (
+                          <div className="text-[10px] text-outline font-mono" title="MAC Address">
+                            <span className="material-symbols-outlined text-[10px] align-middle mr-1">settings_ethernet</span>
+                            {m.macAddress}
+                          </div>
+                        )}
+                        {m.bypassHotspot && (
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                            m.bypassCreated ? 'bg-green-100 text-green-800' : 'bg-surface-variant text-on-surface-variant'
+                          }`} title={m.bypassCreated ? 'Bypass aktif di MikroTik' : 'Menunggu login pertama'}>
+                            {m.bypassCreated ? 'BYPASSED' : 'BYPASS ACTIVE'}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Active Package */}
@@ -526,6 +538,22 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
                     className={`w-full px-3.5 py-2 border border-surface-dim rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono ${!macBinding ? 'bg-surface-container opacity-60 cursor-not-allowed' : ''}`}
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 py-2.5 border border-surface-dim rounded-lg bg-surface-container-low">
+                <div>
+                  <label className="block font-label-md text-label-md text-on-surface font-semibold">Bypass Hotspot (Auto IP-Binding)</label>
+                  <span className="text-[11px] text-on-surface-variant">Otomatis login & bypass hotspot MikroTik saat perangkat terhubung</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={bypassHotspot} 
+                    onChange={(e) => setBypassHotspot(e.target.checked)} 
+                  />
+                  <div className="w-8 h-4 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+                </label>
               </div>
 
               <div>

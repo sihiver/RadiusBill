@@ -404,6 +404,8 @@ export default function App() {
           ipAddress: m.ip_address || '-',
           macBinding: m.mac_binding,
           macAddress: m.mac_address || '',
+          bypassHotspot: m.bypass_hotspot,
+          bypassCreated: m.bypass_created,
           sessionStartedAt: m.session_start ? new Date(m.session_start).getTime() : undefined
         }));
         setMembers(mapped);

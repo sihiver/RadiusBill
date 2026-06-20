@@ -12,6 +12,7 @@ const { testConnection }   = require('./db/pool');
 const { errorHandler }     = require('./middleware/errorHandler');
 const { startExpireJob }   = require('./jobs/expireVouchers');
 const { startStaleSessionJob } = require('./jobs/cleanupStaleSessions');
+const { startBypassJob }   = require('./jobs/hotspotBypass');
 
 // Routes
 const authRouter        = require('./routes/auth');
@@ -108,6 +109,7 @@ async function bootstrap() {
     // 3. Start cron jobs
     startExpireJob();
     startStaleSessionJob();
+    startBypassJob();
 
     // 4. Start HTTP server
     app.listen(PORT, () => {

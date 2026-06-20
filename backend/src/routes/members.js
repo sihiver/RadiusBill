@@ -20,6 +20,7 @@ const memberSchema = Joi.object({
   balance:      Joi.number().integer().default(0),
   expiry_date:  Joi.string().isoDate().allow(null),
   is_active:    Joi.boolean().default(true),
+  bypass_hotspot: Joi.boolean().default(false),
 });
 
 // Parse duration string into seconds (e.g., "12h" -> 43200)
@@ -162,13 +163,13 @@ router.post('/', asyncHandler(async (req, res) => {
 
   const result = await db.query(`
     INSERT INTO members (name, username, password, phone, email, package_id, package_name,
-                         mac_binding, mac_address, balance, expiry_date, is_active)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+                         mac_binding, mac_address, balance, expiry_date, is_active, bypass_hotspot)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
     RETURNING *
   `, [value.name, value.username, value.password, value.phone, value.email,
       value.package_id, value.package_name, value.mac_binding,
       value.mac_binding ? (value.mac_address || null) : null,
-      value.balance, expiryDate, value.is_active]);
+      value.balance, expiryDate, value.is_active, value.bypass_hotspot]);
 
   const member = result.rows[0];
 
@@ -221,19 +222,38 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
   let expiryDate = value.expiry_date;
 
+  const oldMemberRes = await db.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
+  const oldMember = oldMemberRes.rows[0];
+
   const result = await db.query(`
     UPDATE members
     SET name=$1, username=$2, password=$3, phone=$4, email=$5,
         package_id=$6, package_name=$7, mac_binding=$8, mac_address=$9,
-        balance=$10, expiry_date=COALESCE($11, expiry_date), is_active=$12
-    WHERE id=$13
+        balance=$10, expiry_date=COALESCE($11, expiry_date), is_active=$12,
+        bypass_hotspot=$13,
+        bypass_created=CASE WHEN $13 = FALSE THEN FALSE ELSE bypass_created END
+    WHERE id=$14
     RETURNING *
   `, [value.name, value.username, value.password, value.phone, value.email,
       value.package_id, value.package_name, value.mac_binding,
       value.mac_binding ? (value.mac_address || null) : null,
-      value.balance, expiryDate, value.is_active, req.params.id]);
+      value.balance, expiryDate, value.is_active, value.bypass_hotspot, req.params.id]);
 
   if (!result.rows[0]) throw createError(404, 'Member tidak ditemukan');
+
+  // If bypass_hotspot was disabled, or username changed, remove the IP binding from MikroTik
+  if (oldMember) {
+    const usernameChanged = oldMember.username !== value.username;
+    const bypassDisabled = oldMember.bypass_hotspot && !value.bypass_hotspot;
+    if (bypassDisabled || usernameChanged) {
+      const mikrotik = require('../services/mikrotikService');
+      try {
+        await mikrotik.removeHotspotBypass(oldMember.username);
+      } catch (err) {
+        console.error(`[MembersAPI] Failed to remove bypass on update for ${oldMember.username}:`, err.message);
+      }
+    }
+  }
 
   // Re-sync to RADIUS
   const checkAttrs = {};
@@ -275,16 +295,29 @@ router.put('/:id', asyncHandler(async (req, res) => {
 router.post('/:id/extend', asyncHandler(async (req, res) => {
   const { days = 30 } = req.body;
 
+  const mRes = await db.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
+  const m = mRes.rows[0];
+
   const result = await db.query(`
     UPDATE members
     SET expiry_date = GREATEST(expiry_date, NOW()) + INTERVAL '${parseInt(days)} days',
         is_active = TRUE,
-        mac_address = NULL
+        mac_address = NULL,
+        bypass_created = FALSE
     WHERE id = $1
     RETURNING *
   `, [req.params.id]);
 
   if (!result.rows[0]) throw createError(404, 'Member tidak ditemukan');
+
+  if (m && m.bypass_created) {
+    const mikrotik = require('../services/mikrotikService');
+    try {
+      await mikrotik.removeHotspotBypass(m.username);
+    } catch (err) {
+      console.error(`[MembersAPI] Failed to remove bypass on extend for ${m.username}:`, err.message);
+    }
+  }
   await cacheDelPattern('members:*');
   
   // Need to un-reject in RADIUS if they were rejected
@@ -339,13 +372,21 @@ router.delete('/bulk', asyncHandler(async (req, res) => {
   if (!Array.isArray(ids) || ids.length === 0) throw createError(400, 'Tidak ada member yang dipilih');
 
   // get usernames to remove from radius
-  const mRes = await db.query('SELECT username FROM members WHERE id = ANY($1::int[])', [ids]);
+  const mRes = await db.query('SELECT username, bypass_created FROM members WHERE id = ANY($1::int[])', [ids]);
   
   await db.query('DELETE FROM members WHERE id = ANY($1::int[])', [ids]);
   
-  // Remove from radius
+  // Remove from radius and remove MikroTik bypass if created
+  const mikrotik = require('../services/mikrotikService');
   for (const row of mRes.rows) {
     await radius.removeUserFromRadius(row.username);
+    if (row.bypass_created) {
+      try {
+        await mikrotik.removeHotspotBypass(row.username);
+      } catch (err) {
+        console.error(`[MembersAPI] Failed to remove bulk bypass for ${row.username}:`, err.message);
+      }
+    }
   }
   
   await cacheDelPattern('members:*');
@@ -361,6 +402,16 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
   await db.query('DELETE FROM members WHERE id = $1', [req.params.id]);
   await radius.removeUserFromRadius(m.username);
+  
+  if (m.bypass_created) {
+    const mikrotik = require('../services/mikrotikService');
+    try {
+      await mikrotik.removeHotspotBypass(m.username);
+    } catch (err) {
+      console.error(`[MembersAPI] Failed to remove bypass on delete for ${m.username}:`, err.message);
+    }
+  }
+
   await cacheDelPattern('members:*');
   res.json({ success: true, message: `Member "${m.name}" dihapus` });
 }));

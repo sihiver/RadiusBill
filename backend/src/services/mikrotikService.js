@@ -306,8 +306,127 @@ async function setupIsolirRules(appIp) {
   }
 }
 
+/**
+ * Adds a bypassed IP binding in MikroTik for a hotspot user's MAC address.
+ */
+async function addHotspotBypass(mac, username) {
+  if (!mac) return false;
+  const config = await getMikrotikConfig();
+  if (!config.host || !config.user) return false;
+
+  const client = new RouterOSAPI({
+    host: config.host,
+    user: config.user,
+    password: config.password,
+    port: config.port,
+    timeout: 3
+  });
+  client.on('error', (err) => {
+    console.error('[MikroTik Error Event - addHotspotBypass]:', err.message);
+  });
+
+  try {
+    await client.connect();
+
+    const comment = `Bypassed Member: ${username}`;
+    
+    // 1. Check if binding already exists for this user (by comment)
+    const existing = await client.write('/ip/hotspot/ip-binding/print', [
+      `?comment=${comment}`
+    ]);
+
+    if (existing.length > 0) {
+      if (existing[0]['mac-address'] === mac) {
+        console.log(`[MikroTik] IP binding for member ${username} already exists and matches MAC ${mac}`);
+        return true;
+      }
+      try {
+        await client.write('/ip/hotspot/ip-binding/remove', [
+          `=.id=${existing[0]['.id']}`
+        ]);
+        console.log(`[MikroTik] Removed outdated IP binding for member ${username}`);
+      } catch (e) {}
+    }
+
+    // 2. Check if MAC is bound by another rule (avoid conflicts)
+    const existingMac = await client.write('/ip/hotspot/ip-binding/print', [
+      `?mac-address=${mac}`
+    ]);
+    if (existingMac.length > 0) {
+      try {
+        await client.write('/ip/hotspot/ip-binding/remove', [
+          `=.id=${existingMac[0]['.id']}`
+        ]);
+        console.log(`[MikroTik] Removed conflicting IP binding for MAC ${mac}`);
+      } catch (e) {}
+    }
+
+    // 3. Add bypassed binding
+    await client.write('/ip/hotspot/ip-binding/add', [
+      `=mac-address=${mac}`,
+      `=type=bypassed`,
+      `=comment=${comment}`
+    ]);
+    console.log(`[MikroTik] Added bypassed IP binding for member ${username} with MAC ${mac}`);
+    return true;
+  } catch (err) {
+    console.error('[MikroTik] Error adding bypassed IP binding:', err.message);
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
+/**
+ * Removes the bypassed IP binding in MikroTik for a hotspot user.
+ */
+async function removeHotspotBypass(username) {
+  const config = await getMikrotikConfig();
+  if (!config.host || !config.user) return false;
+
+  const client = new RouterOSAPI({
+    host: config.host,
+    user: config.user,
+    password: config.password,
+    port: config.port,
+    timeout: 3
+  });
+  client.on('error', (err) => {
+    console.error('[MikroTik Error Event - removeHotspotBypass]:', err.message);
+  });
+
+  try {
+    await client.connect();
+
+    const comment = `Bypassed Member: ${username}`;
+    const existing = await client.write('/ip/hotspot/ip-binding/print', [
+      `?comment=${comment}`
+    ]);
+
+    if (existing.length > 0) {
+      for (const item of existing) {
+        try {
+          await client.write('/ip/hotspot/ip-binding/remove', [
+            `=.id=${item['.id']}`
+          ]);
+          console.log(`[MikroTik] Removed bypassed IP binding for member ${username}`);
+        } catch (e) {}
+      }
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('[MikroTik] Error removing bypassed IP binding:', err.message);
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
 module.exports = {
   getTrafficForPPPoE,
   disconnectPPPoEUser,
-  setupIsolirRules
+  setupIsolirRules,
+  addHotspotBypass,
+  removeHotspotBypass
 };

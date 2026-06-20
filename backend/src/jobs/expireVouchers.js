@@ -127,7 +127,7 @@ async function runExpireMembers() {
     // Find expired members OR members that are not active,
     // AND who are not already rejected in FreeRADIUS.
     const expiredRes = await client.query(`
-      SELECT m.id, m.username, m.name, m.active_session
+      SELECT m.id, m.username, m.name, m.active_session, m.bypass_created
       FROM members m
       WHERE (m.expiry_date <= NOW() OR m.is_active = FALSE)
       AND NOT EXISTS (
@@ -171,8 +171,24 @@ async function runExpireMembers() {
         // Ensure rejected in FreeRADIUS
         await radius.rejectUserWithReason(m.username, rejectMsg);
 
-        // Removed: We do NOT set is_active = FALSE here because is_active = FALSE means soft-deleted,
-        // which makes the member disappear from the list. The member is naturally expired based on expiry_date.
+        // Remove bypass in MikroTik if it was created
+        if (m.bypass_created) {
+          const mikrotik = require('../services/mikrotikService');
+          try {
+            await mikrotik.removeHotspotBypass(m.username);
+          } catch (err) {
+            console.error(`[ExpireMembersJob] Failed to remove bypass for ${m.username}:`, err.message);
+          }
+        }
+
+        // Reset bypass_created and mac_address in DB so they re-authenticate next time
+        await client.query(`
+          UPDATE members
+          SET bypass_created = FALSE,
+              mac_address = NULL,
+              updated_at = NOW()
+          WHERE id = $1
+        `, [m.id]);
 
         processedCount++;
       } catch (err) {
