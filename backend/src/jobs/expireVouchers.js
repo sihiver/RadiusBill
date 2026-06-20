@@ -258,18 +258,16 @@ async function runExpireRouters() {
  * Default schedule: every 5 minutes (x/5 x x x x)
  */
 function startExpireJob() {
-  console.log(`[ExpireJob] Cron job is currently DISABLED for testing sqlcounter.`);
-  return;
-  
-  // const schedule = process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
-  // console.log(`[ExpireJob] Starting cron: "${schedule}"`);
+  const cron = require('node-cron');
+  const schedule = process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
+  console.log(`[ExpireJob] Starting cron: "${schedule}" (Vouchers check is DISABLED, relying on sqlcounter. Members and Routers check is ENABLED)`);
 
-  // cron.schedule(schedule, async () => {
-  //   console.log('[ExpireJob] Running voucher, member, and router expiry check...');
-  //   await runExpireVouchers();
-  //   await runExpireMembers();
-  //   await runExpireRouters();
-  // });
+  cron.schedule(schedule, async () => {
+    console.log('[ExpireJob] Running member and router expiry check...');
+    // runExpireVouchers is disabled because we rely on FreeRADIUS sqlcounter for hotspot vouchers
+    await runExpireMembers();
+    await runExpireRouters();
+  });
 }
 
 module.exports = { startExpireJob, runExpireVouchers, runExpireMembers, runExpireRouters };

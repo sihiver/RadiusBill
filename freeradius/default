@@ -1042,6 +1042,21 @@ post-auth {
 		# log failed authentications in SQL, too.
 		-sql
 
+		if (&reply:Reply-Message && &reply:Reply-Message =~ /maximum|usage|limit|reached|expired/i) {
+			update control {
+				Tmp-String-2 := "%{sql: SELECT value FROM system_settings WHERE key = 'msg_voucher_expired'}"
+			}
+			if (&control:Tmp-String-2 != '') {
+				update reply {
+					Reply-Message := "%{control:Tmp-String-2}"
+				}
+			} else {
+				update reply {
+					Reply-Message := "Maaf, Voucher Anda telah Habis/Kedaluwarsa."
+				}
+			}
+		}
+
 		if (!&reply:Reply-Message) {
 			update control {
 				Tmp-String-2 := "%{sql: SELECT value FROM system_settings WHERE key = 'msg_invalid_voucher'}"

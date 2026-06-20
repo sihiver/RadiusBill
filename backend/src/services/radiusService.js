@@ -106,9 +106,11 @@ async function isolirUser(username, reason = '') {
   try {
     await client.query('BEGIN');
     
-    // Ensure no old Reject Auth-Type or old Address-List or old Group
-    await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute = 'Auth-Type'`, [username]);
-    await client.query(`DELETE FROM radreply WHERE username = $1 AND attribute IN ('Mikrotik-Address-List', 'Mikrotik-Rate-Limit', 'Mikrotik-Group')`, [username]);
+    // Ensure no old check attributes (except password) that could cause rejection when isolated
+    await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute != 'Cleartext-Password'`, [username]);
+    
+    // Ensure no old reply attributes
+    await client.query(`DELETE FROM radreply WHERE username = $1`, [username]);
     
     // Insert new Isolir parameters
     await client.query(`
