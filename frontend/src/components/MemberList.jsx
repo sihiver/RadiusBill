@@ -99,7 +99,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
           addSystemLog('SYSTEM', editingId ? `Mengubah profil member Hotspot: "${name}"` : `Mendaftarkan member Hotspot baru: "${name}"`);
           setShowModal(false);
         } else {
-          setErrorMsg(json.message || 'Gagal menyimpan member.');
+          setErrorMsg(json.message || (json.details ? json.details.join(', ') : json.error) || 'Gagal menyimpan member.');
         }
       })
       .catch(err => {

@@ -163,7 +163,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
           addSystemLog('SYSTEM', editingId ? `Mengubah profil router PPPoE pelanggan: "${customerName}"` : `Mendaftarkan Router PPPoE baru untuk "${customerName}"`);
           setShowModal(false);
         } else {
-          setErrorMsg(json.message || json.error || 'Gagal menyimpan router.');
+          setErrorMsg(json.message || (json.details ? json.details.join(', ') : json.error) || 'Gagal menyimpan router.');
         }
       })
       .catch(err => {
