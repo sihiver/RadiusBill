@@ -172,7 +172,7 @@ export default function ResellerManagement() {
               {loading ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-12 text-center text-on-surface-variant">
-                    <span className="material-symbols-outlined animate-spin text-3xl mb-2">refresh</span>
+                    <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary/30 border-t-primary mb-3 mx-auto"></div>
                     <p>Memuat data...</p>
                   </td>
                 </tr>

@@ -85,7 +85,7 @@ export default function Login({ onLogin }) {
             className="w-full bg-primary hover:bg-primary/90 text-on-primary py-3 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
           >
             {loading ? (
-              <span className="material-symbols-outlined animate-spin">refresh</span>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
                 <span className="material-symbols-outlined">login</span>

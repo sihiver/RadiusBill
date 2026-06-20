@@ -710,7 +710,12 @@ export default function App() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   if (!authChecked) {
-    return <div className="min-h-screen bg-surface flex items-center justify-center"><span className="material-symbols-outlined animate-spin text-4xl text-primary">refresh</span></div>;
+    return (
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-surface-dim border-t-primary"></div>
+        <p className="text-on-surface-variant font-label-md animate-pulse">Memuat Billing System...</p>
+      </div>
+    );
   }
 
   if (!user) {
