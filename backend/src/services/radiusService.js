@@ -15,7 +15,7 @@ const { query, getClient } = require('../db/pool');
  * @param {string} groupName  e.g. 'hotspot-5mbps', 'pppoe-10mbps'
  * @param {object} replyAttrs e.g. { 'Mikrotik-Rate-Limit': '2M/5M' }
  */
-async function syncUserToRadius(username, password, groupName, replyAttrs = {}) {
+async function syncUserToRadius(username, password, groupName, replyAttrs = {}, checkAttrs = {}) {
   const client = await getClient();
   try {
     await client.query('BEGIN');
@@ -48,15 +48,26 @@ async function syncUserToRadius(username, password, groupName, replyAttrs = {}) 
 
     // 3. Set reply attributes (speed limits, etc.)
     if (Object.keys(replyAttrs).length > 0) {
-      // Remove old reply attrs for this user first
-      await client.query(`DELETE FROM radreply WHERE username = $1`, [username]);
-      // Insert new ones
-      for (const [attr, val] of Object.entries(replyAttrs)) {
+      // 3. Insert or Update reply attributes (radreply)
+    await client.query('DELETE FROM radreply WHERE username = $1', [username]);
+    for (const [attr, val] of Object.entries(replyAttrs)) {
+      if (val !== null && val !== undefined) {
         await client.query(`
           INSERT INTO radreply (username, attribute, op, value)
+          VALUES ($1, $2, '=', $3)
+        `, [username, attr, val]);
+      }
+    }
+
+    // 4. Insert extra check attributes (radcheck) like Expire-After, Max-Data-Volume
+    for (const [attr, val] of Object.entries(checkAttrs)) {
+      if (val !== null && val !== undefined) {
+        await client.query(`
+          INSERT INTO radcheck (username, attribute, op, value)
           VALUES ($1, $2, ':=', $3)
         `, [username, attr, val]);
       }
+    }
     }
 
     await client.query('COMMIT');

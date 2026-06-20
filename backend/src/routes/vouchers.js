@@ -135,17 +135,37 @@ router.post('/generate', asyncHandler(async (req, res) => {
   if (!pkgRes.rows[0]) throw createError(404, 'Paket tidak ditemukan');
   const pkg = pkgRes.rows[0];
 
-  // Calculate expires_at from validity string (e.g. "30 Hari" → +30 days)
-  function parseValidity(validity) {
-    const match = validity.match(/(\d+)\s*(Hari|Jam|Minggu|Bulan)/i);
-    if (!match) return null;
-    const [, num, unit] = match;
+  // Calculate validity in seconds for Expire-After
+  function parseValiditySeconds(validity) {
+    if (!validity || validity.toLowerCase() === 'unlimited') return 0;
+    
+    let totalSeconds = 0;
+    const regex = /(\d+)\s*([wdhms])/gi;
+    let match;
+    let matchedMikrotik = false;
+    
+    while ((match = regex.exec(validity)) !== null) {
+      matchedMikrotik = true;
+      const val = parseInt(match[1]);
+      const unit = match[2].toLowerCase();
+      if (unit === 'w') totalSeconds += val * 7 * 86400;
+      else if (unit === 'd') totalSeconds += val * 86400;
+      else if (unit === 'h') totalSeconds += val * 3600;
+      else if (unit === 'm') totalSeconds += val * 60;
+      else if (unit === 's') totalSeconds += val;
+    }
+    
+    if (matchedMikrotik) return totalSeconds;
+    
+    // Fallback to old format
+    const oldMatch = validity.match(/(\d+)\s*(Hari|Jam|Minggu|Bulan)/i);
+    if (!oldMatch) return 0;
+    const [, num, oldUnit] = oldMatch;
     const n = parseInt(num);
-    const now = new Date();
-    if (/jam/i.test(unit))    return new Date(now.getTime() + n * 3600 * 1000);
-    if (/minggu/i.test(unit)) return new Date(now.getTime() + n * 7 * 86400 * 1000);
-    if (/bulan/i.test(unit))  return new Date(now.getTime() + n * 30 * 86400 * 1000);
-    return new Date(now.getTime() + n * 86400 * 1000); // Hari
+    if (/jam/i.test(oldUnit))    return n * 3600;
+    if (/minggu/i.test(oldUnit)) return n * 7 * 86400;
+    if (/bulan/i.test(oldUnit))  return n * 30 * 86400;
+    return n * 86400; // Hari
   }
 
   // Calculate quota_seconds from duration string (e.g. "12h" -> 43200)
@@ -228,16 +248,27 @@ router.post('/generate', asyncHandler(async (req, res) => {
   const groupName  = radius.buildGroupName(pkg);
   const rateLimit  = radius.buildRateLimit(pkg);
   const quotaSecs  = parseDuration(pkg.duration);
+  const validitySecs = parseValiditySeconds(pkg.validity);
   
   for (const v of generated) {
     const replyAttrs = {};
+    const checkAttrs = {};
+    
     if (rateLimit) {
       replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
     }
-    if (quotaSecs > 0) {
-      replyAttrs['Session-Timeout'] = quotaSecs;
+    
+    // Limits applied directly by FreeRADIUS
+    if (validitySecs > 0) {
+      checkAttrs['Expire-After'] = validitySecs;
     }
-    await radius.syncUserToRadius(v.code, v.password, groupName, replyAttrs);
+    
+    // For duration limit (Total Uptime)
+    if (quotaSecs > 0) {
+      checkAttrs['Max-All-Session'] = quotaSecs;
+    }
+    
+    await radius.syncUserToRadius(v.code, v.password, groupName, replyAttrs, checkAttrs);
   }
 
   await cacheDelPattern('vouchers:*');
