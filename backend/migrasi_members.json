@@ -1,0 +1,508 @@
+{
+  "groups": {
+    "1": {
+      "name": "basic",
+      "price": "100000.00"
+    },
+    "14": {
+      "name": "2K",
+      "price": "2000.00"
+    },
+    "29": {
+      "name": "3K",
+      "price": "3000.00"
+    },
+    "31": {
+      "name": "50K",
+      "price": "50000.00"
+    },
+    "32": {
+      "name": "5K",
+      "price": "5000.00"
+    },
+    "34": {
+      "name": "Standart",
+      "price": "150000.00"
+    },
+    "35": {
+      "name": "premium",
+      "price": "150000.00"
+    },
+    "36": {
+      "name": "3K-Tes",
+      "price": "0.00"
+    },
+    "37": {
+      "name": "Gold",
+      "price": "150000.00"
+    },
+    "38": {
+      "name": "20k",
+      "price": "20000.00"
+    }
+  },
+  "members": [
+    {
+      "member_id": "102",
+      "username": "hidayat",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-09 08:20:31",
+      "activated_at": "2025-12-06 13:48:59",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "106",
+      "username": "fikri",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-26 18:11:25",
+      "activated_at": "2025-12-07 18:34:28",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "108",
+      "username": "sarip",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-09 07:55:46",
+      "activated_at": "2025-12-09 16:30:19",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "110",
+      "username": "jenia",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-08 17:01:40",
+      "activated_at": "2025-12-09 19:51:45",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "112",
+      "username": "lilik",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-18 13:44:26",
+      "activated_at": "2025-12-11 16:19:12",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "113",
+      "username": "kakam",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-13 14:45:14",
+      "activated_at": "2025-12-11 19:02:34",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "114",
+      "username": "nani",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-29 18:35:14",
+      "activated_at": "2025-12-13 16:30:28",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "116",
+      "username": "eti",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-04 17:25:59",
+      "activated_at": "2025-12-15 13:40:08",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "117",
+      "username": "deli",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-16 19:27:43",
+      "activated_at": "2025-12-16 18:42:13",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "118",
+      "username": "sofa",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-29 15:34:59",
+      "activated_at": "2025-12-17 08:56:23",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "119",
+      "username": "oji",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-21 11:07:12",
+      "activated_at": "2025-12-20 16:00:26",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "120",
+      "username": "eli",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-06 07:48:24",
+      "activated_at": "2025-12-22 09:14:45",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "121",
+      "username": "rusman",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-06 07:48:48",
+      "activated_at": "2025-12-22 11:52:17",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "122",
+      "username": "kaka",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-06 07:48:34",
+      "activated_at": "2025-12-22 11:47:52",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "123",
+      "username": "nazmi",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-13 08:09:09",
+      "activated_at": "2025-12-22 19:17:54",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "125",
+      "username": "tuti",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-28 14:05:47",
+      "activated_at": "2025-12-26 21:17:47",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "132",
+      "username": "eloh",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-04 16:29:25",
+      "activated_at": "2026-01-01 06:46:51",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "138",
+      "username": "maskilah",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-05 18:07:31",
+      "activated_at": "2026-01-04 13:48:45",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "139",
+      "username": "bisiroh",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-04 16:36:43",
+      "activated_at": "2026-01-04 14:10:46",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "140",
+      "username": "Basari",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-04 16:36:38",
+      "activated_at": "2026-01-04 13:02:50",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "141",
+      "username": "maskilahtv",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-10 15:41:40",
+      "activated_at": "2026-01-05 17:27:10",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "142",
+      "username": "mangyuyu",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-05 17:48:13",
+      "activated_at": "2026-01-06 13:21:26",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "144",
+      "username": "Noviyanti",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-05 17:47:58",
+      "activated_at": "2026-01-07 16:39:46",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "146",
+      "username": "hsairoh",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-19 14:08:16",
+      "activated_at": "2026-01-20 13:18:01",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "151",
+      "username": "dani",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-03 13:50:54",
+      "activated_at": "2026-02-01 18:25:56",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "153",
+      "username": "via",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-12 07:58:28",
+      "activated_at": "2026-02-04 18:12:41",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "154",
+      "username": "latif",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-10 17:22:00",
+      "activated_at": "2026-02-04 14:45:01",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "155",
+      "username": "masluh",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-09 16:28:49",
+      "activated_at": "2026-02-05 18:05:05",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "157",
+      "username": "ulum",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-03 12:40:16",
+      "activated_at": "2026-02-12 18:42:15",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "160",
+      "username": "aang",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-30 18:15:24",
+      "activated_at": "2026-02-26 11:47:15",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "161",
+      "username": "yuli",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-02 10:56:36",
+      "activated_at": "2026-02-27 13:11:01",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "162",
+      "username": "rido",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-27 20:29:49",
+      "activated_at": "2026-02-27 15:12:52",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "166",
+      "username": "elva",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-05 09:20:26",
+      "activated_at": "2026-04-01 15:30:16",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "173",
+      "username": "lela",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-07 21:32:36",
+      "activated_at": "2026-05-08 21:32:36",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "174",
+      "username": "tatang",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-08 17:01:50",
+      "activated_at": "2026-05-09 16:04:10",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "176",
+      "username": "Zemi",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-12 14:11:07",
+      "activated_at": "2026-05-11 11:24:37",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "178",
+      "username": "Alka",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-13 15:09:28",
+      "activated_at": "2026-05-13 05:12:58",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "179",
+      "username": "nunu",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-16 08:03:49",
+      "activated_at": "2026-05-15 20:03:53",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "180",
+      "username": "widi",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-21 14:43:47",
+      "activated_at": "2026-05-22 14:43:47",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "181",
+      "username": "apoy",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-21 14:42:39",
+      "activated_at": "2026-05-22 14:42:39",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "182",
+      "username": "tasya",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-06-22 06:26:56",
+      "activated_at": "2026-05-23 06:26:56",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    },
+    {
+      "member_id": "183",
+      "username": "mukdas",
+      "name": null,
+      "group_id": "31",
+      "valid_until": "2026-07-11 19:17:45",
+      "activated_at": "2026-06-11 19:17:45",
+      "package_name": "50K",
+      "package_price": "50000.00",
+      "password": "123456"
+    }
+  ]
+}
