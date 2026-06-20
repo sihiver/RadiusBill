@@ -22,6 +22,52 @@ const memberSchema = Joi.object({
   is_active:    Joi.boolean().default(true),
 });
 
+// Parse duration string into seconds (e.g., "12h" -> 43200)
+function parseDuration(duration) {
+  if (!duration || duration.toLowerCase() === 'unlimited') return 0;
+  
+  let totalSeconds = 0;
+  const regex = /(\d+)\s*([wdhms])/gi;
+  let match;
+  let matchedMikrotik = false;
+  
+  while ((match = regex.exec(duration)) !== null) {
+    matchedMikrotik = true;
+    const val = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    if (unit === 'w') totalSeconds += val * 7 * 86400;
+    else if (unit === 'd') totalSeconds += val * 86400;
+    else if (unit === 'h') totalSeconds += val * 3600;
+    else if (unit === 'm') totalSeconds += val * 60;
+    else if (unit === 's') totalSeconds += val;
+  }
+  
+  if (matchedMikrotik) return totalSeconds;
+  
+  const oldMatch = duration.match(/(\d+)\s*(Hari|Jam|Minggu|Bulan)/i);
+  if (!oldMatch) return 0;
+  const [, num, unit] = oldMatch;
+  const n = parseInt(num);
+  if (/jam/i.test(unit))    return n * 3600;
+  if (/minggu/i.test(unit)) return n * 7 * 86400;
+  if (/bulan/i.test(unit))  return n * 30 * 86400;
+  return n * 86400; // Hari
+}
+
+// Convert ISO date string to FreeRADIUS Expiration format (DD MMM YYYY HH:mm:ss)
+function formatRadiusExpiration(dateStr) {
+  if (!dateStr) return null;
+  const dObj = new Date(dateStr);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = dObj.getDate().toString().padStart(2, '0');
+  const m = months[dObj.getMonth()];
+  const y = dObj.getFullYear();
+  const h = dObj.getHours().toString().padStart(2, '0');
+  const min = dObj.getMinutes().toString().padStart(2, '0');
+  const s = dObj.getSeconds().toString().padStart(2, '0');
+  return `${d} ${m} ${y} ${h}:${min}:${s}`;
+}
+
 // GET /api/members
 router.get('/', asyncHandler(async (req, res) => {
   const { q: search, page = 1, limit = 50 } = req.query;
@@ -127,14 +173,31 @@ router.post('/', asyncHandler(async (req, res) => {
   const member = result.rows[0];
 
   // Sync to FreeRADIUS
+  const checkAttrs = {};
+  if (expiryDate) {
+    const expiration = formatRadiusExpiration(expiryDate);
+    if (expiration) checkAttrs['Expiration'] = expiration;
+  }
+
   if (value.package_id) {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
+      const quotaSecs = parseDuration(pkg.duration);
+      if (quotaSecs > 0) {
+        checkAttrs['Max-All-Session'] = quotaSecs;
+      }
+      
+      const replyAttrs = {};
+      if (radius.buildRateLimit(pkg)) {
+        replyAttrs['Mikrotik-Rate-Limit'] = radius.buildRateLimit(pkg);
+      }
+
       await radius.syncUserToRadius(
         member.username, member.password,
         radius.buildGroupName(pkg),
-        radius.buildRateLimit(pkg) ? { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) } : {}
+        replyAttrs,
+        checkAttrs
       );
 
       // Log transaction for member registration
@@ -144,7 +207,7 @@ router.post('/', asyncHandler(async (req, res) => {
       `, [member.username, pkg.cost_price, `Pendaftaran member ${member.username} paket ${pkg.name}`]);
     }
   } else {
-    await radius.syncUserToRadius(member.username, member.password, 'hotspot-member');
+    await radius.syncUserToRadius(member.username, member.password, 'hotspot-member', {}, checkAttrs);
   }
 
   await cacheDelPattern('members:*');
@@ -173,15 +236,35 @@ router.put('/:id', asyncHandler(async (req, res) => {
   if (!result.rows[0]) throw createError(404, 'Member tidak ditemukan');
 
   // Re-sync to RADIUS
+  const checkAttrs = {};
+  if (expiryDate) {
+    const expiration = formatRadiusExpiration(expiryDate);
+    if (expiration) checkAttrs['Expiration'] = expiration;
+  }
+
   if (value.package_id) {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
+      const pkg = pkgRes.rows[0];
+      const quotaSecs = parseDuration(pkg.duration);
+      if (quotaSecs > 0) {
+        checkAttrs['Max-All-Session'] = quotaSecs;
+      }
+      
+      const replyAttrs = {};
+      if (radius.buildRateLimit(pkg)) {
+        replyAttrs['Mikrotik-Rate-Limit'] = radius.buildRateLimit(pkg);
+      }
+
       await radius.syncUserToRadius(
         value.username, value.password,
-        radius.buildGroupName(pkgRes.rows[0]),
-        radius.buildRateLimit(pkgRes.rows[0]) ? { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkgRes.rows[0]) } : {}
+        radius.buildGroupName(pkg),
+        replyAttrs,
+        checkAttrs
       );
     }
+  } else {
+    await radius.syncUserToRadius(value.username, value.password, 'hotspot-member', {}, checkAttrs);
   }
 
   await cacheDelPattern('members:*');
@@ -208,15 +291,32 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
   await radius.unisolirUser(result.rows[0].username);
   
   // Re-sync password and package attributes to clear Auth-Type Reject
+  const checkAttrs = {};
+  if (result.rows[0].expiry_date) {
+    const expiration = formatRadiusExpiration(result.rows[0].expiry_date);
+    if (expiration) checkAttrs['Expiration'] = expiration;
+  }
+
   if (result.rows[0].package_id) {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [result.rows[0].package_id]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
+      const quotaSecs = parseDuration(pkg.duration);
+      if (quotaSecs > 0) {
+        checkAttrs['Max-All-Session'] = quotaSecs;
+      }
+      
+      const replyAttrs = {};
+      if (radius.buildRateLimit(pkg)) {
+        replyAttrs['Mikrotik-Rate-Limit'] = radius.buildRateLimit(pkg);
+      }
+
       await radius.syncUserToRadius(
         result.rows[0].username, 
         result.rows[0].password,
         radius.buildGroupName(pkg),
-        radius.buildRateLimit(pkg) ? { 'Mikrotik-Rate-Limit': radius.buildRateLimit(pkg) } : {}
+        replyAttrs,
+        checkAttrs
       );
 
       // Log transaction for member extension
@@ -226,7 +326,7 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
       `, [result.rows[0].username, pkg.cost_price, `Perpanjangan member ${result.rows[0].username} paket ${pkg.name} (${days} hari)`]);
     }
   } else {
-    await radius.syncUserToRadius(result.rows[0].username, result.rows[0].password, 'hotspot-member', {});
+    await radius.syncUserToRadius(result.rows[0].username, result.rows[0].password, 'hotspot-member', {}, checkAttrs);
   }
   
   res.json({ success: true, data: result.rows[0], message: `Paket diperpanjang ${days} hari` });

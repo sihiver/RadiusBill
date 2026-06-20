@@ -20,6 +20,52 @@ const routerSchema = Joi.object({
   isolir_reason: Joi.string().max(200).allow('', null),
 });
 
+// Parse duration string into seconds (e.g., "12h" -> 43200)
+function parseDuration(duration) {
+  if (!duration || duration.toLowerCase() === 'unlimited') return 0;
+  
+  let totalSeconds = 0;
+  const regex = /(\d+)\s*([wdhms])/gi;
+  let match;
+  let matchedMikrotik = false;
+  
+  while ((match = regex.exec(duration)) !== null) {
+    matchedMikrotik = true;
+    const val = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    if (unit === 'w') totalSeconds += val * 7 * 86400;
+    else if (unit === 'd') totalSeconds += val * 86400;
+    else if (unit === 'h') totalSeconds += val * 3600;
+    else if (unit === 'm') totalSeconds += val * 60;
+    else if (unit === 's') totalSeconds += val;
+  }
+  
+  if (matchedMikrotik) return totalSeconds;
+  
+  const oldMatch = duration.match(/(\d+)\s*(Hari|Jam|Minggu|Bulan)/i);
+  if (!oldMatch) return 0;
+  const [, num, unit] = oldMatch;
+  const n = parseInt(num);
+  if (/jam/i.test(unit))    return n * 3600;
+  if (/minggu/i.test(unit)) return n * 7 * 86400;
+  if (/bulan/i.test(unit))  return n * 30 * 86400;
+  return n * 86400; // Hari
+}
+
+// Convert ISO date string to FreeRADIUS Expiration format (DD MMM YYYY HH:mm:ss)
+function formatRadiusExpiration(dateStr) {
+  if (!dateStr) return null;
+  const dObj = new Date(dateStr);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = dObj.getDate().toString().padStart(2, '0');
+  const m = months[dObj.getMonth()];
+  const y = dObj.getFullYear();
+  const h = dObj.getHours().toString().padStart(2, '0');
+  const min = dObj.getMinutes().toString().padStart(2, '0');
+  const s = dObj.getSeconds().toString().padStart(2, '0');
+  return `${d} ${m} ${y} ${h}:${min}:${s}`;
+}
+
 // GET /api/routers
 router.get('/', asyncHandler(async (req, res) => {
   const { q: search, status } = req.query;
@@ -155,13 +201,25 @@ router.post('/', asyncHandler(async (req, res) => {
     if (rateLimit) {
       replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
     }
+    const checkAttrs = {};
+    if (newExpiryDate) {
+      const expiration = formatRadiusExpiration(newExpiryDate);
+      if (expiration) checkAttrs['Expiration'] = expiration;
+    }
+    
+    const quotaSecs = parseDuration(pkg.duration);
+    if (quotaSecs > 0) {
+      checkAttrs['Max-All-Session'] = quotaSecs;
+    }
+
     if (rtr.router_ip) {
       replyAttrs['Framed-IP-Address'] = rtr.router_ip;
     }
     await radius.syncUserToRadius(
       rtr.pppoe_user, rtr.pppoe_pass,
       radius.buildGroupName(pkg),
-      replyAttrs
+      replyAttrs,
+      checkAttrs
     );
 
     // Log transaction for router registration
@@ -254,13 +312,25 @@ router.put('/:id', asyncHandler(async (req, res) => {
       if (rateLimit) {
         replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
       }
+      const checkAttrs = {};
+      if (newExpiryDate) {
+        const expiration = formatRadiusExpiration(newExpiryDate);
+        if (expiration) checkAttrs['Expiration'] = expiration;
+      }
+      
+      const quotaSecs = parseDuration(pkg.duration);
+      if (quotaSecs > 0) {
+        checkAttrs['Max-All-Session'] = quotaSecs;
+      }
+
       if (rtr.router_ip) {
         replyAttrs['Framed-IP-Address'] = rtr.router_ip;
       }
       await radius.syncUserToRadius(
         rtr.pppoe_user, rtr.pppoe_pass,
         radius.buildGroupName(pkg),
-        replyAttrs
+        replyAttrs,
+        checkAttrs
       );
       
       // Auto-disconnect if package changed so Mikrotik applies new profile/limit
@@ -329,13 +399,25 @@ router.post('/:id/unisolir', asyncHandler(async (req, res) => {
       if (rateLimit) {
         replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
       }
+      const checkAttrs = {};
+      if (rtr.expiry_date) {
+        const expiration = formatRadiusExpiration(rtr.expiry_date);
+        if (expiration) checkAttrs['Expiration'] = expiration;
+      }
+      
+      const quotaSecs = parseDuration(pkg.duration);
+      if (quotaSecs > 0) {
+        checkAttrs['Max-All-Session'] = quotaSecs;
+      }
+
       if (rtr.router_ip) {
         replyAttrs['Framed-IP-Address'] = rtr.router_ip;
       }
       await radius.syncUserToRadius(
         rtr.pppoe_user, rtr.pppoe_pass,
         radius.buildGroupName(pkg),
-        replyAttrs
+        replyAttrs,
+        checkAttrs
       );
     }
   }
@@ -405,13 +487,25 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
       if (rateLimit) {
         replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
       }
+      const checkAttrs = {};
+      if (updatedRtr.expiry_date) {
+        const expiration = formatRadiusExpiration(updatedRtr.expiry_date);
+        if (expiration) checkAttrs['Expiration'] = expiration;
+      }
+      
+      const quotaSecs = parseDuration(pkg.duration);
+      if (quotaSecs > 0) {
+        checkAttrs['Max-All-Session'] = quotaSecs;
+      }
+
       if (updatedRtr.router_ip) {
         replyAttrs['Framed-IP-Address'] = updatedRtr.router_ip;
       }
       await radius.syncUserToRadius(
         updatedRtr.pppoe_user, updatedRtr.pppoe_pass,
         radius.buildGroupName(pkg),
-        replyAttrs
+        replyAttrs,
+        checkAttrs
       );
 
       // Log transaction for extension
