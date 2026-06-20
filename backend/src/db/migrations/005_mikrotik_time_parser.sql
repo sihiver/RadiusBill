@@ -45,6 +45,8 @@ DECLARE
     v_quota_seconds INT;
     v_used_seconds INT;
     v_remaining_seconds INT;
+    v_mac_binding BOOLEAN;
+    v_mac_address VARCHAR(50);
 BEGIN
     -- =========================================================================
     -- 1. Handle activation if Unused when a session starts

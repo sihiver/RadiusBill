@@ -34,6 +34,8 @@ Jalankan perintah SQL berikut di dalam console PostgreSQL:
 CREATE DATABASE radius;
 CREATE USER radius WITH PASSWORD 'radiuspassword';
 GRANT ALL PRIVILEGES ON DATABASE radius TO radius;
+\c radius
+GRANT ALL ON SCHEMA public TO radius;
 \q
 ```
 
@@ -74,7 +76,7 @@ JWT_SECRET=rahasia_super_aman
 **Migrasi Database:**
 Jalankan skrip inisialisasi tabel:
 ```bash
-node src/db/init.js
+node src/db/migrate.js
 ```
 
 ### 6. Instalasi & Konfigurasi FreeRADIUS
