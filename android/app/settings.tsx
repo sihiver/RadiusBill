@@ -238,16 +238,38 @@ export default function SettingsScreen() {
 
         <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border, flexDirection: 'row', gap: 12 }]}>
           {connectedDevice ? (
-            <TouchableOpacity style={[styles.disconnectBtn, { backgroundColor: colors.danger }]} onPress={disconnectDevice}>
-              <Text style={styles.testBtnText}>Putuskan</Text>
+            <TouchableOpacity 
+              style={[styles.disconnectBtn, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]} 
+              onPress={disconnectDevice}
+            >
+              <Text style={[styles.testBtnText, { color: colorScheme === 'dark' ? '#f87171' : '#ef4444' }]}>Putuskan</Text>
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity 
-            style={[styles.testBtn, { flex: 1, backgroundColor: connectedDevice ? '#10b981' : '#cbd5e1' }]} 
+            style={[
+              styles.testBtn, 
+              { 
+                flex: 1, 
+                backgroundColor: connectedDevice 
+                  ? 'rgba(16, 185, 129, 0.15)' 
+                  : (colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
+              }
+            ]} 
             onPress={testPrint} 
             disabled={!connectedDevice}
           >
-            <Text style={styles.testBtnText}>Test Print</Text>
+            <Text 
+              style={[
+                styles.testBtnText, 
+                { 
+                  color: connectedDevice 
+                    ? (colorScheme === 'dark' ? '#34d399' : '#10b981')
+                    : (colorScheme === 'dark' ? '#4b5563' : '#9ca3af')
+                }
+              ]}
+            >
+              Test Print
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
