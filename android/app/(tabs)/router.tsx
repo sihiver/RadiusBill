@@ -227,17 +227,47 @@ export default function RouterScreen() {
       </View>
 
       <View style={styles.cardActions}>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => openEditModal(item)}>
-          <Text style={styles.actionBtnText}>Edit</Text>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(245, 158, 11, 0.15)' }]} 
+          onPress={() => openEditModal(item)}
+        >
+          <Text style={[styles.actionBtnText, { color: colorScheme === 'dark' ? '#fbbf24' : '#f59e0b' }]}>Edit</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: item.isolir ? '#10b981' : '#f59e0b' }]} onPress={() => handleToggleIsolir(item)}>
-          <Text style={[styles.actionBtnText, { color: '#fff' }]}>{item.isolir ? 'Buka Isolir' : 'Isolir'}</Text>
+        <TouchableOpacity 
+          style={[
+            styles.actionBtn, 
+            { 
+              backgroundColor: item.isolir 
+                ? (colorScheme === 'dark' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.15)')
+                : (colorScheme === 'dark' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(245, 158, 11, 0.15)')
+            }
+          ]} 
+          onPress={() => handleToggleIsolir(item)}
+        >
+          <Text 
+            style={[
+              styles.actionBtnText, 
+              { 
+                color: item.isolir 
+                  ? (colorScheme === 'dark' ? '#34d399' : '#10b981')
+                  : (colorScheme === 'dark' ? '#fbbf24' : '#f59e0b')
+              }
+            ]}
+          >
+            {item.isolir ? 'Buka Isolir' : 'Isolir'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#4D44E3' }]} onPress={() => handleExtend(item.id, item.customer_name)}>
-          <Text style={[styles.actionBtnText, { color: '#fff' }]}>Perpanjang</Text>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(77, 68, 227, 0.15)' }]} 
+          onPress={() => handleExtend(item.id, item.customer_name)}
+        >
+          <Text style={[styles.actionBtnText, { color: colors.primary }]}>Perpanjang</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handleDelete(item.id, item.customer_name)}>
-          <Text style={[styles.actionBtnText, { color: '#ef4444' }]}>Hapus</Text>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(239, 68, 68, 0.15)' }]} 
+          onPress={() => handleDelete(item.id, item.customer_name)}
+        >
+          <Text style={[styles.actionBtnText, { color: colorScheme === 'dark' ? '#f87171' : '#ef4444' }]}>Hapus</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -261,7 +291,7 @@ export default function RouterScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.searchContainer}>
-        <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
+        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openAddModal}>
           <Text style={styles.addBtnText}>+ Tambah Router</Text>
         </TouchableOpacity>
       </View>
@@ -344,7 +374,7 @@ export default function RouterScreen() {
               <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalCancelText}>Batal</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSave} disabled={saving}>
+              <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]} onPress={handleSave} disabled={saving}>
                 <Text style={styles.modalSaveText}>{saving ? 'Menyimpan...' : 'Simpan'}</Text>
               </TouchableOpacity>
             </View>

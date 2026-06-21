@@ -192,11 +192,17 @@ export default function VoucherScreen() {
         </View>
       </View>
       <View style={styles.cardActions}>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handleShare(item)}>
-          <Text style={styles.actionBtnText}>Share</Text>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(59, 130, 246, 0.15)' }]} 
+          onPress={() => handleShare(item)}
+        >
+          <Text style={[styles.actionBtnText, { color: colorScheme === 'dark' ? '#60a5fa' : '#3b82f6' }]}>Share</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? '#334155' : '#f1f5f9' }]} onPress={() => handlePrint(item)}>
-          <Text style={styles.actionBtnText}>Print</Text>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { backgroundColor: colorScheme === 'dark' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.15)' }]} 
+          onPress={() => handlePrint(item)}
+        >
+          <Text style={[styles.actionBtnText, { color: colorScheme === 'dark' ? '#34d399' : '#10b981' }]}>Print</Text>
         </TouchableOpacity>
       </View>
     </View>
