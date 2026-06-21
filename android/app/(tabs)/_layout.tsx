@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { Link, Tabs, router } from 'expo-router';
 import { Platform, Pressable, View, Text, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -36,6 +37,7 @@ export default function TabLayout() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               style={{ backgroundColor: colors.background, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8, width: 200, fontSize: 16, color: colors.text }}
+              placeholderTextColor={colors.textSecondary}
             />
           ) : null
         ),
@@ -120,7 +122,21 @@ export default function TabLayout() {
             <TouchableOpacity style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border }} onPress={() => { setIsProfileMenuVisible(false); router.push('/settings'); }}>
               <Text style={{ fontSize: 16, color: colors.text }}>Pengaturan</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ padding: 12 }} onPress={() => { setIsProfileMenuVisible(false); Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin logout?', [{ text: 'Batal', style: 'cancel' }, { text: 'Logout', style: 'destructive', onPress: () => Alert.alert('Info', 'Sistem login belum tersedia') }]); }}>
+            <TouchableOpacity style={{ padding: 12 }} onPress={() => { 
+              setIsProfileMenuVisible(false); 
+              Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin logout?', [
+                { text: 'Batal', style: 'cancel' }, 
+                { text: 'Logout', style: 'destructive', onPress: async () => {
+                  try {
+                    await AsyncStorage.removeItem('auth_token');
+                    await AsyncStorage.removeItem('auth_username');
+                    router.replace('/login');
+                  } catch (err) {
+                    console.error('Failed to logout:', err);
+                  }
+                }}
+              ]); 
+            }}>
               <Text style={{ fontSize: 16, color: '#ef4444' }}>Logout</Text>
             </TouchableOpacity>
           </View>

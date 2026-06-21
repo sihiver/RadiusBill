@@ -367,30 +367,34 @@ export default function MemberScreen() {
             <Text style={[styles.modalTitle, { color: colors.text }]}>{formData.id ? 'Edit Member' : 'Tambah Member'}</Text>
             
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg }]}
               placeholder="Nama Lengkap"
               value={formData.name}
               onChangeText={(text) => setFormData({...formData, name: text})}
+              placeholderTextColor={colors.textSecondary}
             />
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg }]}
               placeholder="Username"
               value={formData.username}
               onChangeText={(text) => setFormData({...formData, username: text})}
+              placeholderTextColor={colors.textSecondary}
             />
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg }]}
               placeholder={formData.id ? "Password (Kosongkan jika tidak diubah)" : "Password"}
               secureTextEntry
               value={formData.password}
               onChangeText={(text) => setFormData({...formData, password: text})}
+              placeholderTextColor={colors.textSecondary}
             />
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff' }]}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg }]}
               placeholder="No. HP"
               keyboardType="phone-pad"
               value={formData.phone}
               onChangeText={(text) => setFormData({...formData, phone: text})}
+              placeholderTextColor={colors.textSecondary}
             />
 
             <Text style={styles.pickerLabel}>Pilih Paket:</Text>
