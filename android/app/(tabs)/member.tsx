@@ -20,8 +20,8 @@ export default function MemberScreen() {
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [members, setMembers] = useState([]);
-  const [packages, setPackages] = useState([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [packages, setPackages] = useState<any[]>([]);
   const { searchQuery } = useSearch();
   
   // Modal State
@@ -152,20 +152,17 @@ export default function MemberScreen() {
   const handlePrint = async (item: any) => {
     try {
       if (BLEPrinter) {
+        let printData = '';
         try {
           const today = new Date();
           const dateStr = today.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
           const timeStr = today.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
           const invId = `INV-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
 
-          
-
-          
-
           const pkg = packages.find((p: any) => p.name === item.package_name || p.id === item.package_id);
           const price = pkg ? pkg.price : (item.price || 0);
 
-          let printData = '================================\n';
+          printData = '================================\n';
           printData += '     MQL.net BILLING SYSTEM     \n';
           printData += '          HOTSPOT & ISP         \n';
           printData += '       Telp: 085311753779       \n';
@@ -196,6 +193,9 @@ export default function MemberScreen() {
             const AsyncStorage = require('@react-native-async-storage/async-storage').default;
             const savedPrinter = await AsyncStorage.getItem('saved_printer');
             if (savedPrinter) {
+              try {
+                await BLEPrinter.closeConn();
+              } catch (e) {}
               await BLEPrinter.connectPrinter(savedPrinter);
               await BLEPrinter.printBill(printData);
               Alert.alert('Sukses', 'Detail member berhasil dicetak (Reconnected)');

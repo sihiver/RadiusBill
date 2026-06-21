@@ -61,9 +61,14 @@ export default function SettingsScreen() {
           if (savedPrinter) {
             try {
               await BLEPrinter.connectPrinter(savedPrinter);
+              // Tes tulis ringan untuk verifikasi perangkat benar-benar aktif
+              await BLEPrinter.printBill("");
               setConnectedDevice(savedPrinter);
             } catch (err) {
               console.log('Failed to auto-connect to printer:', err);
+              try {
+                await BLEPrinter.closeConn();
+              } catch (e) {}
             }
           }
         } catch (e) {
@@ -113,12 +118,44 @@ export default function SettingsScreen() {
     if (!BLEPrinter) return;
     try {
       setIsScanning(true);
+      // Tutup koneksi lama terlebih dahulu jika ada untuk mereset socket
+      try {
+        await BLEPrinter.closeConn();
+      } catch (e) {
+        // Abaikan jika sebelumnya tidak ada koneksi
+      }
       await BLEPrinter.connectPrinter(address);
+      
+      // Tes tulis ringan untuk verifikasi perangkat benar-benar aktif (bukan status terhubung palsu)
+      try {
+        await BLEPrinter.printBill("");
+      } catch (writeErr) {
+        try {
+          await BLEPrinter.closeConn();
+        } catch (e) {}
+        throw new Error('Perangkat tidak merespon. Pastikan printer menyala.');
+      }
+
       setConnectedDevice(address);
       await AsyncStorage.setItem('saved_printer', address);
       Alert.alert('Berhasil', 'Printer berhasil terhubung');
     } catch (err: any) {
       Alert.alert('Gagal Terhubung', err.message || 'Pastikan printer menyala');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const disconnectDevice = async () => {
+    if (!BLEPrinter) return;
+    try {
+      setIsScanning(true);
+      await BLEPrinter.closeConn();
+      setConnectedDevice(null);
+      await AsyncStorage.removeItem('saved_printer');
+      Alert.alert('Berhasil', 'Koneksi printer diputuskan');
+    } catch (err: any) {
+      Alert.alert('Gagal', err.message || 'Gagal memutuskan koneksi');
     } finally {
       setIsScanning(false);
     }
@@ -199,8 +236,17 @@ export default function SettingsScreen() {
         )}
       </View>
 
-        <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-          <TouchableOpacity style={styles.testBtn} onPress={testPrint} disabled={!connectedDevice && !!BLEPrinter}>
+        <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border, flexDirection: 'row', gap: 12 }]}>
+          {connectedDevice ? (
+            <TouchableOpacity style={[styles.disconnectBtn, { backgroundColor: colors.danger }]} onPress={disconnectDevice}>
+              <Text style={styles.testBtnText}>Putuskan</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity 
+            style={[styles.testBtn, { flex: 1, backgroundColor: connectedDevice ? '#10b981' : '#cbd5e1' }]} 
+            onPress={testPrint} 
+            disabled={!connectedDevice}
+          >
             <Text style={styles.testBtnText}>Test Print</Text>
           </TouchableOpacity>
         </View>
@@ -337,6 +383,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
+  },
+  disconnectBtn: {
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   testBtnText: {
     color: '#fff',
