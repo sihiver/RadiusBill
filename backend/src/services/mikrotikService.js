@@ -232,6 +232,15 @@ async function setupIsolirRules(appIp) {
       }
     };
 
+    // Parse host and port from appIp (e.g., "167.71.200.190:3001" -> host: "167.71.200.190", port: "3001")
+    let host = appIp;
+    let portSuffix = '';
+    if (appIp.includes(':')) {
+      const parts = appIp.split(':');
+      host = parts[0];
+      portSuffix = ':' + parts[1];
+    }
+
     const isPrivateIP = (ip) => {
       if (!/^[0-9.]+$/.test(ip)) return false;
       const parts = ip.split('.').map(Number);
@@ -244,7 +253,8 @@ async function setupIsolirRules(appIp) {
     };
 
     const isDomain = ip => ip.includes('.') && !/^[0-9.]+$/.test(ip);
-    const isolirUrl = isDomain(appIp) ? `https://${appIp}/isolir.html` : `http://${appIp}/isolir.html`;
+    const protocol = isDomain(host) ? 'https' : 'http';
+    const isolirUrl = `${protocol}://${host}${portSuffix}/isolir.html`;
 
     // 1. Aktifkan Web Proxy di port 8080
     try {
@@ -274,10 +284,10 @@ async function setupIsolirRules(appIp) {
       '=comment=Isolir-Proxy-Redirect'
     ]);
 
-    // 2b. Address List: Tambahkan appIp ke daftar ALLOWED-ISOLIR
+    // 2b. Address List: Tambahkan host ke daftar ALLOWED-ISOLIR
     await ensureEntity('/ip/firewall/address-list', 'comment', 'Isolir-Allowed-Billing', [
       '=list=ALLOWED-ISOLIR',
-      `=address=${appIp}`,
+      `=address=${host}`,
       '=comment=Isolir-Allowed-Billing'
     ]);
 
@@ -294,22 +304,22 @@ async function setupIsolirRules(appIp) {
     ]);
 
     // Hanya terapkan Port Forward & Masquerade lokal jika IP merupakan IP privat (Server lokal)
-    if (isPrivateIP(appIp)) {
-      // 3b. Port Forward: Teruskan traffic ke http://${appIp}/ (port 80) ke port 3001
+    if (isPrivateIP(host)) {
+      // 3b. Port Forward: Teruskan traffic ke http://${host}/ (port 80) ke port 3001
       await ensureEntity('/ip/firewall/nat', 'comment', 'Isolir-Port-Forward', [
         '=chain=dstnat',
         '=protocol=tcp',
-        `=dst-address=${appIp}`,
+        `=dst-address=${host}`,
         '=dst-port=80',
         '=action=dst-nat',
         '=to-ports=3001',
         '=comment=Isolir-Port-Forward'
       ]);
 
-      // 3c. Masquerade Internal: Cegah asymmetric routing untuk koneksi dari klien ke appIp
+      // 3c. Masquerade Internal: Cegah asymmetric routing untuk koneksi dari klien ke host
       await ensureEntity('/ip/firewall/nat', 'comment', 'Isolir-Masq-Billing', [
         '=chain=srcnat',
-        `=dst-address=${appIp}`,
+        `=dst-address=${host}`,
         '=action=masquerade',
         '=comment=Isolir-Masq-Billing'
       ]);
