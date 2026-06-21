@@ -3,7 +3,16 @@
 -- resolving timezone shift discrepancies in log insertions.
 DO $$
 BEGIN
-  EXECUTE 'ALTER DATABASE ' || quote_ident(current_database()) || ' SET timezone TO ''Asia/Jakarta''';
-  EXECUTE 'ALTER USER ' || quote_ident(current_user) || ' SET timezone TO ''Asia/Jakarta''';
+  BEGIN
+    EXECUTE 'ALTER DATABASE ' || quote_ident(current_database()) || ' SET timezone TO ''Asia/Jakarta''';
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Gagal mengubah timezone database (bukan owner), melewati...';
+  END;
+
+  BEGIN
+    EXECUTE 'ALTER USER ' || quote_ident(current_user) || ' SET timezone TO ''Asia/Jakarta''';
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Gagal mengubah timezone user, melewati...';
+  END;
 END
 $$;
