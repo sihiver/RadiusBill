@@ -5,6 +5,8 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, vou
   const [search, setSearch] = useState('');
   const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
   // Helper to format bytes
   const formatBytes = (bytes) => {
@@ -119,6 +121,9 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, vou
     (s.ipAddress && s.ipAddress.includes(search))
   );
 
+  const totalPages = Math.ceil(filteredSessions.length / rowsPerPage);
+  const paginatedSessions = filteredSessions.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+
   return (
     <div className="w-full space-y-6">
       {/* Title */}
@@ -166,7 +171,7 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, vou
             type="text" 
             placeholder="Cari nama, username, atau IP..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-dim rounded-full font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
@@ -188,14 +193,14 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, vou
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container font-body-md text-[13px] text-on-surface">
-              {filteredSessions.length === 0 ? (
+              {paginatedSessions.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="p-8 text-center text-on-surface-variant italic">
                     {loading ? 'Memuat data sesi...' : 'Tidak ada sesi browser portal yang sedang aktif saat ini.'}
                   </td>
                 </tr>
               ) : (
-                filteredSessions.map((session) => (
+                paginatedSessions.map((session) => (
                   <tr key={session.id} className="hover:bg-surface-container-lowest/50 transition-colors">
                     {/* User profile */}
                     <td className="p-4">
@@ -251,6 +256,33 @@ export default function BrowserSessions({ members, setMembers, fetchMembers, vou
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <div className="p-4 border-t border-surface-variant flex items-center justify-between bg-surface-container-low/50">
+          <div className="flex items-center gap-4">
+            <span className="text-label-sm text-on-surface-variant">
+              Menampilkan {Math.min(filteredSessions.length, (currentPage - 1) * rowsPerPage + 1 || 0)} - {Math.min(filteredSessions.length, currentPage * rowsPerPage)} dari {filteredSessions.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+              className="p-1.5 rounded bg-surface-container hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+            </button>
+            <span className="font-label-md text-on-surface w-10 text-center">{currentPage} / {totalPages || 1}</span>
+            <button 
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="p-1.5 rounded bg-surface-container hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );
