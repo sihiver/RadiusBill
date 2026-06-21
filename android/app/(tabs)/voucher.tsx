@@ -26,7 +26,7 @@ export default function VoucherScreen() {
   const fetchVouchers = async () => {
     try {
       const [vouchersRes, packagesRes] = await Promise.all([
-        apiFetch('/vouchers'),
+        apiFetch('/vouchers?limit=10000'),
         apiFetch('/packages?type=Hotspot')
       ]);
       setVouchers(vouchersRes.data || []);
@@ -230,6 +230,10 @@ export default function VoucherScreen() {
             <Text style={styles.emptyText}>Tidak ada voucher yang tersedia.</Text>
           </View>
         }
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
       />
     </View>
   );

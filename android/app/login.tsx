@@ -31,14 +31,18 @@ export default function LoginScreen() {
   const cleanDomain = BASE_URL.replace('https://', '').replace('http://', '').replace('/api', '');
 
   const handleLogin = async () => {
+    console.log('[LOGIN] Attempting login for username:', username.trim());
     if (!username.trim() || !password.trim()) {
+      console.warn('[LOGIN] Validation failed: Empty username or password');
       Alert.alert('Error', 'Username dan password wajib diisi.');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/auth/login`, {
+      const url = `${BASE_URL}/auth/login`;
+      console.log('[LOGIN] Fetching URL:', url);
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +53,9 @@ export default function LoginScreen() {
         }),
       });
 
+      console.log('[LOGIN] Response status:', response.status);
       const resData = await response.json();
+      console.log('[LOGIN] Response JSON:', resData);
 
       if (!response.ok || !resData.success) {
         throw new Error(resData.message || 'Kredensial tidak valid atau server bermasalah.');
@@ -58,15 +64,21 @@ export default function LoginScreen() {
       // Save token and username to storage
       await AsyncStorage.setItem('auth_token', resData.data.token);
       await AsyncStorage.setItem('auth_username', resData.data.user.username);
+      console.log('[LOGIN] Auth details stored in AsyncStorage');
       
-      Alert.alert('Berhasil', 'Login berhasil!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            router.replace('/(tabs)');
+      if (Platform.OS === 'web') {
+        alert('Login berhasil!');
+        router.replace('/(tabs)');
+      } else {
+        Alert.alert('Berhasil', 'Login berhasil!', [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.replace('/(tabs)');
+            }
           }
-        }
-      ]);
+        ]);
+      }
     } catch (err: any) {
       console.error('[LOGIN ERROR]', err);
       Alert.alert('Login Gagal', err.message || 'Koneksi ke server gagal.');

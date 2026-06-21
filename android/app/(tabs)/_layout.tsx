@@ -122,11 +122,11 @@ export default function TabLayout() {
             <TouchableOpacity style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border }} onPress={() => { setIsProfileMenuVisible(false); router.push('/settings'); }}>
               <Text style={{ fontSize: 16, color: colors.text }}>Pengaturan</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ padding: 12 }} onPress={() => { 
+            <TouchableOpacity style={{ padding: 12 }} onPress={async () => { 
               setIsProfileMenuVisible(false); 
-              Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin logout?', [
-                { text: 'Batal', style: 'cancel' }, 
-                { text: 'Logout', style: 'destructive', onPress: async () => {
+              if (Platform.OS === 'web') {
+                const confirmLogout = confirm('Apakah Anda yakin ingin logout?');
+                if (confirmLogout) {
                   try {
                     await AsyncStorage.removeItem('auth_token');
                     await AsyncStorage.removeItem('auth_username');
@@ -134,8 +134,21 @@ export default function TabLayout() {
                   } catch (err) {
                     console.error('Failed to logout:', err);
                   }
-                }}
-              ]); 
+                }
+              } else {
+                Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin logout?', [
+                  { text: 'Batal', style: 'cancel' }, 
+                  { text: 'Logout', style: 'destructive', onPress: async () => {
+                    try {
+                      await AsyncStorage.removeItem('auth_token');
+                      await AsyncStorage.removeItem('auth_username');
+                      router.replace('/login');
+                    } catch (err) {
+                      console.error('Failed to logout:', err);
+                    }
+                  }}
+                ]);
+              }
             }}>
               <Text style={{ fontSize: 16, color: '#ef4444' }}>Logout</Text>
             </TouchableOpacity>

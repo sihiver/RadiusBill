@@ -354,6 +354,10 @@ export default function MemberScreen() {
             <Text style={styles.emptyText}>Tidak ada data member.</Text>
           </View>
         }
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
       />
 
       <Modal
@@ -397,16 +401,17 @@ export default function MemberScreen() {
               placeholderTextColor={colors.textSecondary}
             />
 
-            <Text style={styles.pickerLabel}>Pilih Paket:</Text>
-            <View style={[styles.pickerContainer, { backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#fff', borderColor: colors.border }]}>
+            <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Pilih Paket:</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
               <Picker
                 selectedValue={formData.package_id}
                 onValueChange={(itemValue) => setFormData({...formData, package_id: itemValue})}
-                style={styles.picker}
+                style={[styles.picker, { color: colors.text }]}
+                dropdownIconColor={colors.text}
               >
-                <Picker.Item label="-- Pilih Paket --" value="" />
+                <Picker.Item label="-- Pilih Paket --" value="" color={colors.text} style={{ backgroundColor: colors.card, color: colors.text }} />
                 {packages.map((pkg: any) => (
-                  <Picker.Item key={pkg.id} label={`${pkg.name} (Rp ${pkg.price})`} value={pkg.id} />
+                  <Picker.Item key={pkg.id} label={`${pkg.name} (Rp ${pkg.price})`} value={pkg.id} color={colors.text} style={{ backgroundColor: colors.card, color: colors.text }} />
                 ))}
               </Picker>
             </View>
