@@ -14,12 +14,67 @@ try {
 }
 import { useSearch } from './_layout';
 
+const formatBytes = (bytes: any) => {
+  if (bytes === null || bytes === undefined) return '0 MB';
+  const num = Number(bytes);
+  if (isNaN(num) || num === 0) return '0 MB';
+  if (num < 1024) return num + ' B';
+  if (num < 1024 * 1024) return (num / 1024).toFixed(1) + ' KB';
+  if (num < 1024 * 1024 * 1024) return (num / (1024 * 1024)).toFixed(1) + ' MB';
+  return (num / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+};
+
+const calculateTimeLeft = (v: any) => {
+  if (v.status === 'Unused') {
+    return v.duration || v.validity || '-';
+  }
+  if (v.status === 'Active') {
+    const quota = v.quota_seconds || 0;
+    if (quota > 0) {
+      const currSessTime = v.current_session_time || 0;
+      const totalUsed = (v.used_seconds || 0) + currSessTime;
+      const rem = Math.max(0, quota - totalUsed);
+      if (rem <= 0) return 'Expired';
+      
+      const h = Math.floor(rem / 3600);
+      const m = Math.floor((rem % 3600) / 60);
+      const s = rem % 60;
+      
+      if (h >= 24) {
+        const d = Math.floor(h / 24);
+        const rh = h % 24;
+        return `${d} Hari ${rh} Jam`;
+      }
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    if (v.expires_at) {
+      const expiresAtMs = new Date(v.expires_at).getTime();
+      const remMs = expiresAtMs - Date.now();
+      if (remMs <= 0) return 'Expired';
+      
+      const remSec = Math.floor(remMs / 1000);
+      const h = Math.floor(remSec / 3600);
+      const m = Math.floor((remSec % 3600) / 60);
+      const s = remSec % 60;
+      
+      if (h >= 24) {
+        const d = Math.floor(h / 24);
+        const rh = h % 24;
+        return `${d} Hari ${rh} Jam`;
+      }
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    return '-';
+  }
+  return 'Expired';
+};
+
 export default function VoucherScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [vouchers, setVouchers] = useState([]);
+  const [vouchers, setVouchers] = useState<any[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
   const { searchQuery } = useSearch();
 
@@ -29,7 +84,14 @@ export default function VoucherScreen() {
         apiFetch('/vouchers?limit=10000'),
         apiFetch('/packages?type=Hotspot')
       ]);
-      setVouchers(vouchersRes.data || []);
+      
+      const mapped = (vouchersRes.data || []).map((v: any) => ({
+        ...v,
+        usedBytes: formatBytes(v.used_bytes),
+        timeLeft: calculateTimeLeft(v),
+      }));
+      
+      setVouchers(mapped);
       setPackages(packagesRes.data || []);
     } catch (error) {
       console.error('Failed to fetch vouchers', error);
