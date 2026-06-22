@@ -34,6 +34,7 @@ export default function MemberScreen() {
     password: '',
     phone: '',
     package_id: '',
+    mac_binding: true,
   });
 
   const fetchData = async () => {
@@ -62,7 +63,7 @@ export default function MemberScreen() {
   };
 
   const openAddModal = () => {
-    setFormData({ id: null, name: '', username: '', password: '', phone: '', package_id: '' });
+    setFormData({ id: null, name: '', username: '', password: '', phone: '', package_id: '', mac_binding: true });
     setModalVisible(true);
   };
 
@@ -74,6 +75,7 @@ export default function MemberScreen() {
       password: '', // do not fill password
       phone: member.phone || '',
       package_id: member.package_id || '',
+      mac_binding: !!member.mac_binding,
     });
     setModalVisible(true);
   };

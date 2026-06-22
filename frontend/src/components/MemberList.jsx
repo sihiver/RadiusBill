@@ -12,7 +12,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
   const [phone, setPhone] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [macBinding, setMacBinding] = useState(false);
+  const [macBinding, setMacBinding] = useState(true);
   const [macAddress, setMacAddress] = useState('');
   const [selectedPkg, setSelectedPkg] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -34,7 +34,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     setName('');
     setUsername('');
     setPassword('');
-    setMacBinding(false);
+    setMacBinding(true);
     setMacAddress('');
     setPhone('');
     setSelectedPkg(hotspotPackages[0]?.name || '');
