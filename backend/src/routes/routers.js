@@ -9,6 +9,7 @@ const mikrotik = require('../services/mikrotikService');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
 
 const routerSchema = Joi.object({
+  id:            Joi.number().integer().allow(null),
   customer_name: Joi.string().max(100).required(),
   pppoe_user:    Joi.string().max(50).required(),
   pppoe_pass:    Joi.string().max(100).required(),
@@ -19,7 +20,7 @@ const routerSchema = Joi.object({
   isolir:        Joi.boolean().default(false),
   isolir_reason: Joi.string().max(200).allow('', null),
   expiry_date:   Joi.date().iso().allow('', null),
-});
+}).unknown(true);
 
 // Parse duration string into seconds (e.g., "12h" -> 43200)
 function parseDuration(duration) {

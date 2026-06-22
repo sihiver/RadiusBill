@@ -8,6 +8,7 @@ const radius  = require('../services/radiusService');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
 
 const memberSchema = Joi.object({
+  id:           Joi.number().integer().allow(null),
   name:         Joi.string().max(100).required(),
   username:     Joi.string().max(50).required(),
   password:     Joi.string().max(100).allow('', null),
@@ -21,7 +22,7 @@ const memberSchema = Joi.object({
   expiry_date:  Joi.string().isoDate().allow(null),
   is_active:    Joi.boolean().default(true),
   bypass_hotspot: Joi.boolean().default(false),
-});
+}).unknown(true);
 
 // Parse duration string into seconds (e.g., "12h" -> 43200)
 function parseDuration(duration) {
