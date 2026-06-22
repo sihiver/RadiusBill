@@ -36,6 +36,7 @@ export default function MemberScreen() {
     package_id: '',
     mac_binding: true,
     mac_address: '',
+    bypass_hotspot: false,
   });
 
   const fetchData = async () => {
@@ -64,7 +65,7 @@ export default function MemberScreen() {
   };
 
   const openAddModal = () => {
-    setFormData({ id: null, name: '', username: '', password: '', phone: '', package_id: '', mac_binding: true, mac_address: '' });
+    setFormData({ id: null, name: '', username: '', password: '', phone: '', package_id: '', mac_binding: true, mac_address: '', bypass_hotspot: false });
     setModalVisible(true);
   };
 
@@ -78,6 +79,7 @@ export default function MemberScreen() {
       package_id: member.package_id || '',
       mac_binding: !!member.mac_binding,
       mac_address: member.mac_address || '',
+      bypass_hotspot: !!member.bypass_hotspot,
     });
     setModalVisible(true);
   };
@@ -479,6 +481,16 @@ export default function MemberScreen() {
                 autoCapitalize="characters"
               />
             )}
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 12, paddingHorizontal: 4 }}>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: '500' }}>Bypass Hotspot</Text>
+              <Switch
+                value={formData.bypass_hotspot}
+                onValueChange={(val) => setFormData({...formData, bypass_hotspot: val})}
+                trackColor={{ false: '#767577', true: '#10b981' }}
+                thumbColor={formData.bypass_hotspot ? '#fff' : '#f4f3f4'}
+              />
+            </View>
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setModalVisible(false)}>
