@@ -277,7 +277,7 @@ export default function DashboardOverview({
           <div className="p-4 border-b border-surface-variant/50 flex justify-between items-center bg-surface-container-lowest rounded-t-xl">
             <div className="flex flex-col">
               <h3 className="font-label-md text-label-md text-on-surface font-semibold uppercase tracking-wider">Revenue Trend (7 Days)</h3>
-              <p className="text-label-sm text-on-surface-variant mt-0.5">Estimasi pendapatan harian (Juta Rupiah)</p>
+              <p className="text-label-sm text-on-surface-variant mt-0.5">Estimasi pendapatan harian</p>
             </div>
             
             {/* Filter buttons */}
