@@ -254,43 +254,40 @@ export default function MemberScreen() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === 'Active') return '#10b981'; // green
-    if (status === 'Expired') return '#ef4444'; // red
-    if (status === 'Suspended') return '#f59e0b'; // orange
-    return '#64748b';
+  const getMemberStatus = (item: any) => {
+    if (item.status === 'Expired') return 'Expired';
+    if (item.status === 'Suspended') return 'Suspended';
+    return item.active_session ? 'Online' : 'Offline';
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={[styles.card, { backgroundColor: colors.card }]}>
-      <View style={styles.cardHeader}>
-        <View style={styles.headerLeft}>
-          <View style={[styles.avatar, { backgroundColor: colorScheme === 'dark' ? '#312e81' : '#e0e7ff' }]}>
-            <Text style={styles.avatarText}>{item.name.substring(0, 1).toUpperCase()}</Text>
-          </View>
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
-              {item.active_session ? (
-                <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                  <Text style={{ color: '#10b981', fontSize: 10, fontWeight: 'bold' }}>Online</Text>
-                </View>
-              ) : (
-                <View style={{ backgroundColor: 'rgba(148, 163, 184, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                  <Text style={{ color: '#64748b', fontSize: 10, fontWeight: 'bold' }}>Offline</Text>
-                </View>
-              )}
+  const getStatusColor = (status: string) => {
+    if (status === 'Active' || status === 'Online') return '#10b981'; // green
+    if (status === 'Expired') return '#ef4444'; // red
+    if (status === 'Suspended') return '#f59e0b'; // orange
+    return '#64748b'; // slate (Offline)
+  };
+
+  const renderItem = ({ item }: { item: any }) => {
+    const displayStatus = getMemberStatus(item);
+    return (
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.avatar, { backgroundColor: colorScheme === 'dark' ? '#312e81' : '#e0e7ff' }]}>
+              <Text style={styles.avatarText}>{item.name.substring(0, 1).toUpperCase()}</Text>
             </View>
-            <Text style={[styles.phoneText, { color: colors.textSecondary }]}>{item.phone || 'No HP Belum Diisi'}</Text>
+            <View>
+              <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.phoneText, { color: colors.textSecondary }]}>{item.phone || 'No HP Belum Diisi'}</Text>
+            </View>
+          </View>
+          
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(displayStatus) + '20' }]}>
+            <Text style={[styles.statusText, { color: getStatusColor(displayStatus) }]}>
+              {displayStatus}
+            </Text>
           </View>
         </View>
-        
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-            {item.status}
-          </Text>
-        </View>
-      </View>
       
       <View style={[styles.cardBody, { backgroundColor: colorScheme === 'dark' ? '#0f172a' : '#f8fafc' }]}>
         <View style={styles.infoRow}>
@@ -351,6 +348,7 @@ export default function MemberScreen() {
       </View>
     </View>
   );
+};
 
   if (loading && !refreshing) {
     return (
