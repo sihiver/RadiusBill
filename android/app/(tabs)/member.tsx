@@ -269,7 +269,18 @@ export default function MemberScreen() {
             <Text style={styles.avatarText}>{item.name.substring(0, 1).toUpperCase()}</Text>
           </View>
           <View>
-            <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
+              {item.active_session ? (
+                <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                  <Text style={{ color: '#10b981', fontSize: 10, fontWeight: 'bold' }}>Online</Text>
+                </View>
+              ) : (
+                <View style={{ backgroundColor: 'rgba(148, 163, 184, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                  <Text style={{ color: '#64748b', fontSize: 10, fontWeight: 'bold' }}>Offline</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.phoneText, { color: colors.textSecondary }]}>{item.phone || 'No HP Belum Diisi'}</Text>
           </View>
         </View>
@@ -298,6 +309,12 @@ export default function MemberScreen() {
           <Text style={[styles.label, { color: colors.textSecondary }]}>Tgl Kedaluwarsa:</Text>
           <Text style={[styles.value, { color: colors.text }]}>{item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '-'}</Text>
         </View>
+        {item.active_session && item.ip_address && (
+          <View style={styles.infoRow}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>IP Address:</Text>
+            <Text style={[styles.value, { color: colors.text, fontFamily: 'monospace' }]}>{item.ip_address}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.cardActions}>
