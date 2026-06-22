@@ -13,7 +13,7 @@ const memberSchema = Joi.object({
   password:     Joi.string().max(100).allow('', null),
   phone:        Joi.string().max(20).allow('', null),
   email:        Joi.string().email().max(100).allow('', null),
-  package_id:   Joi.number().integer().allow(null),
+  package_id:   Joi.number().integer().allow(null).empty('').default(null),
   package_name: Joi.string().max(100).allow('', null),
   mac_binding:  Joi.boolean().default(false),
   mac_address:  Joi.string().max(20).allow('', null),
@@ -156,9 +156,24 @@ router.post('/', asyncHandler(async (req, res) => {
   }
 
   let expiryDate = value.expiry_date;
+  let packageId = value.package_id;
+  let packageName = value.package_name;
+
+  if (packageId) {
+    if (!packageName) {
+      const pkgRes = await db.query('SELECT name FROM packages WHERE id = $1', [packageId]);
+      if (pkgRes.rows[0]) {
+        packageName = pkgRes.rows[0].name;
+      }
+    }
+  } else {
+    packageId = null;
+    packageName = null;
+  }
+
   if (!expiryDate) {
-    if (value.package_id) {
-      const pkgRes = await db.query('SELECT validity FROM packages WHERE id = $1', [value.package_id]);
+    if (packageId) {
+      const pkgRes = await db.query('SELECT validity FROM packages WHERE id = $1', [packageId]);
       if (pkgRes.rows[0] && pkgRes.rows[0].validity) {
         const expRes = await db.query(`SELECT NOW() + parse_mikrotik_time($1) AS exp`, [pkgRes.rows[0].validity]);
         expiryDate = expRes.rows[0].exp;
@@ -175,7 +190,7 @@ router.post('/', asyncHandler(async (req, res) => {
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
     RETURNING *
   `, [value.name, value.username, value.password, value.phone, value.email,
-      value.package_id, value.package_name, value.mac_binding,
+      packageId, packageName, value.mac_binding,
       value.mac_binding ? (value.mac_address || null) : null,
       value.balance, expiryDate, value.is_active, value.bypass_hotspot]);
 
@@ -235,6 +250,29 @@ router.put('/:id', asyncHandler(async (req, res) => {
   if (!oldMember) throw createError(404, 'Member tidak ditemukan');
 
   const newPassword = (value.password && value.password.trim() !== '') ? value.password.trim() : oldMember.password;
+  const phone = (value.phone !== undefined) ? value.phone : oldMember.phone;
+  const email = (value.email !== undefined) ? value.email : oldMember.email;
+  const is_active = (value.is_active !== undefined) ? value.is_active : oldMember.is_active;
+  const balance = (value.balance !== undefined) ? value.balance : oldMember.balance;
+  const mac_binding = (value.mac_binding !== undefined) ? value.mac_binding : oldMember.mac_binding;
+  const mac_address = (value.mac_binding !== undefined)
+    ? (value.mac_binding ? (value.mac_address || null) : null)
+    : oldMember.mac_address;
+  const bypass_hotspot = (value.bypass_hotspot !== undefined) ? value.bypass_hotspot : oldMember.bypass_hotspot;
+
+  let packageId = value.package_id;
+  let packageName = value.package_name;
+  if (packageId) {
+    if (!packageName) {
+      const pkgRes = await db.query('SELECT name FROM packages WHERE id = $1', [packageId]);
+      if (pkgRes.rows[0]) {
+        packageName = pkgRes.rows[0].name;
+      }
+    }
+  } else {
+    packageId = null;
+    packageName = null;
+  }
 
   const result = await db.query(`
     UPDATE members
@@ -245,10 +283,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
         bypass_created=CASE WHEN $13 = FALSE THEN FALSE ELSE bypass_created END
     WHERE id=$14
     RETURNING *
-  `, [value.name, value.username, newPassword, value.phone, value.email,
-      value.package_id, value.package_name, value.mac_binding,
-      value.mac_binding ? (value.mac_address || null) : null,
-      value.balance, expiryDate, value.is_active, value.bypass_hotspot, req.params.id]);
+  `, [value.name, value.username, newPassword, phone, email,
+      packageId, packageName, mac_binding, mac_address,
+      balance, expiryDate, is_active, bypass_hotspot, req.params.id]);
 
   // If bypass_hotspot was disabled, or username changed, remove the IP binding from MikroTik
   if (oldMember) {
@@ -271,8 +308,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
     if (expiration) checkAttrs['Expiration'] = expiration;
   }
 
-  if (value.package_id) {
-    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
+  if (packageId) {
+    const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [packageId]);
     if (pkgRes.rows[0]) {
       const pkg = pkgRes.rows[0];
       const quotaSecs = parseDuration(pkg.duration);
