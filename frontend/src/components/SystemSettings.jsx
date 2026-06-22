@@ -13,7 +13,9 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
     dbUser: 'radius',
     dbPass: 'radpass',
     secret: 'testing123',
-    staleTimeout: '15'
+    staleTimeout: '15',
+    voucherExpireMode: 'cronjob',
+    memberExpireMode: 'cronjob'
   });
 
   const [mikrotikConfig, setMikrotikConfig] = useState({
@@ -49,7 +51,9 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
               dbUser: data.radius_user || 'radius',
               dbPass: data.radius_pass || 'radpass',
               secret: data.radius_secret || 'testing123',
-              staleTimeout: data.stale_session_timeout_minutes || '15'
+              staleTimeout: data.stale_session_timeout_minutes || '15',
+              voucherExpireMode: data.voucher_expire_mode || 'cronjob',
+              memberExpireMode: data.member_expire_mode || 'cronjob'
             });
           }
           if (data.mikrotik_host) {
@@ -83,6 +87,8 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
       radius_pass: radiusConfig.dbPass,
       radius_secret: radiusConfig.secret,
       stale_session_timeout_minutes: radiusConfig.staleTimeout,
+      voucher_expire_mode: radiusConfig.voucherExpireMode,
+      member_expire_mode: radiusConfig.memberExpireMode,
       
       mikrotik_host: mikrotikConfig.host,
       mikrotik_port: mikrotikConfig.port,
@@ -284,6 +290,36 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
                       <span className="text-[13px] text-on-surface-variant">Menit</span>
                     </div>
                     <p className="text-[11px] text-on-surface-variant">Durasi tunggu sebelum sistem memutus otomatis sesi yang menggantung tanpa adanya laporan (Interim-Update) dari Mikrotik. Set 0 untuk menonaktifkan.</p>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2 border-t border-surface-variant pt-4 mt-2">
+                    <label className="text-[13px] font-semibold text-on-surface">Mode Kedaluwarsa Voucher (Voucher Expiry Mode)</label>
+                    <select 
+                      value={radiusConfig.voucherExpireMode}
+                      onChange={(e) => setRadiusConfig({...radiusConfig, voucherExpireMode: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                    >
+                      <option value="sqlcounter">Hanya SQL Counter (Pasif - RADIUS Check Attributes)</option>
+                      <option value="cronjob">Dual Mode / Berlapis (SQL Counter + Cron Job Pembersih Akun Aktif & Putus Sesi)</option>
+                    </select>
+                    <p className="text-[11px] text-on-surface-variant">
+                      Pilih bagaimana sistem memproses voucher yang sudah habis masa aktif atau kuotanya. <strong>Dual Mode</strong> sangat direkomendasikan agar pengguna langsung terputus saat masa aktif habis.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2 border-t border-surface-variant pt-4 mt-2">
+                    <label className="text-[13px] font-semibold text-on-surface">Mode Kedaluwarsa Member (Member Expiry Mode)</label>
+                    <select 
+                      value={radiusConfig.memberExpireMode}
+                      onChange={(e) => setRadiusConfig({...radiusConfig, memberExpireMode: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                    >
+                      <option value="sqlcounter">Hanya SQL Counter (Pasif - RADIUS Check Attributes)</option>
+                      <option value="cronjob">Dual Mode / Berlapis (SQL Counter + Cron Job Pembersih Akun Aktif, Bypass & Putus Sesi)</option>
+                    </select>
+                    <p className="text-[11px] text-on-surface-variant">
+                      Pilih bagaimana sistem memproses akun member yang sudah kedaluwarsa atau dinonaktifkan. <strong>Dual Mode</strong> akan otomatis menghapus bypass MikroTik dan membersihkan MAC binding member.
+                    </p>
                   </div>
                 </div>
 

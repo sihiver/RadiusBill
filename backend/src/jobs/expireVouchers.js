@@ -277,21 +277,33 @@ function startExpireJob() {
   const cron = require('node-cron');
   const schedule = process.env.EXPIRE_CRON_SCHEDULE || process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
   
-  const voucherExpireMode = process.env.VOUCHER_EXPIRE_MODE || 'sqlcounter'; // 'sqlcounter' or 'cronjob'
-  const memberExpireMode = process.env.MEMBER_EXPIRE_MODE || 'cronjob';     // 'sqlcounter' or 'cronjob'
+  const defaultVoucherMode = process.env.VOUCHER_EXPIRE_MODE || 'sqlcounter';
+  const defaultMemberMode = process.env.MEMBER_EXPIRE_MODE || 'cronjob';
 
-  console.log(`[ExpireJob] Starting cron: "${schedule}"`);
-  console.log(`[ExpireJob] Voucher Expire Mode: "${voucherExpireMode}"`);
-  console.log(`[ExpireJob] Member Expire Mode: "${memberExpireMode}"`);
+  console.log(`[ExpireJob] Starting cron: "${schedule}" (Default Env modes - Voucher: ${defaultVoucherMode}, Member: ${defaultMemberMode})`);
 
   cron.schedule(schedule, async () => {
     console.log('[ExpireJob] Running scheduled expiry checks...');
     
-    if (voucherExpireMode === 'cronjob') {
+    let vMode = defaultVoucherMode;
+    let mMode = defaultMemberMode;
+    
+    try {
+      const dbPool = require('../db/pool');
+      const settingsRes = await dbPool.query("SELECT key, value FROM system_settings WHERE key IN ('voucher_expire_mode', 'member_expire_mode')");
+      settingsRes.rows.forEach(row => {
+        if (row.key === 'voucher_expire_mode') vMode = row.value;
+        if (row.key === 'member_expire_mode') mMode = row.value;
+      });
+    } catch (dbErr) {
+      console.error('[ExpireJob] Failed to read settings from database, using env defaults:', dbErr.message);
+    }
+    
+    if (vMode === 'cronjob') {
       await runExpireVouchers();
     }
     
-    if (memberExpireMode === 'cronjob') {
+    if (mMode === 'cronjob') {
       await runExpireMembers();
     }
     
