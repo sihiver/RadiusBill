@@ -1,4 +1,4 @@
-import { useColorScheme, Text, View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert, Share } from 'react-native';
+import { Switch, useColorScheme, Text, View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Modal, Alert, Share } from 'react-native';
 import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/services/api';
@@ -35,6 +35,7 @@ export default function MemberScreen() {
     phone: '',
     package_id: '',
     mac_binding: true,
+    mac_address: '',
   });
 
   const fetchData = async () => {
@@ -63,7 +64,7 @@ export default function MemberScreen() {
   };
 
   const openAddModal = () => {
-    setFormData({ id: null, name: '', username: '', password: '', phone: '', package_id: '', mac_binding: true });
+    setFormData({ id: null, name: '', username: '', password: '', phone: '', package_id: '', mac_binding: true, mac_address: '' });
     setModalVisible(true);
   };
 
@@ -76,6 +77,7 @@ export default function MemberScreen() {
       phone: member.phone || '',
       package_id: member.package_id || '',
       mac_binding: !!member.mac_binding,
+      mac_address: member.mac_address || '',
     });
     setModalVisible(true);
   };
@@ -93,6 +95,15 @@ export default function MemberScreen() {
       const payload: any = { ...formData };
       if (formData.id && !payload.password) {
         delete payload.password; // dont send empty password on update
+      }
+
+      // Bersihkan mac_address jika mac_binding dinonaktifkan
+      if (!payload.mac_binding) {
+        payload.mac_address = null;
+      } else if (payload.mac_address.trim() === '') {
+        payload.mac_address = null; // biarkan kosong agar dikunci otomatis saat login pertama
+      } else {
+        payload.mac_address = payload.mac_address.trim();
       }
 
       await apiFetch(endpoint, {
@@ -447,6 +458,27 @@ export default function MemberScreen() {
                 ))}
               </Picker>
             </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 12, paddingHorizontal: 4 }}>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: '500' }}>MAC Binding</Text>
+              <Switch
+                value={formData.mac_binding}
+                onValueChange={(val) => setFormData({...formData, mac_binding: val})}
+                trackColor={{ false: '#767577', true: '#10b981' }}
+                thumbColor={formData.mac_binding ? '#fff' : '#f4f3f4'}
+              />
+            </View>
+
+            {formData.mac_binding && (
+              <TextInput
+                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg }]}
+                placeholder="MAC Address (e.g. AA:BB:CC:DD:EE:FF)"
+                value={formData.mac_address}
+                onChangeText={(text) => setFormData({...formData, mac_address: text})}
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="characters"
+              />
+            )}
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setModalVisible(false)}>
