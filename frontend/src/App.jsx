@@ -667,10 +667,10 @@ export default function App() {
   const allTabs = [
     { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', section: 'core' },
     { id: 'packages', name: 'Paket', icon: 'inventory_2', section: 'core' },
-    { id: 'log', name: 'Daftar Voucher', icon: 'list_alt', section: 'kontrol' },
+    { id: 'log', name: 'Voucher', icon: 'list_alt', section: 'kontrol' },
     { id: 'members', name: 'Member', icon: 'group', section: 'kontrol' },
     { id: 'routers', name: 'PPPoE', icon: 'router', section: 'kontrol' },
-    { id: 'resellers', name: 'Kelola Reseller', icon: 'storefront', section: 'kontrol' },
+    { id: 'resellers', name: 'Reseller', icon: 'storefront', section: 'kontrol' },
     { id: 'sessions', name: 'Status Sesi', icon: 'sensors', section: 'system' },
     { id: 'reports', name: 'Laporan', icon: 'bar_chart', section: 'system' },
     { id: 'settings', name: 'Pengaturan', icon: 'settings', section: 'system' },

@@ -10,7 +10,7 @@ const { asyncHandler, createError } = require('../middleware/errorHandler');
 const memberSchema = Joi.object({
   name:         Joi.string().max(100).required(),
   username:     Joi.string().max(50).required(),
-  password:     Joi.string().max(100).required(),
+  password:     Joi.string().max(100).allow('', null),
   phone:        Joi.string().max(20).allow('', null),
   email:        Joi.string().email().max(100).allow('', null),
   package_id:   Joi.number().integer().allow(null),
@@ -147,6 +147,14 @@ router.post('/', asyncHandler(async (req, res) => {
   const { error, value } = memberSchema.validate(req.body);
   if (error) throw error;
 
+  if (!value.password || value.password.trim() === '') {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation Error',
+      details: ['"password" is required']
+    });
+  }
+
   let expiryDate = value.expiry_date;
   if (!expiryDate) {
     if (value.package_id) {
@@ -224,6 +232,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
   const oldMemberRes = await db.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
   const oldMember = oldMemberRes.rows[0];
+  if (!oldMember) throw createError(404, 'Member tidak ditemukan');
+
+  const newPassword = (value.password && value.password.trim() !== '') ? value.password.trim() : oldMember.password;
 
   const result = await db.query(`
     UPDATE members
@@ -234,12 +245,10 @@ router.put('/:id', asyncHandler(async (req, res) => {
         bypass_created=CASE WHEN $13 = FALSE THEN FALSE ELSE bypass_created END
     WHERE id=$14
     RETURNING *
-  `, [value.name, value.username, value.password, value.phone, value.email,
+  `, [value.name, value.username, newPassword, value.phone, value.email,
       value.package_id, value.package_name, value.mac_binding,
       value.mac_binding ? (value.mac_address || null) : null,
       value.balance, expiryDate, value.is_active, value.bypass_hotspot, req.params.id]);
-
-  if (!result.rows[0]) throw createError(404, 'Member tidak ditemukan');
 
   // If bypass_hotspot was disabled, or username changed, remove the IP binding from MikroTik
   if (oldMember) {
@@ -277,14 +286,14 @@ router.put('/:id', asyncHandler(async (req, res) => {
       }
 
       await radius.syncUserToRadius(
-        value.username, value.password,
+        value.username, newPassword,
         radius.buildGroupName(pkg),
         replyAttrs,
         checkAttrs
       );
     }
   } else {
-    await radius.syncUserToRadius(value.username, value.password, 'hotspot-member', {}, checkAttrs);
+    await radius.syncUserToRadius(value.username, newPassword, 'hotspot-member', {}, checkAttrs);
   }
 
   await cacheDelPattern('members:*');
