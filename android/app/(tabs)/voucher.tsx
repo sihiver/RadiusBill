@@ -69,6 +69,22 @@ const calculateTimeLeft = (v: any) => {
   return 'Expired';
 };
 
+const calculateVoucherStatus = (v: any) => {
+  if (v.status === 'Active') {
+    const quota = v.quota_seconds || 0;
+    if (quota > 0) {
+      const currSessTime = v.current_session_time || 0;
+      const totalUsed = (v.used_seconds || 0) + currSessTime;
+      const rem = Math.max(0, quota - totalUsed);
+      if (rem <= 0) return 'Expired';
+    } else if (v.expires_at) {
+      const expiresAtMs = new Date(v.expires_at).getTime();
+      if (expiresAtMs <= Date.now()) return 'Expired';
+    }
+  }
+  return v.status;
+};
+
 export default function VoucherScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
@@ -85,11 +101,16 @@ export default function VoucherScreen() {
         apiFetch('/packages?type=Hotspot')
       ]);
       
-      const mapped = (vouchersRes.data || []).map((v: any) => ({
-        ...v,
-        usedBytes: formatBytes(v.used_bytes),
-        timeLeft: calculateTimeLeft(v),
-      }));
+      const mapped = (vouchersRes.data || []).map((v: any) => {
+        const computedStatus = calculateVoucherStatus(v);
+        const tempV = { ...v, status: computedStatus };
+        return {
+          ...v,
+          status: computedStatus,
+          usedBytes: formatBytes(v.used_bytes),
+          timeLeft: calculateTimeLeft(tempV),
+        };
+      });
       
       setVouchers(mapped);
       setPackages(packagesRes.data || []);
