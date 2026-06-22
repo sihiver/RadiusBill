@@ -49,13 +49,19 @@ export default function TabLayout() {
           )
         ),
         headerRight: () => (
-          <View style={{ flexDirection: 'row', marginRight: 16, gap: 16, alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => { setIsSearchActive(!isSearchActive); if (isSearchActive) setSearchQuery(''); }}>
-              <FontAwesome name={isSearchActive ? "close" : "search"} size={20} color={colors.textSecondary} />
+          <View style={{ flexDirection: 'row', marginRight: 8, gap: 4, alignItems: 'center' }}>
+            <TouchableOpacity 
+              style={{ padding: 8 }}
+              onPress={() => { setIsSearchActive(!isSearchActive); if (isSearchActive) setSearchQuery(''); }}
+            >
+              <FontAwesome name={isSearchActive ? "close" : "search"} size={24} color={colors.textSecondary} />
             </TouchableOpacity>
             {!isSearchActive && (
-              <TouchableOpacity onPress={() => setIsProfileMenuVisible(true)}>
-                <FontAwesome name="user-circle" size={20} color={colors.textSecondary} />
+              <TouchableOpacity 
+                style={{ padding: 8 }}
+                onPress={() => setIsProfileMenuVisible(true)}
+              >
+                <FontAwesome name="user-circle" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
