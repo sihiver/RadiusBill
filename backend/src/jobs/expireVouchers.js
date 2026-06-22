@@ -275,13 +275,27 @@ async function runExpireRouters() {
  */
 function startExpireJob() {
   const cron = require('node-cron');
-  const schedule = process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
-  console.log(`[ExpireJob] Starting cron: "${schedule}" (Vouchers check is DISABLED, relying on sqlcounter. Members and Routers check is ENABLED)`);
+  const schedule = process.env.EXPIRE_CRON_SCHEDULE || process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
+  
+  const voucherExpireMode = process.env.VOUCHER_EXPIRE_MODE || 'sqlcounter'; // 'sqlcounter' or 'cronjob'
+  const memberExpireMode = process.env.MEMBER_EXPIRE_MODE || 'cronjob';     // 'sqlcounter' or 'cronjob'
+
+  console.log(`[ExpireJob] Starting cron: "${schedule}"`);
+  console.log(`[ExpireJob] Voucher Expire Mode: "${voucherExpireMode}"`);
+  console.log(`[ExpireJob] Member Expire Mode: "${memberExpireMode}"`);
 
   cron.schedule(schedule, async () => {
-    console.log('[ExpireJob] Running member and router expiry check...');
-    // runExpireVouchers is disabled because we rely on FreeRADIUS sqlcounter for hotspot vouchers
-    await runExpireMembers();
+    console.log('[ExpireJob] Running scheduled expiry checks...');
+    
+    if (voucherExpireMode === 'cronjob') {
+      await runExpireVouchers();
+    }
+    
+    if (memberExpireMode === 'cronjob') {
+      await runExpireMembers();
+    }
+    
+    // Routers always checked by cron because PPPoE monthly accounts don't use sqlcounter
     await runExpireRouters();
   });
 }
