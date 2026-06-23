@@ -93,7 +93,10 @@ export default function DashboardScreen() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const date = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${date}`;
       const dayName = days[d.getDay()];
 
       let dailyAmt = 0;
