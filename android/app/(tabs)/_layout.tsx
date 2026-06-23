@@ -95,12 +95,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="router"
+        name="member"
         options={{
-          title: 'PPPoE',
+          title: 'Member',
           tabBarIcon: ({ color }) => (
             <SymbolView
-              name={{ ios: 'wifi.router', android: 'router', web: 'router' }}
+              name={{ ios: 'person.2', android: 'group', web: 'group' }}
               tintColor={color}
               size={28}
             />
@@ -108,12 +108,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="member"
+        name="router"
         options={{
-          title: 'Member',
+          title: 'PPPoE',
           tabBarIcon: ({ color }) => (
             <SymbolView
-              name={{ ios: 'person.2', android: 'group', web: 'group' }}
+              name={{ ios: 'wifi.router', android: 'router', web: 'router' }}
               tintColor={color}
               size={28}
             />
