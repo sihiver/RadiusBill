@@ -79,7 +79,9 @@ router.post('/sessions/:id/disconnect', asyncHandler(async (req, res) => {
   // Terminate session in radacct
   await db.query(`
     UPDATE radacct
-    SET acctstoptime = NOW(), acctterminatecause = 'Admin Reset'
+    SET acctstoptime = NOW(),
+        acctsessiontime = EXTRACT(EPOCH FROM (NOW() - acctstarttime))::integer,
+        acctterminatecause = 'Admin Reset'
     WHERE radacctid = $1
   `, [radacctid]);
 

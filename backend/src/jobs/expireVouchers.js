@@ -23,14 +23,7 @@ async function runExpireVouchers() {
       SELECT v.* FROM vouchers v
       WHERE (
           (v.expires_at IS NOT NULL AND v.expires_at < NOW())
-          OR (v.quota_seconds > 0 AND 
-              (v.used_seconds + COALESCE((
-                SELECT EXTRACT(EPOCH FROM (NOW() - acctstarttime))
-                FROM radacct 
-                WHERE username = v.code AND acctstoptime IS NULL
-                ORDER BY acctstarttime DESC LIMIT 1
-              ), 0)) >= v.quota_seconds
-          )
+          OR (v.quota_seconds > 0 AND v.used_seconds >= v.quota_seconds)
         )
         AND v.status IN ('Active', 'Unused')
       FOR UPDATE SKIP LOCKED

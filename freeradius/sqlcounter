@@ -106,7 +106,7 @@ sqlcounter expire_on_login {
 	reply_name = Session-Timeout
 	key = User-Name
 	reset = never
-	query = "SELECT COALESCE(EXTRACT(EPOCH FROM (NOW() - MIN(acctstarttime)))::integer, 0) FROM radacct WHERE username='%{${key}}'"
+	query = "SELECT COALESCE(EXTRACT(EPOCH FROM (NOW() - MIN(acctstarttime)))::integer, 0) FROM radacct WHERE username='%{${key}}' AND acctstoptime IS NULL"
 }
 
 sqlcounter max_all_session {
@@ -117,7 +117,7 @@ sqlcounter max_all_session {
     reply_name = Session-Timeout
     key = User-Name
     reset = never
-    query = "SELECT COALESCE(SUM(AcctSessionTime), 0) FROM radacct WHERE UserName='%{${key}}'"
+    query = "SELECT COALESCE(SUM(CASE WHEN acctstoptime IS NOT NULL THEN AcctSessionTime ELSE EXTRACT(EPOCH FROM (NOW() - acctstarttime))::integer END), 0) FROM radacct WHERE UserName='%{${key}}'"
 }
 
 sqlcounter datacounter {

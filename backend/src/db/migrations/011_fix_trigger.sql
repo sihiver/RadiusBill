@@ -78,9 +78,9 @@ BEGIN
             WHERE username = NEW.username
         ),
         used_seconds = v_used_seconds,
-        ip_address = COALESCE(NEW.framedipaddress::TEXT, ip_address),
+        ip_address = CASE WHEN NEW.acctstoptime IS NOT NULL THEN NULL ELSE COALESCE(NEW.framedipaddress::TEXT, ip_address) END,
         mac_address = COALESCE(mac_address, NEW.callingstationid),
-        session_id = COALESCE(NEW.acctsessionid, session_id),
+        session_id = CASE WHEN NEW.acctstoptime IS NOT NULL THEN NULL ELSE COALESCE(NEW.acctsessionid, session_id) END,
         updated_at = NOW()
     WHERE code = NEW.username;
 

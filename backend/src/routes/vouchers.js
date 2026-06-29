@@ -362,6 +362,21 @@ router.post('/:id/disconnect', asyncHandler(async (req, res) => {
     }
   }
 
+  // Close active session in radacct (which updates used_bytes and used_seconds in vouchers table via trigger)
+  await db.query(`
+    UPDATE radacct
+    SET acctstoptime = NOW(),
+        acctsessiontime = EXTRACT(EPOCH FROM (NOW() - acctstarttime))::integer,
+        acctterminatecause = 'Admin Reset'
+    WHERE username = $1 AND acctstoptime IS NULL
+  `, [v.code]);
+
+  // Fetch updated voucher details (with correct used_bytes and used_seconds)
+  const vUpdatedRes = await db.query('SELECT * FROM vouchers WHERE id = $1', [req.params.id]);
+  if (vUpdatedRes.rows[0]) {
+    v = vUpdatedRes.rows[0];
+  }
+
   // Move to voucher_logs with reason 'admin_kick'
   const client = await db.getClient();
   try {
@@ -371,11 +386,13 @@ router.post('/:id/disconnect', asyncHandler(async (req, res) => {
       INSERT INTO voucher_logs (
         original_id, code, password, package_id, package_name,
         price, mac_address, ip_address, activated_at, expired_at,
-        used_bytes, session_id, expire_reason, created_at, moved_at, created_by
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),$10,$11,'admin_kick',$12,NOW(),$13)
+        used_bytes, session_id, expire_reason, created_at, moved_at, created_by,
+        quota_seconds, used_seconds
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),$10,$11,'admin_kick',$12,NOW(),$13,$14,$15)
     `, [v.id, v.code, v.password, v.package_id, v.package_name,
         v.price, v.mac_address, v.ip_address, v.activated_at,
-        v.used_bytes, v.session_id, v.created_at, v.created_by]);
+        v.used_bytes, v.session_id, v.created_at, v.created_by,
+        v.quota_seconds, v.used_seconds]);
 
     await client.query('DELETE FROM vouchers WHERE id = $1', [v.id]);
     await client.query('COMMIT');
