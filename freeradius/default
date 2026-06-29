@@ -488,6 +488,18 @@ authorize {
 	datacounter
 	max_all_session
 
+	# Expires-At Check: Tolak jika voucher sudah melewati masa aktif (expires_at)
+	update control {
+		Tmp-String-2 := "%{sql: SELECT CASE WHEN expires_at IS NOT NULL AND expires_at < NOW() THEN '1' ELSE '0' END FROM vouchers WHERE code = '%{User-Name}' LIMIT 1}"
+		Tmp-String-3 := "%{sql: SELECT value FROM system_settings WHERE key = 'msg_voucher_expired'}"
+	}
+	if (control:Tmp-String-2 == "1") {
+		update reply {
+			Reply-Message := "%{control:Tmp-String-3}"
+		}
+		reject
+	}
+
 	# MAC Binding Check
 	if (Calling-Station-Id) {
 		update control {

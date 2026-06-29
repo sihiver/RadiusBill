@@ -109,6 +109,93 @@ async function runExpireVouchers() {
   }
 }
 
+/**
+ * Only expire vouchers where expires_at has passed (calendar/time based).
+ * Used when voucher_expire_mode = 'sqlcounter' — quota is handled by FreeRADIUS,
+ * but expires_at (masa aktif/validity) must still be enforced by cron.
+ */
+async function runExpireByTime() {
+  const client = await getClient();
+  let movedCount = 0;
+  try {
+    await client.query('BEGIN');
+
+    // Only find vouchers where expires_at is in the past
+    const expired = await client.query(`
+      SELECT v.* FROM vouchers v
+      WHERE v.expires_at IS NOT NULL AND v.expires_at < NOW()
+        AND v.status IN ('Active', 'Unused')
+      FOR UPDATE SKIP LOCKED
+    `);
+
+    if (expired.rows.length === 0) {
+      await client.query('COMMIT');
+      return 0;
+    }
+
+    for (const v of expired.rows) {
+      await client.query(`
+        INSERT INTO voucher_logs (
+          original_id, code, password, package_id, package_name,
+          price, mac_address, ip_address, activated_at, expired_at,
+          used_bytes, session_id, expire_reason, created_at, moved_at,
+          quota_seconds, used_seconds, created_by
+        ) VALUES (
+          $1, $2, $3, $4, $5,
+          $6, $7, $8, $9, COALESCE($10, NOW()),
+          $11, $12, 'auto', $13, NOW(),
+          $14, $15, $16
+        )
+      `, [
+        v.id, v.code, v.password, v.package_id, v.package_name,
+        v.price, v.mac_address, v.ip_address, v.activated_at, v.expires_at,
+        v.used_bytes, v.session_id, v.created_at,
+        v.quota_seconds, v.used_seconds, v.created_by
+      ]);
+    }
+
+    const ids = expired.rows.map(v => v.id);
+    await client.query(`DELETE FROM vouchers WHERE id = ANY($1::int[])`, [ids]);
+    await client.query('COMMIT');
+    movedCount = expired.rows.length;
+
+    // Disconnect and reject each expired voucher in FreeRADIUS
+    const dbPool = require('../db/pool');
+    for (const v of expired.rows) {
+      try {
+        if (v.status === 'Active') {
+          const sessRes = await dbPool.query(`
+            SELECT nasipaddress::text, acctsessionid, framedipaddress::text AS framed_ip
+            FROM radacct WHERE username = $1 AND acctstoptime IS NULL
+            ORDER BY acctstarttime DESC LIMIT 1
+          `, [v.code]);
+          if (sessRes.rows[0]?.nasipaddress) {
+            await radius.sendDisconnectRequest(v.code, sessRes.rows[0].nasipaddress, sessRes.rows[0].acctsessionid, sessRes.rows[0].framed_ip);
+          }
+        }
+
+        const settingsRes = await dbPool.query("SELECT value FROM system_settings WHERE key = 'msg_voucher_expired'");
+        const rejectMsg = settingsRes.rows[0]?.value || 'Maaf, Voucher Anda telah Habis/Kedaluwarsa.';
+        await radius.rejectUserWithReason(v.code, rejectMsg);
+      } catch (err) {
+        console.error(`[ExpireByTimeJob] Failed to disconnect/remove ${v.code}:`, err.message);
+      }
+    }
+
+    await cacheDelPattern('vouchers:*');
+    await cacheDelPattern('stats:*');
+    console.log(`[ExpireByTimeJob] Moved ${movedCount} time-expired voucher(s) to voucher_logs`);
+    return movedCount;
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[ExpireByTimeJob] Error:', err.message);
+    return 0;
+  } finally {
+    client.release();
+  }
+}
+
 async function runExpireMembers() {
   const client = await require('../db/pool').getClient();
   const radius = require('../services/radiusService');
@@ -294,6 +381,10 @@ function startExpireJob() {
     
     if (vMode === 'cronjob') {
       await runExpireVouchers();
+    } else {
+      // Bahkan dalam mode 'sqlcounter', selalu proses voucher yang sudah melewati expires_at (masa aktif waktu)
+      // sqlcounter hanya menangani kuota durasi (Max-All-Session), bukan masa aktif kalender (expires_at)
+      await runExpireByTime();
     }
     
     if (mMode === 'cronjob') {
@@ -305,4 +396,4 @@ function startExpireJob() {
   });
 }
 
-module.exports = { startExpireJob, runExpireVouchers, runExpireMembers, runExpireRouters };
+module.exports = { startExpireJob, runExpireVouchers, runExpireByTime, runExpireMembers, runExpireRouters };
