@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { apiFetch } from '../App';
 import { createPortal } from 'react-dom';
 
+const formatLocalDateForInput = (isoStr) => {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function MemberList({ members, setMembers, fetchMembers, packages, addSystemLog, requestConfirm, addNotification }) {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -53,7 +62,7 @@ export default function MemberList({ members, setMembers, fetchMembers, packages
     setMacAddress(member.macAddress || '');
     setPhone(member.phone);
     setSelectedPkg(member.package);
-    setExpiryDate(member.expiry_date ? member.expiry_date.split('T')[0] : '');
+    setExpiryDate(member.expiry_date ? formatLocalDateForInput(member.expiry_date) : '');
     setBypassHotspot(!!member.bypassHotspot);
     setShowModal(true);
   };

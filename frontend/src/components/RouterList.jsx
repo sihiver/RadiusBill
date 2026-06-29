@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { apiFetch } from '../App';
 import { createPortal } from 'react-dom';
 
+const formatLocalDateForInput = (isoStr) => {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function RouterList({ routers, setRouters, fetchRouters, packages, addSystemLog, requestConfirm, addNotification }) {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -118,7 +127,7 @@ export default function RouterList({ routers, setRouters, fetchRouters, packages
     setRouterIp(router.routerIp === '-' ? '' : router.routerIp);
     setSelectedPkg(router.package);
     setStatus(router.status);
-    setExpiryDate(router.expiry_date ? router.expiry_date.split('T')[0] : '');
+    setExpiryDate(router.expiry_date ? formatLocalDateForInput(router.expiry_date) : '');
     setShowModal(true);
   };
 

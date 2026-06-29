@@ -70,6 +70,18 @@ function formatRadiusExpiration(dateStr) {
   return `${d} ${m} ${y} ${h}:${min}:${s}`;
 }
 
+/**
+ * Parse a YYYY-MM-DD date string from frontend as WIB (Asia/Jakarta, UTC+7) midnight.
+ * Without this, new Date('2026-06-29') creates 2026-06-29T00:00:00Z (UTC),
+ * which is 07:00 WIB — causing isolir to trigger 7 hours late.
+ * With this, we store 2026-06-29T00:00:00+07:00 so the cutoff is midnight WIB.
+ */
+function parseLocalDate(dateStr) {
+  if (!dateStr) return null;
+  if (typeof dateStr === 'string' && dateStr.length > 10) return new Date(dateStr);
+  return new Date(`${dateStr}T00:00:00+07:00`);
+}
+
 // GET /api/members
 router.get('/', asyncHandler(async (req, res) => {
   const { q: search, page = 1, limit = 50 } = req.query;
@@ -156,7 +168,7 @@ router.post('/', asyncHandler(async (req, res) => {
     });
   }
 
-  let expiryDate = value.expiry_date;
+  let expiryDate = value.expiry_date ? parseLocalDate(value.expiry_date) : null;
   let packageId = value.package_id;
   let packageName = value.package_name;
 
@@ -244,7 +256,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const { error, value } = memberSchema.validate(req.body);
   if (error) throw error;
 
-  let expiryDate = value.expiry_date;
+  let expiryDate = value.expiry_date ? parseLocalDate(value.expiry_date) : null;
 
   const oldMemberRes = await db.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
   const oldMember = oldMemberRes.rows[0];

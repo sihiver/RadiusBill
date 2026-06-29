@@ -68,6 +68,20 @@ function formatRadiusExpiration(dateStr) {
   return `${d} ${m} ${y} ${h}:${min}:${s}`;
 }
 
+/**
+ * Parse a YYYY-MM-DD date string from frontend as WIB (Asia/Jakarta, UTC+7) midnight.
+ * Without this, new Date('2026-06-29') creates 2026-06-29T00:00:00Z (UTC),
+ * which is 07:00 WIB — causing isolir to trigger 7 hours late.
+ * With this, we store 2026-06-29T00:00:00+07:00 so the cutoff is midnight WIB.
+ */
+function parseLocalDate(dateStr) {
+  if (!dateStr) return null;
+  // If already a full ISO string with offset (e.g. from DB), parse as-is
+  if (typeof dateStr === 'string' && dateStr.length > 10) return new Date(dateStr);
+  // Plain date "YYYY-MM-DD" — append WIB midnight offset
+  return new Date(`${dateStr}T00:00:00+07:00`);
+}
+
 // GET /api/routers
 router.get('/', asyncHandler(async (req, res) => {
   const { q: search, status } = req.query;
@@ -266,7 +280,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
   let newExpiryDate = old.expiry_date;
   if (value.expiry_date !== undefined) {
-    newExpiryDate = value.expiry_date ? new Date(value.expiry_date) : null;
+    newExpiryDate = value.expiry_date ? parseLocalDate(value.expiry_date) : null;
   } else if (value.package_id && value.package_id !== old.package_id) {
     const pkgRes = await db.query('SELECT * FROM packages WHERE id = $1', [value.package_id]);
     if (pkgRes.rows[0]) {
