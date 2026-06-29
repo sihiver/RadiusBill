@@ -106,7 +106,13 @@ sqlcounter expire_on_login {
 	reply_name = Session-Timeout
 	key = User-Name
 	reset = never
-	query = "SELECT COALESCE(EXTRACT(EPOCH FROM (NOW() - MIN(acctstarttime)))::integer, 0) FROM radacct WHERE username='%{${key}}' AND acctstoptime IS NULL"
+	# Hitung waktu dinding (wall-clock) sejak login PERTAMA KALI (bukan total online).
+	# Tanpa filter acctstoptime IS NULL agar sesi yang sudah tutup tetap ikut dihitung.
+	# Logika: masa aktif terus berjalan meskipun user sedang offline/disconnect.
+	# Contoh: Expire-After=120 detik, login pertama 18:00, logout 18:01, reconnect 18:01:30
+	#         → counter = 90 detik terpakai → Session-Timeout = 30 detik sisa
+	#         → jam 18:02 expired dan tidak bisa konek lagi.
+	query = "SELECT COALESCE(EXTRACT(EPOCH FROM (NOW() - MIN(acctstarttime)))::integer, 0) FROM radacct WHERE username='%{${key}}'"
 }
 
 sqlcounter max_all_session {
