@@ -24,7 +24,7 @@ Langkah-langkah:
                 Tmp-String-0 := "%{sql: SELECT mac_address FROM vouchers WHERE code = '%{User-Name}' AND mac_binding = true}"
                 Tmp-String-1 := "%{sql: SELECT value FROM system_settings WHERE key = 'msg_mac_locked'}"
             }
-            if (&control:Tmp-String-0 != '' && &control:Tmp-String-0 != &Calling-Station-Id) {
+            if (control:Tmp-String-0 && control:Tmp-String-0 != "" && control:Tmp-String-0 != Calling-Station-Id) {
                 update reply {
                     Reply-Message := "%{control:Tmp-String-1}"
                 }
