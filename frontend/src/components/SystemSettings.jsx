@@ -15,7 +15,8 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
     secret: 'testing123',
     staleTimeout: '15',
     voucherExpireMode: 'cronjob',
-    memberExpireMode: 'cronjob'
+    memberExpireMode: 'cronjob',
+    cronInterval: '*/5 * * * *'
   });
 
   const [mikrotikConfig, setMikrotikConfig] = useState({
@@ -53,7 +54,8 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
               secret: data.radius_secret || 'testing123',
               staleTimeout: data.stale_session_timeout_minutes || '15',
               voucherExpireMode: data.voucher_expire_mode || 'cronjob',
-              memberExpireMode: data.member_expire_mode || 'cronjob'
+              memberExpireMode: data.member_expire_mode || 'cronjob',
+              cronInterval: data.voucher_expire_cron || '*/5 * * * *'
             });
           }
           if (data.mikrotik_host) {
@@ -89,6 +91,7 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
       stale_session_timeout_minutes: radiusConfig.staleTimeout,
       voucher_expire_mode: radiusConfig.voucherExpireMode,
       member_expire_mode: radiusConfig.memberExpireMode,
+      voucher_expire_cron: radiusConfig.cronInterval,
       
       mikrotik_host: mikrotikConfig.host,
       mikrotik_port: mikrotikConfig.port,
@@ -293,17 +296,37 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2 border-t border-surface-variant pt-4 mt-2">
+                    <label className="text-[13px] font-semibold text-on-surface">Interval Pengecekan Cron Job (Kedaluwarsa)</label>
+                    <div className="flex items-center space-x-2">
+                      <select 
+                        value={radiusConfig.cronInterval}
+                        onChange={(e) => setRadiusConfig({...radiusConfig, cronInterval: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                      >
+                        <option value="* * * * *">Setiap 1 Menit (Paling Cepat)</option>
+                        <option value="*/2 * * * *">Setiap 2 Menit</option>
+                        <option value="*/5 * * * *">Setiap 5 Menit (Standar)</option>
+                        <option value="*/10 * * * *">Setiap 10 Menit</option>
+                        <option value="*/15 * * * *">Setiap 15 Menit</option>
+                        <option value="*/30 * * * *">Setiap 30 Menit</option>
+                        <option value="0 * * * *">Setiap 60 Menit (1 Jam)</option>
+                      </select>
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant">Seberapa sering sistem di latar belakang mengecek dan menendang (kick) pengguna yang kedaluwarsa.</p>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2 border-t border-surface-variant pt-4 mt-2">
                     <label className="text-[13px] font-semibold text-on-surface">Mode Kedaluwarsa Voucher (Voucher Expiry Mode)</label>
                     <select 
                       value={radiusConfig.voucherExpireMode}
                       onChange={(e) => setRadiusConfig({...radiusConfig, voucherExpireMode: e.target.value})}
                       className="w-full px-4 py-2.5 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors cursor-pointer"
                     >
-                      <option value="sqlcounter">Hanya SQL Counter (Pasif - RADIUS Check Attributes)</option>
-                      <option value="cronjob">Dual Mode / Berlapis (SQL Counter + Cron Job Pembersih Akun Aktif & Putus Sesi)</option>
+                      <option value="sqlcounter">Mode Standar (SQL Counter untuk Kuota Uptime, Cron untuk Masa Aktif)</option>
+                      <option value="cronjob">Mode Berlapis / Dual Mode (Cron Job juga ikut memaksa putus Kuota Uptime)</option>
                     </select>
                     <p className="text-[11px] text-on-surface-variant">
-                      Pilih bagaimana sistem memproses voucher yang sudah habis masa aktif atau kuotanya. <strong>Dual Mode</strong> sangat direkomendasikan agar pengguna langsung terputus saat masa aktif habis.
+                      Pilih bagaimana sistem memproses voucher yang kehabisan kuota. Pemutusan karena masa aktif (kadaluarsa kalender) akan selalu berjalan otomatis di kedua mode.
                     </p>
                   </div>
 
@@ -314,11 +337,11 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
                       onChange={(e) => setRadiusConfig({...radiusConfig, memberExpireMode: e.target.value})}
                       className="w-full px-4 py-2.5 bg-surface-container-low border border-surface-variant rounded-lg font-body-md text-[14px] text-on-surface focus:outline-none focus:border-primary transition-colors cursor-pointer"
                     >
-                      <option value="sqlcounter">Hanya SQL Counter (Pasif - RADIUS Check Attributes)</option>
-                      <option value="cronjob">Dual Mode / Berlapis (SQL Counter + Cron Job Pembersih Akun Aktif, Bypass & Putus Sesi)</option>
+                      <option value="sqlcounter">Mode Standar (SQL Counter untuk Kuota Uptime, Cron untuk Masa Aktif)</option>
+                      <option value="cronjob">Mode Berlapis / Dual Mode (Cron Job juga ikut memaksa putus Kuota Uptime)</option>
                     </select>
                     <p className="text-[11px] text-on-surface-variant">
-                      Pilih bagaimana sistem memproses akun member yang sudah kedaluwarsa atau dinonaktifkan. <strong>Dual Mode</strong> akan otomatis menghapus bypass MikroTik dan membersihkan MAC binding member.
+                      Pilih bagaimana sistem memproses member yang kehabisan kuota. Pemutusan karena masa aktif kalender akan selalu berjalan otomatis.
                     </p>
                   </div>
                 </div>

@@ -28,6 +28,12 @@ router.put('/', asyncHandler(async (req, res) => {
       `, [key, String(value)]);
     }
     await client.query('COMMIT');
+    
+    // Reload cron schedule if voucher_expire_cron was updated
+    if (updates.voucher_expire_cron) {
+      const { startExpireJob } = require('../jobs/expireVouchers');
+      startExpireJob().catch(err => console.error('Failed to reload expire job:', err));
+    }
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

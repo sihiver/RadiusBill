@@ -353,23 +353,39 @@ async function runExpireRouters() {
  * Start the cron job.
  * Default schedule: every 5 minutes (x/5 x x x x)
  */
-function startExpireJob() {
+let activeCronTask = null;
+
+async function startExpireJob() {
   const cron = require('node-cron');
-  const schedule = process.env.EXPIRE_CRON_SCHEDULE || process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
+  const dbPool = require('../db/pool');
   
+  let schedule = process.env.EXPIRE_CRON_SCHEDULE || process.env.VOUCHER_EXPIRE_CRON || '*/5 * * * *';
   const defaultVoucherMode = process.env.VOUCHER_EXPIRE_MODE || 'sqlcounter';
   const defaultMemberMode = process.env.MEMBER_EXPIRE_MODE || 'cronjob';
 
+  try {
+    const settingsRes = await dbPool.query("SELECT value FROM system_settings WHERE key = 'voucher_expire_cron'");
+    if (settingsRes.rows.length > 0 && settingsRes.rows[0].value) {
+      schedule = settingsRes.rows[0].value;
+    }
+  } catch (err) {
+    console.error('[ExpireJob] Error reading cron schedule from DB, using env:', err.message);
+  }
+
+  if (activeCronTask) {
+    activeCronTask.stop();
+    console.log('[ExpireJob] Stopped previous cron task.');
+  }
+
   console.log(`[ExpireJob] Starting cron: "${schedule}" (Default Env modes - Voucher: ${defaultVoucherMode}, Member: ${defaultMemberMode})`);
 
-  cron.schedule(schedule, async () => {
+  activeCronTask = cron.schedule(schedule, async () => {
     console.log('[ExpireJob] Running scheduled expiry checks...');
     
     let vMode = defaultVoucherMode;
     let mMode = defaultMemberMode;
     
     try {
-      const dbPool = require('../db/pool');
       const settingsRes = await dbPool.query("SELECT key, value FROM system_settings WHERE key IN ('voucher_expire_mode', 'member_expire_mode')");
       settingsRes.rows.forEach(row => {
         if (row.key === 'voucher_expire_mode') vMode = row.value;
