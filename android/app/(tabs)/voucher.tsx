@@ -94,6 +94,7 @@ export default function VoucherScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Unused' | 'Expired'>('All');
   const { searchQuery } = useSearch();
 
   const fetchVouchers = async () => {
@@ -302,13 +303,51 @@ export default function VoucherScreen() {
     );
   }
 
-  const filteredVouchers = vouchers.filter((v: any) => 
-    v.code?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    v.package_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredVouchers = vouchers.filter((v: any) => {
+    const matchesSearch = 
+      v.code?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      v.package_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesStatus = 
+      statusFilter === 'All' || 
+      v.status === statusFilter;
+      
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.filterContainer}>
+        {(['All', 'Active', 'Unused', 'Expired'] as const).map((filter) => {
+          const isActive = statusFilter === filter;
+          const label = filter === 'All' ? 'Semua' : filter === 'Unused' ? 'Waiting' : filter === 'Active' ? 'Aktif' : 'Expired';
+          
+          return (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.filterBtn,
+                {
+                  backgroundColor: isActive ? '#4D44E3' : colors.card,
+                  borderColor: isActive ? '#4D44E3' : colors.border || '#e2e8f0',
+                }
+              ]}
+              onPress={() => setStatusFilter(filter)}
+            >
+              <Text
+                style={[
+                  styles.filterBtnText,
+                  {
+                    color: isActive ? '#fff' : colors.text,
+                  }
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       <FlatList
         data={filteredVouchers}
@@ -435,5 +474,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: '#64748b',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  filterBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterBtnText: {
+    fontSize: 13,
+    fontWeight: '500',
   }
 });
