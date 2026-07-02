@@ -66,19 +66,7 @@ export default function LoginScreen() {
       await AsyncStorage.setItem('auth_username', resData.data.user.username);
       console.log('[LOGIN] Auth details stored in AsyncStorage');
       
-      if (Platform.OS === 'web') {
-        alert('Login berhasil!');
-        router.replace('/(tabs)');
-      } else {
-        Alert.alert('Berhasil', 'Login berhasil!', [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.replace('/(tabs)');
-            }
-          }
-        ]);
-      }
+      router.replace('/(tabs)');
     } catch (err: any) {
       console.error('[LOGIN ERROR]', err);
       Alert.alert('Login Gagal', err.message || 'Koneksi ke server gagal.');
