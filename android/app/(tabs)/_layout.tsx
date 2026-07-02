@@ -120,6 +120,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="report"
+        options={{
+          title: 'Laporan',
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{ ios: 'chart.bar', android: 'bar_chart', web: 'bar_chart' }}
+              tintColor={color}
+              size={28}
+            />
+          ),
+        }}
+      />
     </Tabs>
 
       <Modal transparent visible={isProfileMenuVisible} onRequestClose={() => setIsProfileMenuVisible(false)} animationType="fade">
