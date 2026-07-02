@@ -28,8 +28,7 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   const token = jwt.sign(
     { id: user.id, username: user.username, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '24h' }
+    JWT_SECRET
   );
 
   res.json({
@@ -83,8 +82,7 @@ router.post('/client/login', asyncHandler(async (req, res) => {
       role: 'client',
       userType: userType
     },
-    JWT_SECRET,
-    { expiresIn: '24h' }
+    JWT_SECRET
   );
 
   res.json({
