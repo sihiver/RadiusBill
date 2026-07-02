@@ -1,4 +1,4 @@
-import { useColorScheme, Text, View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Alert, Share } from 'react-native';
+import { useColorScheme, Text, View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TextInput, TouchableOpacity, Alert, Share, NativeModules } from 'react-native';
 import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/services/api';
@@ -7,8 +7,10 @@ import * as Sharing from 'expo-sharing';
 
 let BLEPrinter: any = null;
 try {
-  const printer = require('react-native-thermal-receipt-printer-image-qr');
-  BLEPrinter = printer.BLEPrinter;
+  if (NativeModules.RNBLEPrinter) {
+    const printer = require('react-native-thermal-receipt-printer-image-qr');
+    BLEPrinter = printer.BLEPrinter;
+  }
 } catch (error) {
   // Ignore in Expo Go
 }
@@ -185,7 +187,7 @@ export default function VoucherScreen() {
           printData += 'Simpan struk ini sebagai bukti\n';
           printData += '================================\n\n\n';
           
-          await BLEPrinter.printBill(printData);
+          await BLEPrinter.printBill(printData, { tailingLine: false });
           Alert.alert('Sukses', 'Struk voucher berhasil dicetak ke printer Bluetooth');
           return;
         } catch (printErr: any) {
@@ -198,7 +200,7 @@ export default function VoucherScreen() {
                 await BLEPrinter.closeConn();
               } catch (e) {}
               await BLEPrinter.connectPrinter(savedPrinter);
-              await BLEPrinter.printBill(printData);
+              await BLEPrinter.printBill(printData, { tailingLine: false });
               Alert.alert('Sukses', 'Struk voucher berhasil dicetak (Reconnected)');
               return;
             }

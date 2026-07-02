@@ -5,12 +5,14 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform, NativeModules } from 'react-native';
 
 let BLEPrinter: any = null;
 try {
-  const printer = require('react-native-thermal-receipt-printer-image-qr');
-  BLEPrinter = printer.BLEPrinter;
+  if (NativeModules.RNBLEPrinter) {
+    const printer = require('react-native-thermal-receipt-printer-image-qr');
+    BLEPrinter = printer.BLEPrinter;
+  }
 } catch (error) {}
 
 const requestBluetoothPermission = async () => {

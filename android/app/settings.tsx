@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PermissionsAndroid, useColorScheme, Text, View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform } from 'react-native';
+import { PermissionsAndroid, useColorScheme, Text, View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform, NativeModules } from 'react-native';
 import Colors from '@/constants/Colors';
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,8 +11,12 @@ let BLEPrinter: any = null;
 
 
 try {
-  const printer = require('react-native-thermal-receipt-printer-image-qr');
-  BLEPrinter = printer.BLEPrinter;
+  if (NativeModules.RNBLEPrinter) {
+    const printer = require('react-native-thermal-receipt-printer-image-qr');
+    BLEPrinter = printer.BLEPrinter;
+  } else {
+    console.log('Bluetooth native module not linked in this environment (e.g., Expo Go).');
+  }
   
 } catch (error) {
   console.log('Bluetooth printing module not available in this environment');
@@ -61,8 +65,6 @@ export default function SettingsScreen() {
           if (savedPrinter) {
             try {
               await BLEPrinter.connectPrinter(savedPrinter);
-              // Tes tulis ringan untuk verifikasi perangkat benar-benar aktif
-              await BLEPrinter.printBill("");
               setConnectedDevice(savedPrinter);
             } catch (err) {
               console.log('Failed to auto-connect to printer:', err);
@@ -93,13 +95,13 @@ export default function SettingsScreen() {
   
   
   const scanDevices = async () => {
+    if (!BLEPrinter) {
+      Alert.alert('Info', 'Fitur Bluetooth tidak didukung pada Expo Go. Gunakan Development Build (APK).');
+      return;
+    }
     const hasPerm = await requestBluetoothPermission();
     if (!hasPerm) {
       Alert.alert("Izin Ditolak", "Izin Bluetooth diperlukan untuk mencari perangkat.");
-      return;
-    }
-    if (!BLEPrinter) {
-      Alert.alert('Info', 'Fitur Bluetooth tidak didukung pada Expo Go. Gunakan Development Build (APK).');
       return;
     }
     setIsScanning(true);
@@ -125,17 +127,6 @@ export default function SettingsScreen() {
         // Abaikan jika sebelumnya tidak ada koneksi
       }
       await BLEPrinter.connectPrinter(address);
-      
-      // Tes tulis ringan untuk verifikasi perangkat benar-benar aktif (bukan status terhubung palsu)
-      try {
-        await BLEPrinter.printBill("");
-      } catch (writeErr) {
-        try {
-          await BLEPrinter.closeConn();
-        } catch (e) {}
-        throw new Error('Perangkat tidak merespon. Pastikan printer menyala.');
-      }
-
       setConnectedDevice(address);
       await AsyncStorage.setItem('saved_printer', address);
       Alert.alert('Berhasil', 'Printer berhasil terhubung');
@@ -172,7 +163,7 @@ export default function SettingsScreen() {
     }
     
     try {
-      BLEPrinter.printBill('TEST PRINT SUCCESS\nPrinter Anda siap digunakan untuk mencetak struk voucher.\n\n');
+      BLEPrinter.printBill('TEST PRINT SUCCESS\nPrinter Anda siap digunakan untuk mencetak struk voucher.\n\n\n', { tailingLine: false });
     } catch (err: any) {
       Alert.alert('Gagal Cetak', err.message || 'Terjadi kesalahan saat mencetak');
     }
