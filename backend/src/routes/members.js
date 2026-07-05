@@ -78,7 +78,10 @@ function formatRadiusExpiration(dateStr) {
  */
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  // If already a full ISO string with offset (e.g. from DB), parse as-is
   if (typeof dateStr === 'string' && dateStr.length > 10) return new Date(dateStr);
+  // Plain date "YYYY-MM-DD" — append WIB midnight offset
   return new Date(`${dateStr}T00:00:00+07:00`);
 }
 

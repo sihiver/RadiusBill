@@ -19,7 +19,7 @@ const routerSchema = Joi.object({
   status:        Joi.string().valid('Online', 'Offline', 'Isolated').default('Online'),
   isolir:        Joi.boolean().default(false),
   isolir_reason: Joi.string().max(200).allow('', null),
-  expiry_date:   Joi.date().iso().allow('', null),
+  expiry_date:   Joi.string().allow('', null),
 }).unknown(true);
 
 // Parse duration string into seconds (e.g., "12h" -> 43200)
@@ -76,6 +76,7 @@ function formatRadiusExpiration(dateStr) {
  */
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
   // If already a full ISO string with offset (e.g. from DB), parse as-is
   if (typeof dateStr === 'string' && dateStr.length > 10) return new Date(dateStr);
   // Plain date "YYYY-MM-DD" — append WIB midnight offset
