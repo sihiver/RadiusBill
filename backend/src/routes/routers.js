@@ -169,6 +169,14 @@ router.post('/', asyncHandler(async (req, res) => {
     throw createError(400, 'Username PPPoE ini sudah digunakan oleh Member Hotspot atau Voucher. Gunakan username lain (misal: pppoe_' + value.pppoe_user + ').');
   }
 
+  // Check router_ip uniqueness
+  if (value.router_ip) {
+    const ipCheck = await db.query('SELECT 1 FROM routers WHERE router_ip = $1', [value.router_ip]);
+    if (ipCheck.rows.length > 0) {
+      throw createError(400, 'IP Address ini sudah digunakan oleh router lain. Silakan gunakan IP yang berbeda atau kosongkan.');
+    }
+  }
+
   // Calculate Expiry Date and Prorate
   let newExpiryDate = null;
   let transactionAmount = 0;
@@ -276,6 +284,14 @@ router.put('/:id', asyncHandler(async (req, res) => {
     
     if (checkConflict.rows.length > 0) {
       throw createError(400, 'Username PPPoE ini sudah digunakan oleh Member Hotspot atau Voucher. Gunakan username lain (misal: pppoe_' + value.pppoe_user + ').');
+    }
+  }
+
+  // Check router_ip uniqueness if changed
+  if (value.router_ip && value.router_ip !== old.router_ip) {
+    const ipCheck = await db.query('SELECT 1 FROM routers WHERE router_ip = $1 AND id != $2', [value.router_ip, req.params.id]);
+    if (ipCheck.rows.length > 0) {
+      throw createError(400, 'IP Address ini sudah digunakan oleh router lain. Silakan gunakan IP yang berbeda atau kosongkan.');
     }
   }
 
