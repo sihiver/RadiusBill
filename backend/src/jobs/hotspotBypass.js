@@ -13,6 +13,8 @@ async function processBypassBindings() {
       WHERE bypass_hotspot = TRUE 
         AND mac_address IS NOT NULL 
         AND bypass_created = FALSE
+        AND is_active = TRUE
+        AND (expiry_date IS NULL OR expiry_date > NOW())
     `);
 
     for (const m of res.rows) {

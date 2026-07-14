@@ -265,7 +265,7 @@ async function runExpireMembers() {
         await client.query(`
           UPDATE members
           SET bypass_created = FALSE,
-              mac_address = NULL,
+              mac_address = CASE WHEN bypass_hotspot = TRUE THEN mac_address ELSE NULL END,
               updated_at = NOW()
           WHERE id = $1
         `, [m.id]);

@@ -364,7 +364,7 @@ router.post('/:id/extend', asyncHandler(async (req, res) => {
     UPDATE members
     SET expiry_date = GREATEST(expiry_date, NOW()) + INTERVAL '${parseInt(days)} days',
         is_active = TRUE,
-        mac_address = NULL,
+        mac_address = CASE WHEN bypass_hotspot = TRUE THEN mac_address ELSE NULL END,
         bypass_created = FALSE
     WHERE id = $1
     RETURNING *
