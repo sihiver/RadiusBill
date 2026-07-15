@@ -102,7 +102,7 @@ export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate
               <textarea
                 value={templateHtml}
                 onChange={(e) => setTemplateHtml(e.target.value)}
-                className="flex-1 w-full p-4 font-mono text-[13px] bg-[#1E1E1E] text-[#D4D4D4] rounded-xl border-2 border-transparent focus:border-primary/50 outline-none resize-none transition-colors"
+                className="flex-1 w-full p-4 font-mono text-[13px] bg-[#1E1E1E] text-[#D4D4D4] rounded-xl border border-zinc-800 focus:border-primary/50 outline-none resize-none transition-colors"
                 spellCheck="false"
                 placeholder="<!-- Masukkan kode HTML di sini -->"
               />
@@ -117,7 +117,7 @@ export default function VoucherTemplateEditor({ isOpen, onClose, initialTemplate
             </div>
             <div className="flex-1 overflow-y-auto p-8 flex items-center justify-center">
               <div 
-                className="w-full text-black font-sans shadow-xl transform transition-all"
+                className="text-black font-sans shadow-xl transform transition-all overflow-hidden rounded-2xl border-2 border-dashed border-slate-500"
                 dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
               />
             </div>

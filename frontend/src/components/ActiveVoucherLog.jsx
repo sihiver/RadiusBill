@@ -1108,7 +1108,7 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
                 html = html.replace(/\{\{warna_muda\}\}/g, palette.light);
                 
                 return (
-                  <div key={idx} dangerouslySetInnerHTML={{ __html: html }} style={{ pageBreakInside: 'avoid' }} />
+                  <div key={idx} className="border-2 border-dashed border-slate-500 rounded-2xl overflow-hidden" dangerouslySetInnerHTML={{ __html: html }} style={{ pageBreakInside: 'avoid' }} />
                 );
               })}
             </div>
@@ -1158,6 +1158,7 @@ export default function ActiveVoucherLog({ packages, vouchers, setVouchers, fetc
             return (
               <div 
                 key={idx} 
+                className="border-2 border-dashed border-slate-500 rounded-2xl overflow-hidden"
                 dangerouslySetInnerHTML={{ __html: html }} 
                 style={{ pageBreakInside: 'avoid' }}
               />
