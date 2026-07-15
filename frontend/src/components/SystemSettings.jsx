@@ -257,6 +257,29 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
     reader.readAsText(restoreFile);
   };
 
+  const handlePrune = () => {
+    const confirmPrune = window.confirm(
+      'Apakah Anda yakin ingin membersihkan log dan sesi lama? Tindakan ini akan menghapus log sistem > 14 hari, log voucher kedaluwarsa > 90 hari, log autentikasi > 7 hari, dan riwayat sesi selesai > 30 hari secara permanen.'
+    );
+    if (!confirmPrune) return;
+    
+    addNotification('Sedang membersihkan database...', 'info');
+    apiFetch('/api/settings/prune', {
+      method: 'POST'
+    })
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) {
+        addNotification(json.message, 'success');
+      } else {
+        addNotification('Pembersihan gagal: ' + json.message, 'error');
+      }
+    })
+    .catch(err => {
+      addNotification('Pembersihan gagal: ' + err.message, 'error');
+    });
+  };
+
   return (
     <div className="w-full space-y-6 animate-fadeIn">
       {/* Title */}
@@ -693,6 +716,21 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
                         Mulai Restore
                       </button>
                     </div>
+                  </div>
+
+                  {/* Prune Section */}
+                  <div className="p-4 bg-surface-container-low border border-surface-variant rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-[14px] text-on-surface">Pembersihan Database (Optimasi)</h4>
+                      <p className="text-[12px] text-on-surface-variant leading-relaxed">Hapus log sistem (&gt;14 hari), log auth (&gt;7 hari), log voucher lama (&gt;90 hari), dan riwayat sesi selesai (&gt;30 hari) secara permanen untuk memperkecil ukuran backup dan mempercepat server.</p>
+                    </div>
+                    <button 
+                      onClick={handlePrune}
+                      className="px-5 py-2.5 bg-error/10 hover:bg-error/20 text-error rounded-lg transition-colors font-label-md flex items-center gap-2 self-start md:self-auto"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+                      Bersihkan Log Lama
+                    </button>
                   </div>
                 </div>
               </div>

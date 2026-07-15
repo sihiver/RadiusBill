@@ -204,4 +204,54 @@ router.post('/restore', asyncHandler(async (req, res) => {
   }
 }));
 
+// POST /api/settings/prune
+router.post('/prune', asyncHandler(async (req, res) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    
+    // 1. Delete radpostauth older than 7 days
+    const postauthRes = await client.query(`
+      DELETE FROM radpostauth
+      WHERE authdate < NOW() - INTERVAL '7 days'
+    `);
+    
+    // 2. Delete radacct older than 30 days (only closed sessions)
+    const acctRes = await client.query(`
+      DELETE FROM radacct
+      WHERE acctstoptime IS NOT NULL 
+        AND acctstarttime < NOW() - INTERVAL '30 days'
+    `);
+    
+    // 3. Delete radius_logs older than 14 days
+    const radiusLogsRes = await client.query(`
+      DELETE FROM radius_logs
+      WHERE created_at < NOW() - INTERVAL '14 days'
+    `);
+    
+    // 4. Delete voucher_logs older than 90 days
+    const voucherLogsRes = await client.query(`
+      DELETE FROM voucher_logs
+      WHERE created_at < NOW() - INTERVAL '90 days'
+    `);
+    
+    await client.query('COMMIT');
+    
+    // Clear cache
+    const { cacheDelPattern } = require('../services/cacheService');
+    await cacheDelPattern('*');
+    
+    res.json({
+      success: true,
+      message: `Database berhasil dibersihkan! Terhapus: ${postauthRes.rowCount} log auth, ${acctRes.rowCount} riwayat sesi, ${radiusLogsRes.rowCount} log sistem, dan ${voucherLogsRes.rowCount} log voucher.`
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[PRUNE ERROR]', err);
+    res.status(500).json({ success: false, message: `Gagal membersihkan database: ${err.message}` });
+  } finally {
+    client.release();
+  }
+}));
+
 module.exports = router;
