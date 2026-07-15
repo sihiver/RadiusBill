@@ -102,7 +102,8 @@ router.get('/backup', asyncHandler(async (req, res) => {
   const tables = [
     'users', 'system_settings', 'packages', 'members', 'vouchers', 
     'routers', 'member_sessions', 'transactions', 'invoices', 'voucher_logs',
-    'nas', 'radgroupcheck', 'radgroupreply', 'radcheck', 'radreply', 'radusergroup'
+    'nas', 'radgroupcheck', 'radgroupreply', 'radcheck', 'radreply', 'radusergroup',
+    'radacct', 'radpostauth'
   ];
   
   const backupData = {};
@@ -136,7 +137,8 @@ router.post('/restore', asyncHandler(async (req, res) => {
     const deleteOrder = [
       'member_sessions', 'vouchers', 'members', 'routers', 'packages',
       'transactions', 'invoices', 'voucher_logs', 'system_settings', 'users',
-      'radusergroup', 'radcheck', 'radreply', 'radgroupcheck', 'radgroupreply', 'nas'
+      'radusergroup', 'radcheck', 'radreply', 'radgroupcheck', 'radgroupreply', 'nas',
+      'radacct', 'radpostauth'
     ];
     
     for (const table of deleteOrder) {
@@ -155,7 +157,8 @@ router.post('/restore', asyncHandler(async (req, res) => {
     const insertOrder = [
       'users', 'system_settings', 'packages', 'members', 'vouchers', 'routers',
       'member_sessions', 'transactions', 'invoices', 'voucher_logs',
-      'nas', 'radgroupcheck', 'radgroupreply', 'radcheck', 'radreply', 'radusergroup'
+      'nas', 'radgroupcheck', 'radgroupreply', 'radcheck', 'radreply', 'radusergroup',
+      'radacct', 'radpostauth'
     ];
     
     for (const table of insertOrder) {
