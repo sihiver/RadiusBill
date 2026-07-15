@@ -38,6 +38,8 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
     invalidVoucher: 'Maaf, Voucher tidak ditemukan atau salah ketik.'
   });
 
+  const [restoreFile, setRestoreFile] = useState(null);
+
   // Load from backend on mount
   useEffect(() => {
     apiFetch('/api/settings')
@@ -179,6 +181,82 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
     });
   };
 
+  const handleDownloadBackup = () => {
+    addNotification('Sedang mempersiapkan backup database...', 'info');
+    apiFetch('/api/settings/backup')
+      .then(res => {
+        if (!res.ok) throw new Error('Gagal mengambil backup dari server');
+        return res.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `radiusbill_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        addNotification('Backup database berhasil diunduh.', 'success');
+      })
+      .catch(err => {
+        addNotification('Gagal mengunduh backup: ' + err.message, 'error');
+      });
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setRestoreFile(e.target.files[0]);
+    } else {
+      setRestoreFile(null);
+    }
+  };
+
+  const handleRestore = () => {
+    if (!restoreFile) return;
+    
+    const confirmRestore = window.confirm(
+      'APAKAH ANDA YAKIN? Proses restore akan MENGHAPUS SEMUA DATA saat ini di database billing dan RADIUS Anda dan menggantinya dengan data dari file backup!'
+    );
+    if (!confirmRestore) return;
+    
+    addNotification('Sedang membaca file backup...', 'info');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const backupData = JSON.parse(e.target.result);
+        if (!backupData.tables || backupData.app !== 'RadiusBill') {
+          throw new Error('Format file backup tidak valid untuk RadiusBill.');
+        }
+        
+        addNotification('Sedang mengirim data restore ke server...', 'info');
+        apiFetch('/api/settings/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tables: backupData.tables })
+        })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            addNotification('Restore database berhasil! Mengatur ulang halaman...', 'success');
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } else {
+            addNotification('Restore gagal: ' + json.message, 'error');
+          }
+        })
+        .catch(err => {
+          addNotification('Restore gagal: ' + err.message, 'error');
+        });
+        
+      } catch (err) {
+        addNotification('Gagal memproses file backup: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(restoreFile);
+  };
+
   return (
     <div className="w-full space-y-6 animate-fadeIn">
       {/* Title */}
@@ -218,6 +296,13 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
           >
             <span className="material-symbols-outlined text-[20px]">chat</span>
             Pesan Kustom
+          </button>
+          <button 
+            onClick={() => setActiveTab('backup')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-label-md text-left ${activeTab === 'backup' ? 'bg-primary text-on-primary shadow-sm' : 'hover:bg-surface-container text-on-surface-variant'}`}
+          >
+            <span className="material-symbols-outlined text-[20px]">backup</span>
+            Backup & Restore
           </button>
         </div>
 
@@ -554,6 +639,61 @@ export default function SystemSettings({ addNotification, voucherTemplate, setVo
                   <button onClick={handleSave} className="px-6 py-2 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm">
                     Simpan Pesan
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Backup & Restore Settings */}
+            {activeTab === 'backup' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-surface-variant pb-4 mb-4">
+                  <h3 className="font-title-md text-title-md text-on-surface">Backup & Restore Database</h3>
+                  <p className="text-[13px] text-on-surface-variant mt-1">Ekspor seluruh data billing dan konfigurasi RADIUS ke file eksternal, atau pulihkan dari file cadangan sebelumnya.</p>
+                </div>
+                
+                <div className="space-y-6">
+                  {/* Backup Section */}
+                  <div className="p-4 bg-surface-container-low border border-surface-variant rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-[14px] text-on-surface">Backup Database (Ekspor)</h4>
+                      <p className="text-[12px] text-on-surface-variant leading-relaxed">Unduh salinan cadangan lengkap data aplikasi (member, voucher, router, transaksi, pengaturan, dan akun RADIUS) dalam format file JSON.</p>
+                    </div>
+                    <button 
+                      onClick={handleDownloadBackup}
+                      className="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-primary rounded-lg transition-colors font-label-md shadow-sm flex items-center gap-2 self-start md:self-auto"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">download</span>
+                      Unduh Backup
+                    </button>
+                  </div>
+                  
+                  {/* Restore Section */}
+                  <div className="p-4 bg-surface-container-low border border-surface-variant rounded-xl space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-[14px] text-on-surface">Restore Database (Impor)</h4>
+                      <p className="text-[12px] text-on-surface-variant leading-relaxed">
+                        Pilih file cadangan JSON hasil backup untuk memulihkan seluruh data database. <br/>
+                        <span className="text-error font-medium">PERINGATAN: Tindakan ini akan menghapus seluruh data yang ada saat ini dan menggantinya dengan data dari file backup!</span>
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row md:items-center gap-3 pt-2">
+                      <input 
+                        type="file" 
+                        accept=".json"
+                        onChange={handleFileChange}
+                        className="text-[13px] text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[13px] file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                      />
+                      <button 
+                        onClick={handleRestore}
+                        disabled={!restoreFile}
+                        className={`px-5 py-2 rounded-lg transition-colors font-label-md flex items-center gap-2 self-start md:self-auto ${restoreFile ? 'bg-error hover:bg-error/10 text-on-error border border-error/20' : 'bg-surface-variant text-on-surface-variant/40 cursor-not-allowed'}`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">upload</span>
+                        Mulai Restore
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
