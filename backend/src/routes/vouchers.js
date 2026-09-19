@@ -225,8 +225,32 @@ router.post('/generate', asyncHandler(async (req, res) => {
 
     const quotaSecs = parseDuration(pkg.duration);
 
+    // Track codes generated within this batch to avoid intra-batch duplicates
+    const usedCodesInBatch = new Set();
+
     for (let i = 0; i < value.quantity; i++) {
-      const code     = value.prefix + randomCode(value.code_length);
+      // Retry sampai dapat kode yang benar-benar unik
+      let code;
+      let attempts = 0;
+      do {
+        if (attempts++ > 100) {
+          throw createError(500, 'Gagal generate kode unik setelah 100 percobaan. Coba perbesar code_length.');
+        }
+        code = value.prefix + randomCode(value.code_length);
+      } while (usedCodesInBatch.has(code));
+
+      // Cek ke DB — apakah kode sudah ada di vouchers aktif atau riwayat (voucher_logs)
+      const existCheck = await client.query(
+        'SELECT 1 FROM vouchers WHERE code = $1 UNION ALL SELECT 1 FROM voucher_logs WHERE code = $1 LIMIT 1',
+        [code]
+      );
+      if (existCheck.rows.length > 0) {
+        // Kode sudah ada di DB — ulangi slot ini
+        i--;
+        continue;
+      }
+
+      usedCodesInBatch.add(code);
       const password = value.format === 'same' ? code : randomCode(6);
       const expiresAt = null;
 
