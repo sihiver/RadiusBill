@@ -75,7 +75,7 @@ export default function ClientDashboard({ onLogout }) {
 
   const simulateWebhook = async (invoiceNumber) => {
     try {
-      const res = await fetch('http://localhost:3001/api/webhooks/payment/mock', {
+      const res = await apiFetch('/api/webhooks/payment/mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ invoice_number: invoiceNumber })

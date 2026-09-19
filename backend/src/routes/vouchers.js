@@ -227,6 +227,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
 
     // Track codes generated within this batch to avoid intra-batch duplicates
     const usedCodesInBatch = new Set();
+    let dbCollisions = 0;
 
     for (let i = 0; i < value.quantity; i++) {
       // Retry sampai dapat kode yang benar-benar unik
@@ -245,6 +246,10 @@ router.post('/generate', asyncHandler(async (req, res) => {
         [code]
       );
       if (existCheck.rows.length > 0) {
+        dbCollisions++;
+        if (dbCollisions > 100) {
+          throw createError(400, 'Kombinasi kode voucher sudah penuh atau sering bertabrakan. Harap perbesar panjang karakter kode voucher (code_length).');
+        }
         // Kode sudah ada di DB — ulangi slot ini
         i--;
         continue;
@@ -376,7 +381,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 router.post('/:id/disconnect', asyncHandler(async (req, res) => {
   const vRes = await db.query('SELECT * FROM vouchers WHERE id = $1', [req.params.id]);
   if (!vRes.rows[0]) throw createError(404, 'Voucher tidak ditemukan');
-  const v = vRes.rows[0];
+  let v = vRes.rows[0];
 
   // Send physical disconnect command to NAS (Mikrotik) if it's active
   if (v.status === 'Active') {

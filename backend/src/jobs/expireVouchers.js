@@ -41,17 +41,18 @@ async function runExpireVouchers() {
           original_id, code, password, package_id, package_name,
           price, mac_address, ip_address, activated_at, expired_at,
           used_bytes, session_id, expire_reason, created_at, moved_at,
-          quota_seconds, used_seconds
+          quota_seconds, used_seconds, created_by
         ) VALUES (
           $1, $2, $3, $4, $5,
           $6, $7, $8, $9, COALESCE($10, NOW()),
           $11, $12, 'auto', $13, NOW(),
-          $14, $15
+          $14, $15, $16
         )
       `, [
         v.id, v.code, v.password, v.package_id, v.package_name,
         v.price, v.mac_address, v.ip_address, v.activated_at, v.expires_at,
-        v.used_bytes, v.session_id, v.created_at, v.quota_seconds, v.used_seconds
+        v.used_bytes, v.session_id, v.created_at, v.quota_seconds, v.used_seconds,
+        v.created_by
       ]);
     }
 
