@@ -280,22 +280,31 @@ router.post('/generate', asyncHandler(async (req, res) => {
   for (const v of generated) {
     const replyAttrs = {};
     const checkAttrs = {};
-    
+
     if (rateLimit) {
       replyAttrs['Mikrotik-Rate-Limit'] = rateLimit;
     }
-    
-    // Limits applied directly by FreeRADIUS
+
     if (validitySecs > 0) {
       checkAttrs['Expire-After'] = validitySecs;
     }
-    
-    // For duration limit (Total Uptime)
+
     if (quotaSecs > 0) {
       checkAttrs['Max-All-Session'] = quotaSecs;
     }
-    
-    await radius.syncUserToRadius(v.code, v.password, groupName, replyAttrs, checkAttrs);
+
+    // Retry once on transient error so a blip doesn't leave voucher without radcheck
+    try {
+      await radius.syncUserToRadius(v.code, v.password, groupName, replyAttrs, checkAttrs);
+    } catch (syncErr) {
+      console.warn(`[VoucherGen] syncUserToRadius failed for ${v.code}, retrying once:`, syncErr.message);
+      try {
+        await radius.syncUserToRadius(v.code, v.password, groupName, replyAttrs, checkAttrs);
+      } catch (retryErr) {
+        console.error(`[VoucherGen] Retry also failed for ${v.code}:`, retryErr.message);
+        // Do not throw — voucher exists in DB; admin can re-sync via /api/radius/sync
+      }
+    }
   }
 
   await cacheDelPattern('vouchers:*');

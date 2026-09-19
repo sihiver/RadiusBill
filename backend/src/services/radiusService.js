@@ -20,50 +20,49 @@ async function syncUserToRadius(username, password, groupName, replyAttrs = {}, 
   try {
     await client.query('BEGIN');
 
-    // 1. Upsert radcheck — Cleartext-Password
+    // Advisory lock per-username: prevents concurrent sync for the same user
+    // from racing each other and leaving radcheck in a partial state.
+    // hashtext() converts the username string to a stable 32-bit int for the lock key.
+    await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [username]);
+
+    // Build the full list of radcheck rows to insert, then replace atomically
+    // in a single DELETE + INSERT — no window where Cleartext-Password is missing.
+    const newCheckRows = [];
     if (password !== null && password !== undefined) {
-      await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute = 'Cleartext-Password'`, [username]);
-      await client.query(`
-        INSERT INTO radcheck (username, attribute, op, value)
-        VALUES ($1, 'Cleartext-Password', ':=', $2)
-      `, [username, password]);
+      newCheckRows.push({ attr: 'Cleartext-Password', op: ':=', val: String(password) });
+    }
+    for (const [attr, val] of Object.entries(checkAttrs)) {
+      if (val !== null && val !== undefined) {
+        newCheckRows.push({ attr, op: ':=', val: String(val) });
+      }
+    }
+
+    // 1. Atomically replace ALL radcheck rows for this user in one shot
+    await client.query(`DELETE FROM radcheck WHERE username = $1`, [username]);
+    for (const row of newCheckRows) {
+      await client.query(
+        `INSERT INTO radcheck (username, attribute, op, value) VALUES ($1, $2, $3, $4)`,
+        [username, row.attr, row.op, row.val]
+      );
     }
 
     // 2. Assign group
     if (groupName) {
-      // Clear previous group assignments to prevent duplicates
       await client.query(`DELETE FROM radusergroup WHERE username = $1`, [username]);
-      
-      await client.query(`
-        INSERT INTO radusergroup (username, groupname, priority)
-        VALUES ($1, $2, 1)
-      `, [username, groupName]);
+      await client.query(
+        `INSERT INTO radusergroup (username, groupname, priority) VALUES ($1, $2, 1)`,
+        [username, groupName]
+      );
     }
 
     // 3. Set reply attributes (speed limits, etc.)
-    if (Object.keys(replyAttrs).length > 0) {
-      // 3. Insert or Update reply attributes (radreply)
-      await client.query('DELETE FROM radreply WHERE username = $1', [username]);
-      for (const [attr, val] of Object.entries(replyAttrs)) {
-        if (val !== null && val !== undefined) {
-          await client.query(`
-            INSERT INTO radreply (username, attribute, op, value)
-            VALUES ($1, $2, '=', $3)
-          `, [username, attr, val]);
-        }
-      }
-    }
-
-    // 4. Insert extra check attributes (radcheck) like Expire-After, Max-All-Session
-    await client.query(`DELETE FROM radcheck WHERE username = $1 AND attribute != 'Cleartext-Password'`, [username]);
-    if (Object.keys(checkAttrs).length > 0) {
-      for (const [attr, val] of Object.entries(checkAttrs)) {
-        if (val !== null && val !== undefined) {
-          await client.query(`
-            INSERT INTO radcheck (username, attribute, op, value)
-            VALUES ($1, $2, ':=', $3)
-          `, [username, attr, val]);
-        }
+    await client.query('DELETE FROM radreply WHERE username = $1', [username]);
+    for (const [attr, val] of Object.entries(replyAttrs)) {
+      if (val !== null && val !== undefined) {
+        await client.query(
+          `INSERT INTO radreply (username, attribute, op, value) VALUES ($1, $2, '=', $3)`,
+          [username, attr, val]
+        );
       }
     }
 
