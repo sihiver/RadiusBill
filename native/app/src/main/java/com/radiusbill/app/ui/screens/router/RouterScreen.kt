@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -83,9 +84,9 @@ fun RouterScreen(
 
     routerToExtend?.let { router ->
         ConfirmationDialog(
-            title = "Perpanjang Router",
+            title = "Extend Router",
             message = "Perpanjang masa aktif router \"${router.customerName}\" selama 30 hari?",
-            confirmText = "Perpanjang",
+            confirmText = "Extend",
             onConfirm = {
                 viewModel.extendRouter(router.id, days = 30)
                 routerToExtend = null
@@ -232,7 +233,23 @@ fun RouterItemCard(
                     }
                 }
 
-                StatusBadge(status = router.displayStatus)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    StatusBadge(status = router.displayStatus)
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Hapus Router",
+                            tint = DangerRed,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -286,14 +303,14 @@ fun RouterItemCard(
             // Actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
                     onClick = onEdit,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Edit", fontSize = 12.sp)
+                    Text("Edit")
                 }
 
                 Button(
@@ -304,7 +321,7 @@ fun RouterItemCard(
                         containerColor = if (router.isolir) SuccessGreen else WarningAmber
                     )
                 ) {
-                    Text(if (router.isolir) "Buka Isolir" else "Isolir", fontSize = 12.sp)
+                    Text(if (router.isolir) "Buka Isolir" else "Isolir")
                 }
 
                 Button(
@@ -313,16 +330,7 @@ fun RouterItemCard(
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
                 ) {
-                    Text("Perpanjang", fontSize = 12.sp)
-                }
-
-                OutlinedButton(
-                    onClick = onDelete,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed)
-                ) {
-                    Text("Hapus", fontSize = 12.sp)
+                    Text("Extend")
                 }
             }
         }

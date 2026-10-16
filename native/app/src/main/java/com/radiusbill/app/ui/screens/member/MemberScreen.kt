@@ -86,9 +86,9 @@ fun MemberScreen(
 
     memberToExtend?.let { member ->
         ConfirmationDialog(
-            title = "Perpanjang Member",
+            title = "Extend Member",
             message = "Perpanjang masa aktif member \"${member.name}\" selama 30 hari?",
-            confirmText = "Perpanjang",
+            confirmText = "Extend",
             onConfirm = {
                 viewModel.extendMember(member.id, days = 30)
                 memberToExtend = null
@@ -321,7 +321,7 @@ fun MemberItemCard(
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
                 ) {
-                    Text("Perpanjang")
+                    Text("Extend")
                 }
 
                 OutlinedButton(
