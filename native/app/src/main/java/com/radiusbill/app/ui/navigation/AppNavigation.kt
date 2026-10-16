@@ -9,6 +9,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import com.radiusbill.app.data.local.PreferencesManager
 import com.radiusbill.app.ui.components.RadiusBillTopAppBar
@@ -102,6 +104,10 @@ fun MainContainerScreen(
             )
         },
         bottomBar = {
+            val isDark = isSystemInDarkTheme()
+            val unselectedNavColor = if (isDark) Color(0xFFCBD5E1) else Color(0xFF64748B)
+            val selectedNavColor = if (isDark) Color(0xFF818CF8) else PrimaryIndigo
+
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
@@ -120,9 +126,11 @@ fun MainContainerScreen(
                         },
                         selected = isSelected,
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PrimaryIndigo,
-                            selectedTextColor = PrimaryIndigo,
-                            indicatorColor = PrimaryIndigo.copy(alpha = 0.12f)
+                            selectedIconColor = selectedNavColor,
+                            selectedTextColor = selectedNavColor,
+                            indicatorColor = selectedNavColor.copy(alpha = if (isDark) 0.20f else 0.12f),
+                            unselectedIconColor = unselectedNavColor,
+                            unselectedTextColor = unselectedNavColor
                         ),
                         onClick = {
                             if (currentRoute != item.route) {
