@@ -186,9 +186,7 @@ fun DashboardScreen(
                     val maxAmt = (uiState.chartData.maxOfOrNull { it.amount } ?: 100_000.0).coerceAtLeast(100_000.0)
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(130.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Bottom
                     ) {
@@ -199,31 +197,51 @@ fun DashboardScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                if (bar.amount > 0) {
-                                    Text(
-                                        text = Formatters.formatCompactNumber(bar.amount),
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = PrimaryIndigo
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                }
-
+                                // 1. Value Text at Top
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth(0.55f)
-                                        .fillMaxHeight(heightFraction)
-                                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                        .background(if (bar.amount > 0) PrimaryIndigo else MaterialTheme.colorScheme.surfaceVariant)
-                                )
+                                        .fillMaxWidth()
+                                        .height(18.dp),
+                                    contentAlignment = Alignment.BottomCenter
+                                ) {
+                                    if (bar.amount > 0) {
+                                        Text(
+                                            text = Formatters.formatCompactNumber(bar.amount),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryIndigo,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                // 2. Bar Container (Fixed 90.dp height, bar grows inside it)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(90.dp),
+                                    contentAlignment = Alignment.BottomCenter
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth(0.55f)
+                                            .fillMaxHeight(heightFraction)
+                                            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                            .background(if (bar.amount > 0) PrimaryIndigo else MaterialTheme.colorScheme.surfaceVariant)
+                                    )
+                                }
 
                                 Spacer(modifier = Modifier.height(6.dp))
 
+                                // 3. Day Label at Bottom (Always fully visible)
                                 Text(
                                     text = bar.dayName,
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1
                                 )
                             }
                         }

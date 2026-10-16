@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import androidx.compose.ui.unit.sp
 import com.radiusbill.app.data.local.PreferencesManager
 import com.radiusbill.app.ui.components.RadiusBillTopAppBar
 import com.radiusbill.app.ui.screens.dashboard.DashboardScreen
@@ -111,7 +112,10 @@ fun MainContainerScreen(
                         label = {
                             Text(
                                 text = item.title,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 10.5.sp,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         },
                         selected = isSelected,
