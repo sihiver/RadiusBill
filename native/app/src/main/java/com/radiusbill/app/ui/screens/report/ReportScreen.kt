@@ -281,7 +281,7 @@ fun ReportScreen(
                 EmptyState(message = "Tidak ada transaksi tercatat pada periode ini.")
             }
         } else {
-            items(filteredRevenue, key = { it.id ?: it.hashCode().toLong() }) { rev ->
+            items(filteredRevenue, key = { "${it.date}_${it.type}_${it.displayAmount}_${it.displayCount}" }) { rev ->
                 RevenueTransactionCard(rev)
             }
         }
@@ -296,6 +296,10 @@ fun RevenueTransactionCard(item: RevenueItem) {
     val icon = if (isVoucher) Icons.Default.ConfirmationNumber else if (isMember) Icons.Default.Group else Icons.Default.Receipt
     val iconColor = if (isVoucher) InfoBlue else if (isMember) SuccessGreen else PrimaryIndigo
     val iconBg = if (isVoucher) InfoBlueLight else if (isMember) SuccessGreenLight else PrimaryIndigoLight
+
+    val transTypeTitle = (item.type ?: "Transaksi").replaceFirstChar { it.uppercase() }
+    val formattedDate = Formatters.formatDate(item.date ?: item.createdAt)
+    val subtitle = "$formattedDate • ${item.displayCount} Transaksi"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -326,13 +330,13 @@ fun RevenueTransactionCard(item: RevenueItem) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = item.description ?: item.type ?: "Transaksi",
+                        text = item.description ?: transTypeTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = item.date ?: item.createdAt ?: "-",
+                        text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -340,7 +344,7 @@ fun RevenueTransactionCard(item: RevenueItem) {
             }
 
             Text(
-                text = "+${Formatters.formatRupiah(item.amount)}",
+                text = "+${Formatters.formatRupiah(item.displayAmount)}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = SuccessGreen
