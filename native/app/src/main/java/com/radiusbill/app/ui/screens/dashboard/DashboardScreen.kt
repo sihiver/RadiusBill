@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -317,21 +319,31 @@ fun DashboardScreen(
 
 @Composable
 fun RadiusLogItemCard(log: RadiusLogRaw) {
-    val isAccept = log.reply?.contains("Accept", ignoreCase = true) == true ||
-            log.action?.contains("Accept", ignoreCase = true) == true
-    val isReject = log.reply?.contains("Reject", ignoreCase = true) == true ||
-            log.action?.contains("Reject", ignoreCase = true) == true
+    val rawAction = log.action
+        ?: (if (log.reply?.contains("Accept", ignoreCase = true) == true) "Accept"
+        else if (log.reply?.contains("Reject", ignoreCase = true) == true) "Reject"
+        else log.logType ?: "LOG")
 
-    val badgeColor = when {
-        isAccept -> SuccessGreen
-        isReject -> DangerRed
-        else -> InfoBlue
+    val actionText = when {
+        rawAction.equals("Start", ignoreCase = true) -> "Start"
+        rawAction.equals("Stop", ignoreCase = true) -> "Stop"
+        rawAction.contains("Accept", ignoreCase = true) -> "Accept"
+        rawAction.contains("Reject", ignoreCase = true) -> "Reject"
+        rawAction.contains("Interim", ignoreCase = true) -> "Interim"
+        rawAction.equals("Auth", ignoreCase = true) -> "Auth"
+        rawAction.equals("Acct", ignoreCase = true) -> "Acct"
+        else -> rawAction
     }
 
-    val badgeBg = when {
-        isAccept -> SuccessGreenLight
-        isReject -> DangerRedLight
-        else -> InfoBlueLight
+    val (badgeColor, badgeBg) = when {
+        actionText.equals("Accept", ignoreCase = true) || actionText.equals("Start", ignoreCase = true) ->
+            Pair(SuccessGreen, SuccessGreenLight)
+        actionText.equals("Reject", ignoreCase = true) || actionText.equals("Stop", ignoreCase = true) ->
+            Pair(DangerRed, DangerRedLight)
+        actionText.equals("Interim", ignoreCase = true) ->
+            Pair(WarningAmber, WarningAmberLight)
+        else ->
+            Pair(InfoBlue, InfoBlueLight)
     }
 
     Card(
@@ -370,17 +382,24 @@ fun RadiusLogItemCard(log: RadiusLogRaw) {
                 )
             }
 
+            Spacer(modifier = Modifier.width(8.dp))
+
             Box(
                 modifier = Modifier
+                    .width(66.dp)
+                    .height(26.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(badgeBg)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .background(badgeBg),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = log.action ?: (if (isAccept) "Accept" else if (isReject) "Reject" else log.logType ?: "LOG"),
+                    text = actionText,
                     color = badgeColor,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
