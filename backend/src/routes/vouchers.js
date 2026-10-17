@@ -32,7 +32,7 @@ router.get('/', asyncHandler(async (req, res) => {
     params.push(status);
   }
   if (search) {
-    conditions.push(`(v.code ILIKE $${params.length + 1} OR v.package_name ILIKE $${params.length + 1})`);
+    conditions.push(`(v.code ILIKE $${params.length + 1} OR v.package_name ILIKE $${params.length + 1} OR v.mac_address ILIKE $${params.length + 1})`);
     params.push(`%${search}%`);
   }
   if (req.user && req.user.role === 'reseller') {

@@ -66,13 +66,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 val statsRes = statsDeferred.await()
                 val logsRes = logsDeferred.await()
 
-                val vCount = vouchersRes?.pagination?.total ?: vouchersRes?.data?.size ?: 0
-                val mCount = membersRes?.data?.size ?: 0
-                val rCount = routersRes?.data?.size ?: 0
-
                 val statsData = statsRes?.data
                 val revenueMonth = statsData?.revenue?.thisMonth ?: 0.0
                 val onlineUsers = statsData?.sessions?.activeSessions?.toIntOrNull() ?: 0
+
+                val vCount = vouchersRes?.pagination?.total
+                    ?: vouchersRes?.data?.size
+                    ?: ((statsData?.vouchers?.activeVouchers?.toIntOrNull() ?: 0) + (statsData?.vouchers?.unusedVouchers?.toIntOrNull() ?: 0))
+                val mCount = membersRes?.data?.size
+                    ?: (statsData?.members?.totalMembers?.toIntOrNull() ?: 0)
+                val rCount = routersRes?.data?.size
+                    ?: (statsData?.routers?.totalRouters?.toIntOrNull() ?: 0)
 
                 val chartBars = generateChartData(statsData?.revenueTrend ?: emptyList())
                 val logsList = logsRes?.data ?: emptyList()

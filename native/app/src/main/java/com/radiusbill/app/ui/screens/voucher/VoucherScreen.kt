@@ -67,7 +67,8 @@ fun VoucherScreen(
         uiState.vouchers.filter { v ->
             val matchesSearch = searchQuery.isBlank() ||
                     v.code.contains(searchQuery, ignoreCase = true) ||
-                    (v.packageName?.contains(searchQuery, ignoreCase = true) == true)
+                    (v.packageName?.contains(searchQuery, ignoreCase = true) == true) ||
+                    (v.macAddress?.contains(searchQuery, ignoreCase = true) == true)
 
             val matchesStatus = when (uiState.statusFilter) {
                 "Active" -> v.computedStatus.equals("Active", ignoreCase = true)
@@ -298,6 +299,23 @@ fun VoucherItemCard(
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "MAC:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = voucher.macAddress?.ifBlank { null } ?: "-",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = if (!voucher.macAddress.isNullOrBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 

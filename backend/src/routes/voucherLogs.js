@@ -16,7 +16,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const params     = [];
 
   if (search) {
-    conditions.push(`(vl.code ILIKE $${params.length + 1} OR vl.package_name ILIKE $${params.length + 1})`);
+    conditions.push(`(vl.code ILIKE $${params.length + 1} OR vl.package_name ILIKE $${params.length + 1} OR vl.mac_address ILIKE $${params.length + 1})`);
     params.push(`%${search}%`);
   }
   if (reason) {

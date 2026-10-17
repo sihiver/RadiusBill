@@ -23,6 +23,7 @@ data class Voucher(
     @SerializedName("validity") val validity: String? = null,
     @SerializedName("quota") val quota: String? = null,
     @SerializedName("price") val price: Double? = null,
+    @SerializedName("mac_address") val macAddress: String? = null,
     @SerializedName("created_at") val createdAt: String? = null
 ) {
     val usedBytes: Long
