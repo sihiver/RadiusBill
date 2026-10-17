@@ -113,4 +113,20 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Log voucher dihapus' });
 }));
 
+// ── PUT /api/voucher-logs/:id — Update voucher log (MAC) ─────────────────────
+router.put('/:id', asyncHandler(async (req, res) => {
+  const schema = Joi.object({
+    mac_address: Joi.string().max(20).allow('', null),
+  });
+  const { error, value } = schema.validate(req.body);
+  if (error) throw error;
+
+  const result = await db.query(
+    `UPDATE voucher_logs SET mac_address = $1 WHERE id = $2 RETURNING *`,
+    [value.mac_address || null, req.params.id]
+  );
+  if (!result.rows[0]) throw createError(404, 'Log voucher tidak ditemukan');
+  res.json({ success: true, data: result.rows[0], message: 'MAC address voucher diperbarui' });
+}));
+
 module.exports = router;

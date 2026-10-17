@@ -335,7 +335,10 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const fields = [];
   const params = [];
   for (const [k, v] of Object.entries(value)) {
-    if (v !== undefined) { fields.push(`${k} = $${params.length + 1}`); params.push(v); }
+    if (v !== undefined) {
+      fields.push(`${k} = $${params.length + 1}`);
+      params.push(v === '' ? null : v);
+    }
   }
   if (!fields.length) throw createError(400, 'Tidak ada data yang diupdate');
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.radiusbill.app.data.model.PackageItem
 import com.radiusbill.app.data.model.Voucher
+import com.radiusbill.app.ui.components.EditVoucherMacDialog
 import com.radiusbill.app.ui.components.EmptyState
 import com.radiusbill.app.ui.components.GenerateVouchersDialog
 import com.radiusbill.app.ui.components.LoadingState
@@ -50,6 +52,7 @@ fun VoucherScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var showGenerateDialog by remember { mutableStateOf(false) }
+    var voucherToEditMac by remember { mutableStateOf<Voucher?>(null) }
 
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -72,6 +75,13 @@ fun VoucherScreen(
         }
     }
 
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.clearMessage()
+        }
+    }
+
     if (showGenerateDialog) {
         GenerateVouchersDialog(
             packages = uiState.packages,
@@ -79,6 +89,17 @@ fun VoucherScreen(
             onGenerate = { packageId, quantity, prefix ->
                 showGenerateDialog = false
                 viewModel.generateVouchers(packageId, quantity, prefix)
+            }
+        )
+    }
+
+    voucherToEditMac?.let { voucher ->
+        EditVoucherMacDialog(
+            voucher = voucher,
+            onDismiss = { voucherToEditMac = null },
+            onSave = { newMac ->
+                viewModel.updateVoucherMac(voucher, newMac)
+                voucherToEditMac = null
             }
         )
     }
@@ -207,6 +228,7 @@ fun VoucherScreen(
                         VoucherItemCard(
                             voucher = voucher,
                             pkg = pkg,
+                            onEdit = { voucherToEditMac = voucher },
                             onShare = {
                                 val message = buildString {
                                     append("Berikut adalah detail Voucher WiFi Anda:\n\n")
@@ -292,6 +314,7 @@ fun VoucherScreen(
 fun VoucherItemCard(
     voucher: Voucher,
     pkg: PackageItem?,
+    onEdit: () -> Unit,
     onShare: () -> Unit,
     onPrint: () -> Unit
 ) {
@@ -402,24 +425,37 @@ fun VoucherItemCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit", maxLines = 1)
+                }
+
+                OutlinedButton(
                     onClick = onShare,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Share")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Share", maxLines = 1)
                 }
 
                 Button(
                     onClick = onPrint,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) {
                     Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Print")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Print", maxLines = 1)
                 }
             }
         }

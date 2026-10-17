@@ -28,6 +28,18 @@ interface ApiService {
     @POST("vouchers/generate")
     suspend fun generateVouchers(@Body request: GenerateVoucherRequest): ApiResponse<Any>
 
+    @PUT("vouchers/{id}")
+    suspend fun updateVoucher(
+        @Path("id") id: Long,
+        @Body request: UpdateVoucherRequest
+    ): ApiResponse<Any>
+
+    @PUT("voucher-logs/{id}")
+    suspend fun updateVoucherLog(
+        @Path("id") id: Long,
+        @Body request: UpdateVoucherRequest
+    ): ApiResponse<Any>
+
     // Packages
     @GET("packages")
     suspend fun getPackages(@Query("type") type: String): ApiResponse<List<PackageItem>>

@@ -142,3 +142,7 @@ data class GenerateVoucherRequest(
     @SerializedName("prefix") val prefix: String? = null,
     @SerializedName("character_length") val characterLength: Int = 6
 )
+
+data class UpdateVoucherRequest(
+    @SerializedName("mac_address") val macAddress: String? = null
+)

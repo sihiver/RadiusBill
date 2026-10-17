@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.radiusbill.app.data.api.ApiClient
 import com.radiusbill.app.data.model.GenerateVoucherRequest
 import com.radiusbill.app.data.model.PackageItem
+import com.radiusbill.app.data.model.UpdateVoucherRequest
 import com.radiusbill.app.data.model.Voucher
 import com.radiusbill.app.util.ThermalPrinterManager
 import kotlinx.coroutines.Job
@@ -223,6 +224,29 @@ class VoucherViewModel(application: Application) : AndroidViewModel(application)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = e.message ?: "Gagal generate voucher."
+                )
+            }
+        }
+    }
+
+    fun updateVoucherMac(voucher: Voucher, newMac: String?) {
+        viewModelScope.launch {
+            try {
+                val formattedMac = newMac?.trim()?.ifBlank { null }
+                val request = UpdateVoucherRequest(macAddress = formattedMac)
+                val targetId = voucher.originalId ?: voucher.id
+                val response = if (!voucher.expiredAt.isNullOrBlank() || !voucher.expireReason.isNullOrBlank()) {
+                    apiService.updateVoucherLog(voucher.id, request)
+                } else {
+                    apiService.updateVoucher(targetId, request)
+                }
+                _uiState.value = _uiState.value.copy(
+                    message = response.message ?: "MAC address voucher berhasil diperbarui"
+                )
+                refresh()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message ?: "Gagal memperbarui MAC address"
                 )
             }
         }

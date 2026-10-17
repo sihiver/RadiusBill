@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +21,7 @@ import com.radiusbill.app.data.model.MemberRequest
 import com.radiusbill.app.data.model.PackageItem
 import com.radiusbill.app.data.model.RouterClient
 import com.radiusbill.app.data.model.RouterClientRequest
+import com.radiusbill.app.data.model.Voucher
 import com.radiusbill.app.ui.theme.PrimaryIndigo
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -418,6 +420,82 @@ fun ConfirmationDialog(
                 )
             ) {
                 Text(confirmText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal")
+            }
+        }
+    )
+}
+
+@Composable
+fun EditVoucherMacDialog(
+    voucher: Voucher,
+    onDismiss: () -> Unit,
+    onSave: (String?) -> Unit
+) {
+    var macAddress by remember { mutableStateOf(voucher.macAddress ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Edit MAC Voucher",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Kode: ${voucher.code}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    StatusBadge(status = voucher.computedStatus)
+                }
+
+                OutlinedTextField(
+                    value = macAddress,
+                    onValueChange = { macAddress = it.uppercase() },
+                    label = { Text("MAC Address") },
+                    placeholder = { Text("Contoh: AA:BB:CC:DD:EE:FF") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        if (macAddress.isNotEmpty()) {
+                            IconButton(onClick = { macAddress = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Kosongkan MAC", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                )
+
+                Text(
+                    text = "Kosongkan MAC address jika ingin menghapus pengikatan perangkat (voucher dapat dipakai di perangkat lain saat login).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(macAddress.trim().ifBlank { null })
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+            ) {
+                Text("Simpan")
             }
         },
         dismissButton = {
