@@ -11,7 +11,19 @@ interface ApiService {
 
     // Vouchers
     @GET("vouchers")
-    suspend fun getVouchers(@Query("limit") limit: Int = 10000): ApiResponse<List<Voucher>>
+    suspend fun getVouchers(
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 25,
+        @Query("status") status: String? = null,
+        @Query("q") query: String? = null
+    ): ApiResponse<List<Voucher>>
+
+    @GET("voucher-logs")
+    suspend fun getVoucherLogs(
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 25,
+        @Query("q") query: String? = null
+    ): ApiResponse<List<Voucher>>
 
     @POST("vouchers/generate")
     suspend fun generateVouchers(@Body request: GenerateVoucherRequest): ApiResponse<Any>

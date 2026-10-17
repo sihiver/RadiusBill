@@ -7,24 +7,43 @@ import java.util.Locale
 
 data class Voucher(
     @SerializedName("id") val id: Long,
+    @SerializedName("original_id") val originalId: Long? = null,
     @SerializedName("code") val code: String,
     @SerializedName("package_id") val packageId: Long? = null,
     @SerializedName("package_name") val packageName: String? = null,
-    @SerializedName("status") val rawStatus: String? = "Unused",
-    @SerializedName("used_bytes") val usedBytes: Long? = null,
+    @SerializedName("status") val rawStatus: String? = null,
+    @SerializedName("used_bytes") private val rawUsedBytes: Any? = null,
     @SerializedName("quota_seconds") val quotaSeconds: Long? = null,
     @SerializedName("current_session_time") val currentSessionTime: Long? = null,
     @SerializedName("used_seconds") val usedSeconds: Long? = null,
     @SerializedName("expires_at") val expiresAt: String? = null,
+    @SerializedName("expired_at") val expiredAt: String? = null,
+    @SerializedName("expire_reason") val expireReason: String? = null,
     @SerializedName("duration") val duration: String? = null,
     @SerializedName("validity") val validity: String? = null,
     @SerializedName("quota") val quota: String? = null,
     @SerializedName("price") val price: Double? = null,
     @SerializedName("created_at") val createdAt: String? = null
 ) {
+    val usedBytes: Long
+        get() = when (val b = rawUsedBytes) {
+            is Number -> b.toLong()
+            is String -> b.toLongOrNull() ?: 0L
+            else -> 0L
+        }
+
     val computedStatus: String
         get() {
-            val status = rawStatus ?: "Unused"
+            if (!expiredAt.isNullOrBlank() || !expireReason.isNullOrBlank()) {
+                return "Expired"
+            }
+            val status = rawStatus
+            if (status.isNullOrBlank()) {
+                return "Unused"
+            }
+            if (status.equals("Expired", ignoreCase = true)) {
+                return "Expired"
+            }
             if (status.equals("Active", ignoreCase = true)) {
                 val quotaSec = quotaSeconds ?: 0L
                 if (quotaSec > 0) {
@@ -49,7 +68,7 @@ data class Voucher(
 
     val formattedUsedBytes: String
         get() {
-            val bytes = usedBytes ?: 0L
+            val bytes = usedBytes
             if (bytes <= 0) return "0 MB"
             val kb = bytes / 1024.0
             val mb = kb / 1024.0
@@ -64,6 +83,9 @@ data class Voucher(
 
     val computedTimeLeft: String
         get() {
+            if (computedStatus.equals("Expired", ignoreCase = true)) {
+                return "Expired"
+            }
             if (computedStatus.equals("Unused", ignoreCase = true)) {
                 return duration ?: validity ?: "-"
             }

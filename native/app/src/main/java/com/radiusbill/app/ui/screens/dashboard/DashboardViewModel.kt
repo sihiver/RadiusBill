@@ -66,7 +66,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 val statsRes = statsDeferred.await()
                 val logsRes = logsDeferred.await()
 
-                val vCount = vouchersRes?.data?.size ?: 0
+                val vCount = vouchersRes?.pagination?.total ?: vouchersRes?.data?.size ?: 0
                 val mCount = membersRes?.data?.size ?: 0
                 val rCount = routersRes?.data?.size ?: 0
 

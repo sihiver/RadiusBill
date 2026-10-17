@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -71,11 +72,32 @@ fun VoucherScreen(
             val matchesStatus = when (uiState.statusFilter) {
                 "Active" -> v.computedStatus.equals("Active", ignoreCase = true)
                 "Unused" -> v.computedStatus.equals("Unused", ignoreCase = true)
-                "Expired" -> v.computedStatus.equals("Expired", ignoreCase = true)
+                "Expired" -> v.computedStatus.equals("Expired", ignoreCase = true) || !v.expiredAt.isNullOrBlank() || !v.expireReason.isNullOrBlank()
                 else -> true
             }
 
             matchesSearch && matchesStatus
+        }
+    }
+
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(searchQuery) {
+        viewModel.onSearchQueryChanged(searchQuery)
+    }
+
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisibleIndex >= totalItems - 3
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore && !uiState.isLoading && !uiState.isLoadingMore && uiState.hasMore) {
+            viewModel.loadMore()
         }
     }
 
@@ -142,6 +164,7 @@ fun VoucherScreen(
                 EmptyState(message = "Tidak ada voucher yang sesuai.")
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -175,6 +198,48 @@ fun VoucherScreen(
                                 }
                             }
                         )
+                    }
+
+                    if (uiState.isLoadingMore) {
+                        item(key = "loading_more_item") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 14.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = PrimaryIndigo
+                                    )
+                                    Text(
+                                        text = "Memuat voucher berikutnya...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    } else if (!uiState.hasMore && filteredVouchers.size >= 15) {
+                        item(key = "all_loaded_item") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Semua voucher (${uiState.totalCount.takeIf { it > 0 } ?: filteredVouchers.size}) telah dimuat",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
                     }
                 }
             }
