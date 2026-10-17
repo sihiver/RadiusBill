@@ -7,15 +7,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +31,7 @@ import com.radiusbill.app.ui.components.*
 import com.radiusbill.app.ui.theme.*
 import com.radiusbill.app.util.Formatters
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RouterScreen(
     searchQuery: String,
@@ -39,6 +45,20 @@ fun RouterScreen(
     var routerToDelete by remember { mutableStateOf<RouterClient?>(null) }
     var routerToExtend by remember { mutableStateOf<RouterClient?>(null) }
     var routerToIsolir by remember { mutableStateOf<RouterClient?>(null) }
+
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.refresh()
+        }
+    }
+
+    LaunchedEffect(uiState.isRefreshing) {
+        if (!uiState.isRefreshing) {
+            pullToRefreshState.endRefresh()
+        }
+    }
 
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
@@ -145,11 +165,19 @@ fun RouterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
             if (uiState.isLoading && !uiState.isRefreshing) {
                 LoadingState(message = "Memuat daftar router PPPoE...")
             } else if (filteredRouters.isEmpty()) {
-                EmptyState(message = "Tidak ada router PPPoE yang ditemukan.")
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EmptyState(message = "Tidak ada router PPPoE yang ditemukan.")
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -170,6 +198,13 @@ fun RouterScreen(
                     }
                 }
             }
+
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }

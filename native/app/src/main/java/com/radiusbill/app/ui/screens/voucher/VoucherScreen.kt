@@ -9,16 +9,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,6 +39,7 @@ import com.radiusbill.app.ui.theme.*
 import com.radiusbill.app.util.PrintUtils
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoucherScreen(
     searchQuery: String,
@@ -44,6 +50,20 @@ fun VoucherScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var showGenerateDialog by remember { mutableStateOf(false) }
+
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.refresh()
+        }
+    }
+
+    LaunchedEffect(uiState.isRefreshing) {
+        if (!uiState.isRefreshing) {
+            pullToRefreshState.endRefresh()
+        }
+    }
 
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
@@ -159,12 +179,24 @@ fun VoucherScreen(
                 }
             }
 
-            if (uiState.isLoading && !uiState.isRefreshing) {
-                LoadingState(message = "Memuat data voucher...")
-            } else if (filteredVouchers.isEmpty()) {
-                EmptyState(message = "Tidak ada voucher yang sesuai.")
-            } else {
-                LazyColumn(
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(pullToRefreshState.nestedScrollConnection)
+            ) {
+                if (uiState.isLoading && !uiState.isRefreshing) {
+                    LoadingState(message = "Memuat data voucher...")
+                } else if (filteredVouchers.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        EmptyState(message = "Tidak ada voucher yang sesuai.")
+                    }
+                } else {
+                    LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
@@ -243,6 +275,14 @@ fun VoucherScreen(
                         }
                     }
                 }
+            }
+
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.primary
+            )
             }
         }
     }
