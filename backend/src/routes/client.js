@@ -4,6 +4,81 @@ const db = require('../db/pool');
 const { requireAuth } = require('../middleware/authMiddleware');
 const { asyncHandler, createError } = require('../middleware/errorHandler');
 
+// ── Public Hotspot Voucher Check: GET /api/client/voucher-check/:code ────────
+router.get('/voucher-check/:code', asyncHandler(async (req, res) => {
+  const { code } = req.params;
+  if (!code) {
+    return res.status(400).json({ success: false, message: 'Kode voucher harus diisi' });
+  }
+
+  // 1. Cek data voucher di tabel vouchers
+  const vResult = await db.query(`
+    SELECT v.id, v.code, v.status, v.created_at, v.first_login_at, v.expired_at,
+           p.id as package_id, p.name as package_name, p.duration, p.validity,
+           p.speed_upload, p.speed_download, p.price
+    FROM vouchers v
+    LEFT JOIN packages p ON p.id = v.package_id
+    WHERE v.code = $1
+    LIMIT 1
+  `, [code]);
+
+  if (vResult.rows.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: 'Kode voucher tidak ditemukan di sistem'
+    });
+  }
+
+  const voucher = vResult.rows[0];
+
+  // 2. Cek sesi aktif di radacct (sedang login atau tidak)
+  const activeSessionRes = await db.query(`
+    SELECT acctstarttime, acctsessiontime, framedipaddress::text as ip_address,
+           callingstationid as mac_address, (acctinputoctets + acctoutputoctets) as used_bytes
+    FROM radacct
+    WHERE username = $1 AND acctstoptime IS NULL
+    ORDER BY acctstarttime DESC
+    LIMIT 1
+  `, [code]);
+
+  const isOnline = activeSessionRes.rows.length > 0;
+  const currentSession = isOnline ? activeSessionRes.rows[0] : null;
+
+  // 3. Hitung total pemakaian sebelumnya
+  const totalStatsRes = await db.query(`
+    SELECT COALESCE(SUM(acctsessiontime), 0) as total_used_seconds,
+           COALESCE(SUM(acctinputoctets + acctoutputoctets), 0) as total_used_bytes
+    FROM radacct
+    WHERE username = $1
+  `, [code]);
+
+  const totalUsedSeconds = parseInt(totalStatsRes.rows[0].total_used_seconds, 10);
+  const totalUsedBytes = parseInt(totalStatsRes.rows[0].total_used_bytes, 10);
+
+  // Sisa durasi (jika package memiliki durasi detik)
+  let remainingSeconds = null;
+  if (voucher.duration && voucher.duration > 0) {
+    remainingSeconds = Math.max(0, voucher.duration - totalUsedSeconds);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      code: voucher.code,
+      status: voucher.status,
+      packageName: voucher.package_name,
+      speed: `${voucher.speed_download || 0} Mbps / ${voucher.speed_upload || 0} Mbps`,
+      isOnline,
+      currentSession,
+      totalUsedSeconds,
+      totalUsedBytes,
+      remainingSeconds,
+      firstLoginAt: voucher.first_login_at,
+      expiredAt: voucher.expired_at
+    }
+  });
+}));
+
 // GET /api/client/me
 router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   // `req.user` comes from jwt token: { id, username, role, userType }
